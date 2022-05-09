@@ -1,0 +1,23 @@
+RuO2
+6.97	! density of the material in [g/cm^3]
+0.0e0	! [eV] band gap
+0.0e0	! [eV] Fermi energy
+4542.6	! Speed of sound [m/s]
+
+VALENCE
+9
+0.6150	2.84	2.0 		! A, E0, Gamma coefficients
+17.340	14.024	3.092
+8.39	17.42	2.105
+2.02	20.5	0.5
+13.0	23.1	0.69
+50.0	24.05	3.0
+252.54	27.87	10.82
+87.23	47.18	15.0
+500.0	54.39	34.91		
+
+DOS
+DOS_RuO2.dat
+
+BARRIER
+5.1	10.0d0	5.1d0

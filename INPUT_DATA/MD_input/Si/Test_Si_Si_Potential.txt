@@ -1,0 +1,6 @@
+1			! How many potentials for Si-Si interaction
+
+
+LJ
+5.0d0	0.1d0					! d_cut, dd
+18000.0	220.0					! C12, C6

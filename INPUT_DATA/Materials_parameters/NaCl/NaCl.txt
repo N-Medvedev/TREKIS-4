@@ -1,0 +1,5 @@
+NaCl
+2.16	! density of the material in [g/cm^3]
+8.6		! Pair creation energy [eV]
+7.3d0	! [eV] Fermi energy
+4200.0	! Speed of sound [m/s]

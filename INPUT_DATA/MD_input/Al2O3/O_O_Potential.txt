@@ -1,0 +1,14 @@
+2			! How many potentials for O-O interaction
+
+
+Buck
+10.0e0	0.1d0
+6462.7	3.623	85.09
+
+!Coulomb_Ewald
+10.0e0	0.1e0								! d_cut, dd
+-0.945	-0.945
+
+Coulomb
+10.0e0	0.0e0								! d_cut, dd
+-0.945	-0.945

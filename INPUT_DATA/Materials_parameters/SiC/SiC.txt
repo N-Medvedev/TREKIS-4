@@ -1,0 +1,5 @@
+SiC
+
+3.21	! density of the material in [g/cm^3]
+
+2.36 	! [eV] Pair Creation Energy (or band gap) of the solid

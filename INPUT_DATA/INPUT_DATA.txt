@@ -1,0 +1,27 @@
+::: TARGET :::
+PbI2            ! Whole sample name
+1               ! how many target components there are
+PbI2            ! Material of this part of the target
+300.0          ! Temperature of the target [K]
+0              ! type of the first component: Rectangle
+0.0   0.0   0.0     ! coordinates of its center
+-1e20   1e20        ! Length: its beginning and its end along X axis [A]
+-1e20   1e20        ! Length: its beginning and its end along Y axis [A]
+-1e20   1.0e20        ! Length: its beginning and its end along Z axis [A]
+0.0e0           ! its rotation around X-axis (degree)
+0.0e0           ! its rotation around Y-axis (degree)
+0.0e0           ! its rotation around Z-axis (degree)
+1               ! Type of surface potential barrier: 0=step, 1=Eckart
+::: RADIATION ::: SHI
+1           ! How many different incoming particles/pulses to model
+1           ! How many particles are in the 1st bunch of radiation
+0           ! Type of incoming particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole
+0.0     0.0     0.0            ! [A] coordinates of impact: X, Y, Z
+0.0     0.0     0.0            ! [A] spread (or uncertainty) of coordinates of impact along X, Y, Z
+0.0     0.0                    ! [degrees] angles of impact: from Z [0:180], from Y [0:360]
+1.0e2        ! [eV] energy of the incoming particle / pulse
+0.0           ! [eV] spread of energies (or energy uncertainty)
+0.0           ! [fs] arrival time of the incoming particle / center of the pulse
+0.0           ! [fs] FWHM-duration of the pulse (ignorred for single particles)
+92            ! Z atomic number of SHI
+1  -1.0      ! Zeff,  Meff

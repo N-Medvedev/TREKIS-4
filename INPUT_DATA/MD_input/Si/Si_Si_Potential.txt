@@ -1,0 +1,10 @@
+1			! How many potentials for Si-Si interaction
+
+Buck
+5.0e0	0.1e0									! d_cut, dd
+2162.3914	6.25	0.0d0
+
+
+!Matsui
+5.0e0	0.1e0									! d_cut, dd
+1.4408e0	0.046e0	25.19025167e0				! A, B, C

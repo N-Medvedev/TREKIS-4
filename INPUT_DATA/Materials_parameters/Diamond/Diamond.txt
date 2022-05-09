@@ -1,0 +1,14 @@
+C
+3.52	! density of the material in [g/cm^3]
+5.5		! [eV] Pair Creation Energy (or band gap) of the solid
+0.0e0	! [eV] Fermi energy
+12000.0	! Speed of sound [m/s]
+
+VALENCE
+6	
+17	22.3	2	! A, E0, Gamma coefficients
+25	24.5	4
+185	29.2	5.5
+29	32	4
+221	35	11
+505	47	37

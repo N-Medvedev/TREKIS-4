@@ -1,0 +1,5 @@
+SrTiO3
+
+4.81 	! density of the material in [g/cm^3]
+
+3.25	! [eV] Pair Creation Energy (or band gap) of the solid

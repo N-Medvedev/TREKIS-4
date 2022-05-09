@@ -1,0 +1,13 @@
+2			! How many potentials for Al-O interaction
+
+Buck
+10.0d0	0.1e0
+28477	5.8139	34.58
+
+!Coulomb_Ewald
+10.0e0	0.1e0								! d_cut, dd
+1.4175	-0.945
+
+Coulomb
+10.0e0	0.0d0								! d_cut, dd
+1.4175	-0.945

@@ -1,0 +1,24 @@
+H2O
+1.00	! density of the material in [g/cm^3]
+6.9d0	! [eV] Pair Creation Energy (or band gap) of the solid
+0.0	! Fermi energy [eV]
+1531.0	! Speed of sound [m/s]
+
+Valence			! Valence band
+5				! Number of CDF functions
+0.3e0	8.0e0	1.0e0	! A, E0, Gamma coefficients
+47.0e0	20.0e0	5.0e0
+175.0e0	26.0e0	11.0e0
+155.0e0	35.0e0	30.0e0
+15.0e0	16.0e0	5.0e0
+
+Phonons			! Phonons
+8				! Number of CDF fitting functions
+0.00017e0	0.03e0	0.03e0	! A, E0, Gamma coefficients
+0.00043e0	0.075e0	0.04e0
+0.00086e0	0.095e0	0.03e0
+0.00004e0	0.21e0	0.006e0
+0.0001e0	0.26e0	0.05e0
+0.00165e0	0.43e0	0.018e0
+0.00025e0	0.205e0	0.02e0
+0.0016e0	0.415e0	0.025e0

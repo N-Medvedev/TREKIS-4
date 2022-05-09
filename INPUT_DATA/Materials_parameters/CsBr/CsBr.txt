@@ -1,0 +1,5 @@
+CsBr
+
+4.44	! density of the material in [g/cm^3]
+
+6.9	! Pair creation energy

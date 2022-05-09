@@ -1,0 +1,5 @@
+Y2O3
+
+5.01	! density of the material in [g/cm^3]
+
+5.6	! Pair creation energy

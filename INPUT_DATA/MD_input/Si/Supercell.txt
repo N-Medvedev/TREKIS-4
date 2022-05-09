@@ -1,0 +1,3 @@
+-10.0	10.0	1	! Start and end of simulation box along X [A]; 0=free boundary, 1=periodic boundary
+-10.0	10.0	1	! Start and end of simulation box along Y [A]; 0=free boundary, 1=periodic boundary
+0.0e0	10.0	1	! Start and end of simulation box along Z [A]; 0=free boundary, 1=periodic boundary

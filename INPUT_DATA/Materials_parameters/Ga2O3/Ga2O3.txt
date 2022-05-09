@@ -1,0 +1,5 @@
+Ga2O3
+
+5.88	! density of the material in [g/cm^3]
+
+-1	! [eV] Pair Creation Energy (or band gap) of the solid

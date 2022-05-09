@@ -1,0 +1,19 @@
+C
+2.26	! density of the material in [g/cm^3]
+0.0	! [eV] band gap
+5.5205	! [eV] Fermi energy
+4000.0	! Speed of sound [m/s]
+
+VALENCE
+5
+0.7  3    4	! A, E0, Gamma coefficients
+5    7    1
+9    10   3
+45   20   6
+530  28   10.5
+
+DOS
+DOS_Graphite.dat
+
+BARRIER
+5.0	10.0d0	5.0

@@ -1,0 +1,5 @@
+UO2
+
+10.97	! density of the material in [g/cm^3]
+
+2.35	! Pair creation energy

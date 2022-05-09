@@ -1,0 +1,5 @@
+RbCl
+
+2.8	! density of the material in [g/cm^3]
+
+8.3	! Pair creation energy

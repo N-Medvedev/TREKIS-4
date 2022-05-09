@@ -1,0 +1,9 @@
+2			! How many potentials for Mg-O interaction
+
+Matsui
+9.0e0	0.1e0									! d_cut, dd
+2.7155e0	0.178e0	27.28104080e0				! A, B, C
+
+Coulomb
+9.0e0	0.1e0								! d_cut, dd
+0.945	-0.945

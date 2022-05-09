@@ -1,0 +1,15 @@
+Y3Fe5O12
+5.11 	! density of the material in [g/cm^3]
+2.47	! [eV] Pair Creation Energy (or band gap) of the solid
+0.03e0	! fermi level [eV]
+5506.0	! Speed of sound [m/s]
+
+VALENCE 	! valence band CDF
+4		! A, E0, Gamma
+-0.74	3.1	2.7
+30	10.2	2.5
+114	15	8
+380	30	18
+
+DOS
+DOS_Y3Fe5O12.dat

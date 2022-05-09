@@ -1,0 +1,5 @@
+CdTe
+
+5.85	! density of the material in [g/cm^3]
+
+-3.0	! Pair creation energy

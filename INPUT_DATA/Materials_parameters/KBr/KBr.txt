@@ -1,0 +1,5 @@
+KBr
+
+2.75	! density of the material in [g/cm^3]
+
+7.6	! Pair creation energy

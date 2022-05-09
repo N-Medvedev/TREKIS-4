@@ -1,0 +1,5 @@
+Ru
+12.3	! density of the material in [g/cm^3]
+0.10	! [eV] Pair Creation Energy (or band gap) of the solid
+8.7	! Fermi energy [eV]
+4200.0	! Speed of sound [m/s]

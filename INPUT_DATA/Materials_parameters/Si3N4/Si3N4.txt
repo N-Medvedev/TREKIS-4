@@ -1,0 +1,5 @@
+Si3N4
+
+3.44 	! density of the material in [g/cm^3]
+
+-5.0	! [eV] Pair Creation Energy (or band gap) of the solid

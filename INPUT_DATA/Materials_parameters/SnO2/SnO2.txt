@@ -1,0 +1,5 @@
+SnO2
+
+6.95	! density of the material in [g/cm^3]
+
+-3.5	! Pair creation energy

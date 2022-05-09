@@ -1,0 +1,5 @@
+B4C
+
+2.37	! density of the material in [g/cm^3]
+
+2.09	! [eV] Pair Creation Energy (or band gap) of the solid

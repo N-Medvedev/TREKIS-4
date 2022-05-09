@@ -1,0 +1,26 @@
+Si
+2.329	! density of the material in [g/cm^3]
+1.17	! [eV] band gap
+0.0e0	! [eV] Fermi energy
+8430.0	! Speed of sound [m/s]
+
+VALENCE
+1
+270.0	16.8	4.1		! A, E0, Gamma coefficients
+!-0.37675	3.3	4.5
+
+PHONONS
+4
+1.2e-9	0.005	0.005
+1.5e-8	0.02	0.1
+2.0e-8	0.076	0.005
+5.7e-8	0.10	0.05
+
+DOS
+DOS_Si.dat
+
+BARRIER
+4.76	10.0d0	6.18d0
+
+!EFFECTIVE_MASS
+0.3

@@ -1,0 +1,15 @@
+Al
+2.7		! Density of the material in [g/cm^3]
+0.01	! Band gap of the solid [eV]
+0.0	! Fermi energy [eV]  (11.17)
+5000.0	! Speed of sound [m/s]
+
+Valence		! Valence band or phonons
+1		! Number of CDF fitting functions
+245	15.1	0.4d0		! A, E0, Gamma coefficients
+
+DOS
+DOS_Al.dat
+
+!BANDS
+-11.17  0.0 0.0 20.0

@@ -1,0 +1,23 @@
+SiO2
+2.65	! density of the material in [g/cm^3]
+8.9	! [eV] Pair Creation Energy (or band gap) of the solid
+0.0	! Fermi energy [eV]
+5800.0	! Speed of sound [m/s]
+
+Valence			! Valence band
+3				! Number of CDF functions
+50	19	4		! A, E0, Gamma coefficients
+100	22	9
+200	26	7
+
+
+Phonons			! Phonons
+3				! Number of CDF fitting functions
+5E-4	0.063	0.008	! A, E0, Gamma coefficients
+2E-4	0.10	0.013
+0.005	0.155	0.009
+
+!DOS
+
+!EFFECTIVE_MASS
+0.5

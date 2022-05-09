@@ -1,0 +1,3 @@
+Lu1.8Y0.2SiO5Ce0.2
+7.1 	! density of the material in [g/cm^3]
+-6.2	! [eV] Pair Creation Energy (or band gap) of the solid

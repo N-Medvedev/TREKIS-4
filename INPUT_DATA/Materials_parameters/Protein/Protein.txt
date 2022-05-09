@@ -1,0 +1,5 @@
+H50C30N9O19Cl
+
+1.35 	! density of the material in [g/cm^3]
+
+10.0	! [eV] Pair Creation Energy (or band gap) of the solid

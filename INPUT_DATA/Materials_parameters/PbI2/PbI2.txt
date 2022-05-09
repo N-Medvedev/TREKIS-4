@@ -1,0 +1,8 @@
+PbI2
+6.16e0      ! density of the material in [g/cm^3]
+2.32e0      ! [eV] Pair Creation Energy (or band gap) of the solid
+-2.32e0     ! fermi level [eV]
+2775.0      ! Speed of sound [m/s]
+
+DOS
+DOS_PbI2.dat

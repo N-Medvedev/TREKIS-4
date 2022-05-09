@@ -1,0 +1,20 @@
+Mg2SiO4
+3.275e0      ! density of the material in [g/cm^3]
+6.4e0       ! [eV] Pair Creation Energy (or band gap) of the solid
+0.0e0       ! fermi level [eV]
+5000.0      ! Speed of sound [m/s]
+
+VALENCE     ! valence band CDF
+4           ! A, E0, Gamma
+5	14	4
+92	21	8
+198	28.5	15
+290	40	32
+
+PHONONS     ! phonon CDF
+2           ! A, E0, Gamma
+0.00062	0.07	0.045
+0.0025	0.139	0.033
+
+DOS
+Mg2SiO4.dos

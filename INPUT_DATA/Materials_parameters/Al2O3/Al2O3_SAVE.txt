@@ -1,0 +1,16 @@
+Al2O3
+3.99e0	! density of the material in [g/cm^3]
+8.8e0	! [eV] Pair Creation Energy (or band gap) of the solid
+4.4e0	! fermi level [eV]
+6050.0	! Speed of sound [m/s]
+
+!VALENCE 	! valence band CDF
+3		! A, E0, Gamma
+275.0	25.4	12.5
+520.0	38.0	38.0
+84.0	36.0	6.0
+
+PHONONS		! phonon CDF
+2
+0.003	0.1125	0.005
+0.000045	0.061	0.002

@@ -1,0 +1,3 @@
+H0.108376O0.878959Na0.000022S0.012553Cl0.000035Fe0.000055
+1.024 	! density of the material in [g/cm^3]
+-6.2	! [eV] Pair Creation Energy (or band gap) of the solid

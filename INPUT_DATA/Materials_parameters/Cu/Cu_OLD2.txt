@@ -1,0 +1,24 @@
+Cu
+8.96	! density of the material in [g/cm^3]
+0.0	! [eV] Pair Creation Energy (or band gap) of the solid
+0.0e0	! [eV] Fermi energy
+3790.0	! Speed of sound [m/s]
+
+VALENCE
+6
+-0.07	1.8	    1.0
+-0.146	1.81	2.7
+25	    10	    9	
+90	    19.2	10	
+85	    28.9	8
+1070	50	    90
+ 
+DOS
+DOS_Cu.dat
+ 
+BARRIER
+5.4	10.0d0	5.4
+ 
+ 
+ 
+ 

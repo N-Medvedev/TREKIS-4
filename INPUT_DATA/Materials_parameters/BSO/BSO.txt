@@ -1,0 +1,5 @@
+Bi4Si3O12
+
+6.80 	! density of the material in [g/cm^3]
+
+8.08	! [eV] Pair Creation Energy (or band gap) of the solid

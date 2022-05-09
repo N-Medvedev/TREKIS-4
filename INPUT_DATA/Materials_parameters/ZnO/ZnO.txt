@@ -1,0 +1,22 @@
+ZnO
+5.68	! density of the material in [g/cm^3]
+3.3		! [eV] band gap
+0.0e0	! [eV] Fermi energy
+5850.0	! Speed of sound [m/s]
+
+VALENCE
+7
+1.50	9.00	2.0		! A, E0, Gamma coefficients
+75.0	20.0	4.0
+46.0	23.0	4.0
+30.0	26.0	4.0
+70.0	32.0	12.0
+64.0	42.0	15.0
+1100.0	60.0	112.0
+
+PHONONS
+1
+0.0007	0.073	0.003
+
+DOS
+ZnO.dos
