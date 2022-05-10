@@ -1,7 +1,7 @@
 # TREKIS-4
  Time-REsolved Kinetics in Irradiated Solids
 
-A hybrid code combining Monte Carlo and molecular dynamics simulation of the effects of SHI impact on matter
+A hybrid code combining Monte Carlo and molecular dynamics simulation of the effects of radiation impact on matter. It can model swift-heavy ion, photon, electron or positron impacts.
 
 For all details and instruction, address the files TREKIS_4_manual_v1.2022.01.22.docx (currecntly only available in Russian)
 
