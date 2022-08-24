@@ -48,13 +48,13 @@ pure function Coulomb_Wolf_pot(q1, q2, r, Rc, alpha) result(WPot) ! truncated Co
 end function Coulomb_Wolf_pot
 
 
-pure function Coulomg_Wolf_self_term(q1, Rc, alpha) result(SelfPot)   ! Self-term, Eq.(5.13) [3]
+pure function Coulomb_Wolf_self_term(q1, Rc, alpha) result(SelfPot)   ! Self-term, Eq.(5.13) [3]
    real(8) :: SelfPot  ! [eV]
    real(8), intent(in) :: q1    ! [e] charges
    real(8), intent(in) :: Rc    ! [A] interatomic distance, truncation distance
    real(8), intent(in) :: alpha ! truncation parameter
    SelfPot = m_k*q1*q1*(erfc(alpha*Rc)/Rc + 2.0d0*alpha/m_sqrtPi)    ! [eV]
-end function Coulomg_Wolf_self_term
+end function Coulomb_Wolf_self_term
 
 
 pure function d_Coulomb_Wolf_pot(q1, q2, r, Rc, alpha) result(dWPot) ! derivative truncated Coulomb potential, Eq.(5.22) [3]
@@ -89,12 +89,12 @@ pure function Coulomb_Wolf_pot_simple(q1, q2, r, Rc) result(WPot) ! truncated Co
 end function Coulomb_Wolf_pot_simple
 
 
-pure function Coulomg_Wolf_self_term_simple(q1, Rc) result(SelfPot)   ! Self-term, Eq.(3.15) [3]
+pure function Coulomb_Wolf_self_term_simple(q1, Rc) result(SelfPot)   ! Self-term, Eq.(3.15) [3]
    real(8) :: SelfPot  ! [eV]
    real(8), intent(in) :: q1    ! [e] charges
    real(8), intent(in) :: Rc    ! [A] interatomic distance, truncation distance
    SelfPot = m_k*q1*q1/Rc    ! [eV]
-end function Coulomg_Wolf_self_term_simple
+end function Coulomb_Wolf_self_term_simple
 
 
 pure function d_Coulomb_Wolf_pot_simple(q1, q2, r, Rc) result(dWPot) ! derivative truncated Coulomb potential, Eq.(3.17) [3]
@@ -216,7 +216,7 @@ subroutine Ewalds_Coulomb(numpar, MD_atoms, MD_supce, MD_pots)
    ! a) construct S(k)=exp(ik.r):
    ! Get the array of charges first:
    call define_charge_array(MD_atoms, MD_pots, q)   ! below
-   ! Calcualte Sk inself now:
+   ! Calcualte Sk itself now:
    call get_Sk_Ewalds(Nat, nk, eikx, eiky, eikz, q, k_sq_max, Sk)    ! below
 
 !    call print_time_step('Ewalds_Coulomb:', 4.0, msec=.true.)   ! module "Little_subroutines"

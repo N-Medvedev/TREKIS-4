@@ -233,6 +233,10 @@ subroutine get_pot_type_keyword(MDPar, chargedpot, Z1)
       !potkeyword = 'atomic' ! no charges in this potential
       chargedpot = .false.
       if (present(Z1)) Z1 = 0.0d0
+   type is (SW) ! Stillinger-Weber potential
+      !potkeyword = 'atomic' ! no charges in this potential
+      chargedpot = .false.
+      if (present(Z1)) Z1 = 0.0d0
    type is (Coulomb)    ! Truncated Coulomb according to Wolf et al. [3]
       !potkeyword = 'charge' ! charges in this potential
       chargedpot = .true.

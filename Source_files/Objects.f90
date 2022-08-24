@@ -396,6 +396,14 @@ type, extends (MD_pot) :: Matsui
    real(8) :: A, B, C
 end type Matsui
 
+! Stillinger-Weber:
+type, extends (MD_pot) :: SW
+   real(8) :: E, sigma
+   real(8) :: A, B
+   real(8) :: p, q
+   real(8) :: aa, ll, gam
+end type SW
+
 ! Truncated Coulomb (following Wolf et al.):
 type, extends (MD_pot) :: Coulomb
    real(8) :: Z1, Z2

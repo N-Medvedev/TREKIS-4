@@ -908,6 +908,24 @@ subroutine set_MD_potential(Path_to_MD, used_target, ind_target, MD_pots, Err)
                            ARRAY2%C = ARRAY%C
                         endselect
                      ENDASSOCIATE
+                  type is (SW)
+                     allocate(SW::MD_pots(j,i)%Set(k)%Par)
+                     ASSOCIATE (ARRAY2 => MD_pots(j,i)%Set(k)%Par)
+                        select type(ARRAY2)
+                        type is (SW)
+                           ARRAY2%d_cut = ARRAY%d_cut
+                           ARRAY2%dd = ARRAY%dd
+                           ARRAY2%E = ARRAY%E
+                           ARRAY2%sigma = ARRAY%sigma
+                           ARRAY2%A = ARRAY%A
+                           ARRAY2%B = ARRAY%B
+                           ARRAY2%p = ARRAY%p
+                           ARRAY2%q = ARRAY%q
+                           ARRAY2%aa = ARRAY%aa
+                           ARRAY2%ll = ARRAY%ll
+                           ARRAY2%gam = ARRAY%gam
+                        endselect
+                     ENDASSOCIATE
                   type is (Morse)
                      allocate(Morse::MD_pots(j,i)%Set(k)%Par)
                      ASSOCIATE (ARRAY2 => MD_pots(j,i)%Set(k)%Par)
@@ -1130,6 +1148,51 @@ subroutine read_MD_potential(FN, File_name, MD_pots, Error_descript)
                   endif
                   
                   read(FN,*,IOSTAT=Reason) ARRAY%A, ARRAY%B, ARRAY%C
+                  call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+                  if (.not. read_well) then
+                     write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+                     goto 9996
+                  endif
+               endselect
+            ENDASSOCIATE
+            read_potential = .true. ! read one more potential
+
+         case ('SW', 'sw', 'Stillinger-Weber', 'StillingerWeber', 'Stillinger_Weber')  ! Stillinger-Weber
+            allocate(SW::MD_pots%Set(count_pots)%Par)    ! set the type of potential
+            ASSOCIATE (ARRAY => MD_pots%Set(count_pots)%Par) ! this is the sintax we have to use to check the class of defined types
+               select type(ARRAY)
+               type is (SW)
+                  ARRAY%Name = 'Stillinger-Weber'
+
+                  read(FN,*,IOSTAT=Reason) ARRAY%d_cut, ARRAY%dd
+                  call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+                  if (.not. read_well) then
+                     write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+                     goto 9996
+                  endif
+
+                  read(FN,*,IOSTAT=Reason) ARRAY%E, ARRAY%sigma, ARRAY%aa
+                  call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+                  if (.not. read_well) then
+                     write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+                     goto 9996
+                  endif
+
+                  read(FN,*,IOSTAT=Reason) ARRAY%A, ARRAY%B
+                  call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+                  if (.not. read_well) then
+                     write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+                     goto 9996
+                  endif
+
+                  read(FN,*,IOSTAT=Reason) ARRAY%p, ARRAY%q
+                  call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+                  if (.not. read_well) then
+                     write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+                     goto 9996
+                  endif
+
+                  read(FN,*,IOSTAT=Reason) ARRAY%ll, ARRAY%gam
                   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                   if (.not. read_well) then
                      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines

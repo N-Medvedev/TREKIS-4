@@ -4,10 +4,10 @@ Unit_cell
 
 Coordinates
 8							! how many atoms
-Si	0.0e0	0.0e0	0.0e0	! elements; relative coordinates inside of the unit cell
-Si	0.5e0	0.5e0	0.0e0
-Si	0.5e0	0.0e0	0.5e0
-Si	0.0e0	0.5e0	0.5e0
+Si	1.0e-6	1.0e-6	1.0e-6	! elements; relative coordinates inside of the unit cell
+Si	0.5e0	0.5e0	1.0e-6
+Si	0.5e0	1.0e-6	0.5e0
+Si	1.0e-6	0.5e0	0.5e0
 Si	0.25e0	0.25e0	0.25e0
 Si	0.75e0	0.75e0	0.25e0
 Si	0.75e0	0.25e0	0.75e0

@@ -20,7 +20,8 @@ use MD_data_analysis, only: get_total_energies
 use MD_Pot_Simple, only: power_potential, d_power_potential, LJ_potential, d_LJ_potential, exp_potential, d_exp_potential
 use MD_Pot_Buck, only: Buck_potential, d_Buck_potential, Matsui_potential, d_Matsui_potential
 use MD_Pot_Coulomb, only: Bare_Coulomb_pot, d_Bare_Coulomb_pot, Ewalds_Coulomb, Coulomb_Wolf_pot, d_Coulomb_Wolf_pot, &
-                            Coulomg_Wolf_self_term
+                            Coulomb_Wolf_self_term
+use MD_Pot_SW, only: SW_potential, d_SW_potential, SW_U_ij, SW_dU_ij
 use MD_Pot_ZBL, only: ZBL_pot, d_ZBL_pot
 
 implicit none
@@ -343,19 +344,25 @@ subroutine get_MD_pot_n_force(numpar, MD_atoms, MD_supce, MD_pots)
    !-----------------------------
    integer :: i, j, k, Nat, i_pot, N_pot, KOP1, KOP2
    real(8) :: Pot_part, f_cut, d_Pot_part, d_f_cut, tot_derive
-   real(8) :: cos_a, cos_b, cos_c, Force(3)
+   real(8) :: cos_a, cos_b, cos_c, Force(3), Force_3bdy(3), Force_3tmp(3)
    logical :: long_range_present, ion_done
+   real(8), dimension(:,:), allocatable :: U_ij ! repeated contributions for three-body potentials (e.g. SW)
+   real(8), dimension(:,:), allocatable :: dU_ij ! repeated contributions for derivative of three-body potentials (e.g. SW)
    real(8), pointer :: r, x, y, z
    integer, pointer :: atom_2
    
    Nat = size(MD_atoms) ! all atoms
    MD_supce%P_pot(:,:) = 0.0d0    ! to start with
+
+   ! If there are three-body_potentials, set and save repeating functions for them:
+   call get_repeated_three_body_potential(numpar, MD_atoms, MD_pots, U_ij, dU_ij) ! below
+
 !    call print_time_step('get_MD_pot_n_force 0:', 0.0, msec=.true.)   ! module "Little_subroutines"
 
    !------------------------------------
    ! I. All short-rage potentials:
    ! For each pair of interacting atoms:
-   !$omp parallel private (i, ion_done, j, atom_2, r, x, y, z, cos_a, cos_b, cos_c, KOP1, KOP2, Force, &
+   !$omp parallel private (i, ion_done, j, atom_2, r, x, y, z, cos_a, cos_b, cos_c, KOP1, KOP2, Force, Force_3bdy, &
    !$                      N_pot, i_pot, f_cut, d_f_cut, Pot_part, d_Pot_part, tot_derive, k)
    !$omp do
    do i = 1, Nat
@@ -380,7 +387,8 @@ subroutine get_MD_pot_n_force(numpar, MD_atoms, MD_supce, MD_pots)
          call find_which_potential(MD_atoms, i, atom_2, MD_pots, KOP1, KOP2)    ! module "MD_general_tools"
          
          ! How many potentials are used for this pair of atoms:
-         Force = 0.0d0  ! to start summing up total forces 
+         Force = 0.0d0  ! to start summing up total forces
+         Force_3bdy = 0.0d0   ! three-body contribution to the force
          N_pot = size(MD_pots(KOP1,KOP2)%Set)
          ! Find parameters of all potentials between the two atoms:
          do i_pot = 1, N_pot
@@ -389,7 +397,8 @@ subroutine get_MD_pot_n_force(numpar, MD_atoms, MD_supce, MD_pots)
             d_f_cut = d_Fermi_cut_off(r, MD_pots(KOP1,KOP2)%Set(i_pot)%Par%d_cut, MD_pots(KOP1,KOP2)%Set(i_pot)%Par%dd) ! module "MD_general_tools"
 
             ! Calculate the potential and its derivative by r:
-            call get_single_pot_and_force(MD_pots(KOP1,KOP2)%Set(i_pot)%Par, r, ion_done, Pot_part, d_Pot_part)    ! below
+            call get_single_pot_and_force(MD_pots(KOP1,KOP2)%Set(i_pot)%Par, r, ion_done, Pot_part, d_Pot_part, &
+                                          numpar, i, atom_2, (/ x, y, z /), MD_atoms, U_ij, dU_ij, Force_3bdy)    ! below
             
             ! Combine the total potential from potential and cut-off function:
             MD_atoms(i)%U = MD_atoms(i)%U + Pot_part * f_cut    ! [eV] add to total potential of this atom
@@ -401,7 +410,7 @@ subroutine get_MD_pot_n_force(numpar, MD_atoms, MD_supce, MD_pots)
 
          enddo ! i_pot
          ! Add to the total force on atom i:
-         MD_atoms(i)%Force(:) = MD_atoms(i)%Force(:) + Force(:)
+         MD_atoms(i)%Force(:) = MD_atoms(i)%Force(:) + Force(:) - Force_3bdy(:)
          ! Also save potential part of pressure in the supercell:
          do k = 1, 3
             MD_supce%P_pot(1,k) = MD_supce%P_pot(1,k) + Force(k)*x  ! [eV]
@@ -462,11 +471,18 @@ end subroutine get_MD_pot_n_force
 
 
 
-subroutine get_single_pot_and_force(MDPar, r, ion_done, Pot_part, d_Pot_part) ! short-range potentials
+subroutine get_single_pot_and_force(MDPar, r, ion_done, Pot_part, d_Pot_part, &
+                                    numpar, i, j, R_ij, MD_atoms, U_ij, dU_ij, Force_3bdy) ! short-range potentials
    class(MD_pot), intent(in) :: MDPar   ! MD potential parameters
    real(8), intent(in) :: r ! [A] interatomic distance
    logical, intent(inout) :: ion_done   ! index of ions, to calculate terms that are single-ion specific
    real(8), intent(out) :: Pot_part, d_Pot_part ! potential and derivative of potential (without cut off function)
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   integer, intent(in) :: i, j   ! indices of the interacting atoms
+   real(8), dimension(3), intent(in) :: R_ij  ! [A] projections of the distance between atoms i and j
+   type(Atom), dimension(:), intent(in) :: MD_atoms
+   real(8), dimension(:,:), intent(in) :: U_ij, dU_ij ! repeated contributions for three-body potentials (e.g. SW)
+   real(8), dimension(3), intent(out) :: Force_3bdy  ! three-body contribution into the force, if present
    real(8) :: alpha
    select type(MDPar)
    type is (LJ) ! Lennard-Jones
@@ -481,13 +497,22 @@ subroutine get_single_pot_and_force(MDPar, r, ion_done, Pot_part, d_Pot_part) ! 
       Pot_part = Matsui_potential(MDPar%A, MDPar%B, MDPar%C, r)   ! module "MD_Pot_Buck"
       d_Pot_part = d_Matsui_potential(MDPar%A, MDPar%B, MDPar%C, r)   ! module "MD_Pot_Buck"
 
+   type is (SW) ! Stillinger-Weber potential
+      ASSOCIATE (ARRAY => MDPar)
+         select type(ARRAY)
+         type is (SW)
+            Pot_part = SW_potential(ARRAY, r, i, j, R_ij, numpar, U_ij)   ! module "MD_Pot_SW"
+            call d_SW_potential(ARRAY, r, i, j, R_ij, numpar, U_ij, dU_ij, d_Pot_part, Force_3bdy)   ! module "MD_Pot_SW"
+         endselect
+      ENDASSOCIATE
+
    type is (Coulomb)    ! Truncated Coulomb according to Wolf et al. [3]
       alpha = 3.0d0/(4.0d0*MDPar%d_cut) ! it's chosen according to optimal value from [4]
       Pot_part = Coulomb_Wolf_pot(MDPar%Z1, MDPar%Z2, r, MDPar%d_cut, alpha)   ! module "MD_Pot_Coulomb"
       d_Pot_part = d_Coulomb_Wolf_pot(MDPar%Z1, MDPar%Z2, r, MDPar%d_cut, alpha)   ! module "MD_Pot_Coulomb"
       ! Subtract self-term from the neutralizing part:
 !      if (.not. ion_done) then
-!          Pot_part = Pot_part - Coulomg_Wolf_self_term(MDPar%Z1, MDPar%d_cut, alpha)     ! module "MD_Pot_Coulomb"
+!          Pot_part = Pot_part - Coulomg_Wolf_self_term_simple(MDPar%Z1, MDPar%d_cut, alpha)     ! module "MD_Pot_Coulomb"
 !          ion_done = .true. ! not to count the same ion again, mark it as done
 !       endif
 
@@ -522,6 +547,77 @@ end subroutine get_single_pot_and_force
 
 
 
+subroutine get_repeated_three_body_potential(numpar, MD_atoms, MD_pots, U_ij, dU_ij)
+   type(Num_par), intent(inout), target :: numpar   ! all numerical parameters
+   class(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   type(Atom), dimension(:), intent(in) :: MD_atoms
+   real(8), dimension(:,:), allocatable, intent(inout) :: U_ij ! repeated contributions for three-body potentials (e.g. SW)
+   real(8), dimension(:,:), allocatable, intent(inout) :: dU_ij ! repeated contributions for derivative of three-body potentials
+   ! For the moment, only one three-body potential is allowed;
+   ! If one wants to add more three-body potentials within the same simulation,
+   ! U_ij must be made a 3-d array, including i_pot index for each three-body potential: U_ij(i,j,i_pot)
+   !--------------------------------
+   logical :: Three_body_pot_present
+   integer :: i, j, i_pot, KOP1, KOP2, Nat
+   real(8), pointer :: r
+   integer, pointer :: atom_2
+
+   Three_body_pot_present = .false.
+   ! Find if there is any three-body potential:
+   do i = 1, size(MD_pots,1)    ! check all pair of types of atoms
+      do j = 1, size(MD_pots,2)
+         do i_pot = 1, size(MD_pots(i,j)%Set) ! and all potentials for them
+            ASSOCIATE (MDPot => MD_pots(i,j)%Set(i_pot)%Par) ! this is the sintax we have to use to check the class of defined types
+               select type(MDPot)
+               type is (SW)   ! SW as three-body potential
+                  Three_body_pot_present = .true.
+               end select
+            END ASSOCIATE
+         enddo ! i_poy
+      enddo ! j
+   enddo ! i
+
+   ! If there is, construct the repeating part to be reused:
+   if (Three_body_pot_present) then
+      Nat = size(MD_atoms) ! all atoms
+      ! Allocate the array of repeating functions:
+      if (.not. allocated(U_ij)) then  ! set the repeated contribution into the potential:
+         allocate(U_ij(Nat,Nat), source = 0.0d0)
+      endif
+      if (.not. allocated(dU_ij)) then  ! set the repeated contribution into derivative of the potential:
+         allocate(dU_ij(Nat,Nat), source = 0.0d0)
+      endif
+      ! Set it:
+      !$omp parallel private (i, j, atom_2, r, i_pot, KOP1, KOP2)
+      !$omp do
+      do i = 1, Nat ! for all atoms
+         ! Find nearest neighbors it is interacting with:
+         do j = 1, numpar%Neighbors_Num(i)    ! that's how many atoms the atom "i" interacts with
+            atom_2 => numpar%Neighbors_list(i, j)     ! that's index of the atom, which "i" is interacting with
+            r => numpar%Neighbors_Rij(i, j)      ! [A] shortest distance between the atoms "i" and "atom_2" (which has number j in the list)
+
+            ! Find indices of the potential(s) is used for this pair of atoms:
+            call find_which_potential(MD_atoms, i, atom_2, MD_pots, KOP1, KOP2)    ! module "MD_general_tools"
+
+            do i_pot = 1, size(MD_pots(KOP1, KOP2)%Set) ! and all potentials for them
+               ! Get the function:
+               ASSOCIATE (MDPot => MD_pots(KOP1,KOP2)%Set(i_pot)%Par)
+                  select type(MDPot)
+                  type is (SW)   ! SW is three-body potential:
+                     U_ij(i, atom_2) = SW_U_ij(MDPot, r) ! module "MD_Pot_SW"
+                     dU_ij(i, atom_2) = SW_dU_ij(MDPot, r) ! module "MD_Pot_SW"
+                  end select
+               ENDASSOCIATE
+
+            enddo ! i_pot
+         enddo ! j
+      enddo ! i
+      !$omp enddo
+      !$omp end parallel
+   endif
+
+   nullify(r, atom_2)
+end subroutine get_repeated_three_body_potential
 
 
 

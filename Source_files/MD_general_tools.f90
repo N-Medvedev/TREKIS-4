@@ -6,13 +6,14 @@
 ! [1] Thompson et al., J. Chem. Phys. 131, 154107 (2009); https://doi.org/10.1063/1.3245303
 ! [2] Namilae et al., PRB 76, 144111 (2007); https://doi.org/10.1103/PhysRevB.76.144111
 ! [3] Mohamed, J. Stat. Phys. 145, 1653 (2011); https://doi.org/10.1007/s10955-011-0364-y
-
+! [4] Fan et al., PRB 92, 094301 (2015); http://dx.doi.org/10.1103/PhysRevB.92.094301
 
 module MD_general_tools
 use Universal_constants
 use Objects
 use Relativity, only: kinetic_energy_from_velosity
 use Little_subroutines, only: solve_rate_equation
+use Geometries, only: Spherical_R
 
 implicit none
 
@@ -24,6 +25,41 @@ parameter(m_Afs2kg_2_eVA = 1.0d10/g_e)                      ! [A/fs^2/kg] -> [eV
 
 
  contains
+
+
+pure function three_body_cos_teta(R_ij, R_ik) result(cos_teta)
+   real(8) cos_teta  ! cosine of the angle between atoms j,i,k (centered on i)
+   real(8), dimension(3), intent(in) :: R_ij, R_ik
+   real(8) rij, rik
+   ! Get absolute values:
+   rij = Spherical_R(R_ij(1),R_ij(2),R_ij(3))   ! module "Geometries"
+   rik = Spherical_R(R_ik(1),R_ik(2),R_ik(3))   ! module "Geometries"
+   if ((rij > 0.0d0) .and. (rik > 0.0d0)) then
+      cos_teta = DOT_PRODUCT(R_ij, R_ik) / (rij*rik)  ! Eq.(25) in [4]
+   else  ! undefined, set default:
+      cos_teta = 0.0d0
+   endif
+end function three_body_cos_teta
+
+
+pure function d_three_body_cos_teta(R_ij, R_ik, alpha) result(cos_teta)
+   real(8) cos_teta  ! derivative of cosine of the angle between atoms j,i,k (centered on i) by R_ij,alpha
+   real(8), dimension(3), intent(in) :: R_ij, R_ik
+   integer, intent(in) :: alpha  ! companent of derivative (1=x, 2=y, 3=z)
+   real(8) rij, rik
+   ! Get absolute values:
+   rij = Spherical_R(R_ij(1),R_ij(2),R_ij(3))   ! module "Geometries"
+   rik = Spherical_R(R_ik(1),R_ik(2),R_ik(3))   ! module "Geometries"
+   ! Get cosine:
+   cos_teta = three_body_cos_teta(R_ij, R_ik)   ! above
+   ! Construct the derivative:
+   if ((rij > 0.0d0) .and. (rik > 0.0d0)) then
+      cos_teta = 1.0d0/rij*(R_ik(alpha)/rik - R_ij(alpha)/rij*cos_teta) ! Eq.(A4) in [4]
+   else  ! undefined, set default:
+      cos_teta = 0.0d0
+   endif
+end function d_three_body_cos_teta
+
 
 
 subroutine Thermostat(numpar, MD_atoms, MD_supce, dt)
