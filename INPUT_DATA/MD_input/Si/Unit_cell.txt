@@ -1,6 +1,6 @@
 Unit_cell
 5.42d0	5.42d0	5.42d0		! size along X, Y, Z in [A]
-4	4	4					! how many unit cells to be used in the supercell
+3	3	3					! how many unit cells to be used in the supercell
 
 Coordinates
 8							! how many atoms

@@ -833,6 +833,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
    temp_ch = ''
    read_well = .true.
    numpar%print_each_step = .false.    ! to start with the default value (do not printout each MD step timing)
+   numpar%MD_force_ind = 0 ! Default value of the MD force calculator
    
    ! Define default parameters for the grids:
    call set_default_grid_params(numpar) ! below
@@ -847,6 +848,11 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
          
          select case (trim(adjustl(temp_ch)))
          
+         !============================================
+         ! Printout atomic coordinates from MD in XYZ format:
+         case ('Numerical_potential', 'Numeric_potential', 'Numeric_pot', 'numeric_pot', 'numeric_force', 'Numeric_force')
+            numpar%MD_force_ind = 1 ! calculate forces as numerical derivative of the potential (SLOW)
+
          !============================================
          ! Printout atomic coordinates from MD in XYZ format:
          case ('Cohesive', 'COHESIVE', 'cohesive', 'Cohesive_energy', 'COHESIVE_ENERGY', 'cohesive_energy')

@@ -35,6 +35,39 @@ end function Cylindrical_R
 
 
 
+
+subroutine fit_parabola_to_3points(x1, y1, x2, y2, x3, y3, A, B, C)  ! find coefficients of parabola by given three points
+   real(8), intent(in) :: x1, x2, x3    ! given three points x coordinates
+   real(8), intent(in) :: y1, y2, y3    ! function values for the given three points
+   real(8), intent(out) :: A, B, C      ! parabola coefficients
+   real(8) :: denom, x1x2, x2x3, x1x3, x3y1y2, x2y1y3, x1y2y3
+   x1x2 = x1 - x2
+   x2x3 = x2 - x3
+   x1x3 = x1 - x3
+   x3y1y2 = x3*(y1 - y2)
+   x2y1y3 = x2*(y1 - y3)
+   x1y2y3 = x1*(y2 - y3)
+   denom = x1x2*x1x3*x2x3
+   A = (-x3y1y2 + x2y1y3 - x1y2y3) / denom
+   B = (x3*x3y1y2 - x2*x2y1y3 + x1*x1y2y3) / denom
+   C = (x2*x3*x2x3*y1 - x3*x1*x1x3*y2 + x1*x2*x1x2*y3) / denom
+end subroutine fit_parabola_to_3points
+
+
+
+subroutine fit_line_to_2points(x1, y1, x2, y2, A, B)  ! find coefficients of a line by given two points
+   real(8), intent(in) :: x1, x2    ! given 2 points x coordinates
+   real(8), intent(in) :: y1, y2    ! function values for the given 2 points
+   real(8), intent(out) :: A, B      ! line coefficients
+   real(8) :: x1x2
+   x1x2 = x2 - x1
+   A = (x2*y1 - x1*y2) / x1x2
+   B = (y2 - y1) / x1x2
+end subroutine fit_line_to_2points
+
+
+
+
 !------------------------------------------------------------------------------------ 
 !Find the velosity projection onto the normal to the surface:
 pure function scalar_projection(V_to_project, V_normal) result(Vnorm)

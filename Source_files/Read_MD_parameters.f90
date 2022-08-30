@@ -760,8 +760,9 @@ subroutine set_atomic_velocities(used_target, numpar, Path_to_MD, MD_atoms, Err)
 end subroutine set_atomic_velocities
 
 
-subroutine set_MD_potential(Path_to_MD, used_target, ind_target, MD_pots, Err)
+subroutine set_MD_potential(Path_to_MD, numpar, used_target, ind_target, MD_pots, Err)
    character(*), intent(in) :: Path_to_MD   ! path to the directory with MD parameters
+   type(Num_par), intent(inout) :: numpar	! all numerical parameters
    type(Matter), intent(in), target :: used_target	! parameters of the target
    integer, intent(in) :: ind_target        ! target index
    type(MD_potential), dimension(:,:), allocatable, intent(inout) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
@@ -775,7 +776,7 @@ subroutine set_MD_potential(Path_to_MD, used_target, ind_target, MD_pots, Err)
    ! to start with:
    Error_descript = ''
    FN = 5000
-   
+
    ! Number of different chemical elements the target is composed of:
    NoElem = size(used_target%Material(ind_target)%Elements(:))
    ! Allocate array of pair-wise potentials:
@@ -831,7 +832,7 @@ subroutine set_MD_potential(Path_to_MD, used_target, ind_target, MD_pots, Err)
          MD_pots(i,j)%El1 = Elem_name1
          MD_pots(i,j)%El2 = Elem_name2
          
-         call read_MD_potential(FN, File_Pot, MD_pots(i, j), Error_descript)   ! below
+         call read_MD_potential(FN, File_Pot, numpar, MD_pots(i, j), Error_descript)   ! below
          if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
             ! print out the error into the log file:
             call Save_error_details(Err, 1, Error_descript)	! module "Objects"
@@ -1002,9 +1003,10 @@ end subroutine set_MD_potential
 
 
 
-subroutine read_MD_potential(FN, File_name, MD_pots, Error_descript)
+subroutine read_MD_potential(FN, File_name, numpar, MD_pots, Error_descript)
    integer, intent(in) :: FN    ! file with potential, must be opened
    character(*), intent(inout) :: File_name
+   type(Num_par), intent(inout) :: numpar   ! all numerical parameters
    type(MD_potential), intent(inout) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
    character(*), intent(inout) :: Error_descript
    !---------------------
@@ -1201,6 +1203,9 @@ subroutine read_MD_potential(FN, File_name, MD_pots, Error_descript)
                endselect
             ENDASSOCIATE
             read_potential = .true. ! read one more potential
+
+            ! For now, only numberical derivative of SW is implemented, so mark it:
+!              numpar%MD_force_ind = 1
 
          case ('Morse', 'MORSE', 'morse')  ! Morse
             allocate(Morse::MD_pots%Set(count_pots)%Par)    ! set the type of potential

@@ -1034,7 +1034,7 @@ subroutine Read_MD_input(used_target, numpar, MD_atoms, MD_supce, MD_pots, Err)
       call set_atomic_velocities(used_target, numpar, Path_to_MD, MD_atoms, Err)  ! module "Read_MD_parameters"
       
       ! 4) Read parameters of interatomic potentials (assume target #1 for now, may be changed later):
-      call set_MD_potential(Path_to_MD, used_target, 1, MD_pots, Err)  ! module "Read_MD_parameters"
+      call set_MD_potential(Path_to_MD, numpar, used_target, 1, MD_pots, Err)  ! module "Read_MD_parameters"
 
       ! 5) Set the list of nearest neighbors for all atoms:
       call get_nearest_neighbors_list(MD_atoms, MD_supce, MD_pots, numpar) ! module "MD_general_tools"

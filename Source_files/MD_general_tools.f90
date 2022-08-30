@@ -27,23 +27,23 @@ parameter(m_Afs2kg_2_eVA = 1.0d10/g_e)                      ! [A/fs^2/kg] -> [eV
  contains
 
 
-pure function three_body_cos_teta(R_ij, R_ik) result(cos_teta)
-   real(8) cos_teta  ! cosine of the angle between atoms j,i,k (centered on i)
+pure function three_body_cos_theta(R_ij, R_ik) result(cos_theta)
+   real(8) cos_theta  ! cosine of the angle between atoms j,i,k (centered on i)
    real(8), dimension(3), intent(in) :: R_ij, R_ik
    real(8) rij, rik
    ! Get absolute values:
    rij = Spherical_R(R_ij(1),R_ij(2),R_ij(3))   ! module "Geometries"
    rik = Spherical_R(R_ik(1),R_ik(2),R_ik(3))   ! module "Geometries"
    if ((rij > 0.0d0) .and. (rik > 0.0d0)) then
-      cos_teta = DOT_PRODUCT(R_ij, R_ik) / (rij*rik)  ! Eq.(25) in [4]
+      cos_theta = DOT_PRODUCT(R_ij, R_ik) / (rij*rik)  ! Eq.(25) in [4]
    else  ! undefined, set default:
-      cos_teta = 0.0d0
+      cos_theta = 0.0d0
    endif
-end function three_body_cos_teta
+end function three_body_cos_theta
 
 
-pure function d_three_body_cos_teta(R_ij, R_ik, alpha) result(cos_teta)
-   real(8) cos_teta  ! derivative of cosine of the angle between atoms j,i,k (centered on i) by R_ij,alpha
+pure function d_three_body_cos_theta(R_ij, R_ik, alpha) result(cos_theta)
+   real(8) cos_theta  ! derivative of cosine of the angle between atoms j,i,k (centered on i) by R_ij,alpha
    real(8), dimension(3), intent(in) :: R_ij, R_ik
    integer, intent(in) :: alpha  ! companent of derivative (1=x, 2=y, 3=z)
    real(8) rij, rik
@@ -51,14 +51,14 @@ pure function d_three_body_cos_teta(R_ij, R_ik, alpha) result(cos_teta)
    rij = Spherical_R(R_ij(1),R_ij(2),R_ij(3))   ! module "Geometries"
    rik = Spherical_R(R_ik(1),R_ik(2),R_ik(3))   ! module "Geometries"
    ! Get cosine:
-   cos_teta = three_body_cos_teta(R_ij, R_ik)   ! above
+   cos_theta = three_body_cos_theta(R_ij, R_ik)   ! above
    ! Construct the derivative:
    if ((rij > 0.0d0) .and. (rik > 0.0d0)) then
-      cos_teta = 1.0d0/rij*(R_ik(alpha)/rik - R_ij(alpha)/rij*cos_teta) ! Eq.(A4) in [4]
+      cos_theta = 1.0d0/rij*(R_ik(alpha)/rik - R_ij(alpha)/rij*cos_theta) ! Eq.(A4) in [4]
    else  ! undefined, set default:
-      cos_teta = 0.0d0
+      cos_theta = 0.0d0
    endif
-end function d_three_body_cos_teta
+end function d_three_body_cos_theta
 
 
 
@@ -237,27 +237,33 @@ subroutine Damp_pressure(numpar, MD_atoms, MD_supce)    ! following methodology 
          Force = 0.0d0 ! to start with
          ! Get the viscose forces at each border:
          if ( MD_atoms(i)%R(1) < visc_border_start(1) ) then
-            viscos_factor = (abs(MD_atoms(i)%R(1)-visc_border_start(1))/MD_supce%pressdamp_dx_start)**3 / MD_supce%press_tau  ! [1/fs]
+            viscos_factor = (abs(MD_atoms(i)%R(1)-visc_border_start(1))/MD_supce%pressdamp_dx_start)**3
+            viscos_factor = viscos_factor / MD_supce%press_tau  ! [1/fs]
             Force(:) = Force(:) + MD_atoms(i)%V(:) * viscos_factor  ! [A/fs^2]
          endif
          if ( MD_atoms(i)%R(2) < visc_border_start(2) ) then
-            viscos_factor = (abs(MD_atoms(i)%R(2)-visc_border_start(2))/MD_supce%pressdamp_dy_start)**3 / MD_supce%press_tau  ! [1/fs]
+            viscos_factor = (abs(MD_atoms(i)%R(2)-visc_border_start(2))/MD_supce%pressdamp_dy_start)**3
+            viscos_factor = viscos_factor / MD_supce%press_tau  ! [1/fs]
             Force(:) = Force(:) + MD_atoms(i)%V(:) * viscos_factor  ! [A/fs^2]
          endif
          if ( MD_atoms(i)%R(3) < visc_border_start(3) ) then
-            viscos_factor = (abs(MD_atoms(i)%R(3)-visc_border_start(3))/MD_supce%pressdamp_dz_start)**3 / MD_supce%press_tau  ! [1/fs]
+            viscos_factor = (abs(MD_atoms(i)%R(3)-visc_border_start(3))/MD_supce%pressdamp_dz_start)**3
+            viscos_factor = viscos_factor / MD_supce%press_tau  ! [1/fs]
             Force(:) = Force(:) + MD_atoms(i)%V(:) * viscos_factor  ! [A/fs^2]
          endif
          if ( MD_atoms(i)%R(1) > visc_border_end(1) ) then
-            viscos_factor = (abs(MD_atoms(i)%R(1)-visc_border_end(1))/MD_supce%pressdamp_dx_end)**3 / MD_supce%press_tau  ! [1/fs]
+            viscos_factor = (abs(MD_atoms(i)%R(1)-visc_border_end(1))/MD_supce%pressdamp_dx_end)**3
+            viscos_factor = viscos_factor / MD_supce%press_tau  ! [1/fs]
             Force(:) = Force(:) + MD_atoms(i)%V(:) * viscos_factor  ! [A/fs^2]
          endif
          if ( MD_atoms(i)%R(2) > visc_border_end(2) ) then
-            viscos_factor = (abs(MD_atoms(i)%R(2)-visc_border_end(2))/MD_supce%pressdamp_dy_end)**3 / MD_supce%press_tau  ! [1/fs]
+            viscos_factor = (abs(MD_atoms(i)%R(2)-visc_border_end(2))/MD_supce%pressdamp_dy_end)**3
+            viscos_factor = viscos_factor / MD_supce%press_tau  ! [1/fs]
             Force(:) = Force(:) + MD_atoms(i)%V(:) * viscos_factor  ! [A/fs^2]
          endif
          if ( MD_atoms(i)%R(3) > visc_border_end(3) ) then
-            viscos_factor = (abs(MD_atoms(i)%R(3)-visc_border_end(3))/MD_supce%pressdamp_dz_end)**3 / MD_supce%press_tau  ! [1/fs]
+            viscos_factor = (abs(MD_atoms(i)%R(3)-visc_border_end(3))/MD_supce%pressdamp_dz_end)**3
+            viscos_factor = viscos_factor / MD_supce%press_tau  ! [1/fs]
             Force(:) = Force(:) + MD_atoms(i)%V(:) * viscos_factor  ! [A/fs^2]
          endif
          ! Update forces acting on the atom:
@@ -538,22 +544,38 @@ subroutine get_nearest_neighbors_list(MD_atoms, MD_supce, MD_pots, numpar)
 end subroutine get_nearest_neighbors_list
 
 
-pure subroutine shortest_distance(i, j, MD_atoms, MD_supce, r_shortest, x1, y1, z1)
+pure subroutine shortest_distance(i, j, MD_atoms, MD_supce, r_shortest, x1, y1, z1, disp, ind_disp)
    integer, intent(in) :: i, j  ! indices of atoms interacting
-   type(Atom), dimension(:), intent(inout) :: MD_atoms	! all atoms in MD as objects
+   type(Atom), dimension(:), intent(in) :: MD_atoms	! all atoms in MD as objects
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters
    real(8), intent(out) :: r_shortest   ! [A] shortest distance between two atoms, accounting for periodic boundaries
    real(8), intent(out), optional :: x1, y1, z1 ! [A] distance along X, Y, Z
+   real(8), intent(in), optional :: disp  ! [A] displacement of atom i
+   integer, intent(in), optional :: ind_disp ! along which axis is the displacement
    !---------------------
    integer :: ix, iy, iz
-   real(8) :: r_min, x_min, y_min, z_min, x, y, z, r
+   real(8) :: r_min, x_min, y_min, z_min, x, y, z, r, x_min_0, y_min_0, z_min_0
    
    ! To start with:
    x_min = MD_atoms(i)%R(1) - MD_atoms(j)%R(1)
    y_min = MD_atoms(i)%R(2) - MD_atoms(j)%R(2)
    z_min = MD_atoms(i)%R(3) - MD_atoms(j)%R(3)
+   if (present(disp) .and. present(ind_disp)) then ! atom is displaeced:
+      select case (ind_disp)
+      case (1)
+         x_min = x_min + disp
+      case (2)
+         y_min = y_min + disp
+      case (3)
+         z_min = z_min + disp
+      end select
+   endif
    r_min = sqrt(x_min*x_min + y_min*y_min + z_min*z_min)
-   
+   ! Save to reuse below:
+   x_min_0 = x_min
+   y_min_0 = y_min
+   z_min_0 = z_min
+
    ! And only if the boundaries are periodic, check if atoms in the image cells are closer:
    if (any((MD_supce%boundary(:) == 1))) then
       ! To start with:
@@ -566,13 +588,16 @@ pure subroutine shortest_distance(i, j, MD_atoms, MD_supce, r_shortest, x1, y1, 
          do iy = -1,1
             do iz = -1,1
                if (MD_supce%boundary(1) == 1) then ! periodic along X
-                  x = MD_atoms(i)%R(1) - MD_atoms(j)%R(1) + dble(ix)*MD_supce%vect(1)
+                  !x = MD_atoms(i)%R(1) - MD_atoms(j)%R(1) + dble(ix)*MD_supce%vect(1)
+                  x = x_min_0 + dble(ix)*MD_supce%vect(1)
                endif
                if (MD_supce%boundary(2) == 1) then ! periodic along Y
-                  y = MD_atoms(i)%R(2) - MD_atoms(j)%R(2) + dble(iy)*MD_supce%vect(2)
+                  !y = MD_atoms(i)%R(2) - MD_atoms(j)%R(2) + dble(iy)*MD_supce%vect(2)
+                  y = y_min_0 + dble(iy)*MD_supce%vect(2)
                endif
                if (MD_supce%boundary(3) == 1) then ! periodic along Z
-                  z = MD_atoms(i)%R(3) - MD_atoms(j)%R(3) + dble(iz)*MD_supce%vect(3)
+                  !z = MD_atoms(i)%R(3) - MD_atoms(j)%R(3) + dble(iz)*MD_supce%vect(3)
+                  z = z_min_0 + dble(iz)*MD_supce%vect(3)
                endif
                r = sqrt(x*x + y*y + z*z)
                ! If the distance is shorter to this image copy of the atom, save it:

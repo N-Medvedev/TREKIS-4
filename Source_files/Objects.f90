@@ -551,6 +551,7 @@ type Num_par
    real(8) :: t_start   ! [fs] starting time of the simulation
    real(8) :: t_total	! [fs] when to stop simulation
    logical :: print_each_step   ! printout time each MD timestep or not?
+   integer :: MD_force_ind ! index: how to calculate MD force: 0=analytical; 1=numerical
    ! SIMULATION BOX PARAMETERS:
    logical :: reset_from_MD(3)  ! if the simulation box boundaries should be taken MD supercell
    real(8) :: box_start_x, box_end_x    ! [A] coordinates of the left and right ends of the simulation box along X

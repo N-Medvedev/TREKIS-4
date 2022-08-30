@@ -1,14 +1,16 @@
 1				! How many potentials for Si-Si interaction
 
-!SW
-5.0e0	1.0e-6							! d_cut=a [A], dd [A]
+SW
+4.7e0	0.1e0						! d_cut=a [A], dd [A]
 2.16806272646e0	2.0951e0	1.8e0		! E [eV/atom], sigma [A], a
 7.049556277e0	0.6022245584e0          ! A, B
 4.0e0	0.0e0                			! p, q
 21.0e0	1.2e0                			! lambda, gamma
 
-SW
-3.77118e0	1.0e-6						! d_cut=a [A], dd [A]
+
+! SAVE
+! SW
+3.77118e0	0.1e0						! d_cut=a [A], dd [A]
 2.16806272646e0	2.0951e0	1.8e0		! E [eV/atom], sigma [A], a
 7.049556277e0	0.6022245584e0          ! A, B
 4.0e0	0.0e0                			! p, q

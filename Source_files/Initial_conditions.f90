@@ -311,10 +311,10 @@ subroutine Set_defaults(numpar, bunch, MC)
    !-------------------------------------------------
    ! All defaults about MC routines:
    
-   numpar%DO_MC = .true.        ! by default, run MC simulation
+!    numpar%DO_MC = .true.       ! by default, run MC simulation
 !    numpar%DO_MD = .false.      ! Activate MD module or not
-!    numpar%DO_TTM = .false.    ! Activate TTM module or not
-!    numpar%MC_vs_MD = 0          ! MC or MD target model: 0=MC, 1=MD
+!    numpar%DO_TTM = .false.     ! Activate TTM module or not
+!    numpar%MC_vs_MD = 0         ! MC or MD target model: 0=MC, 1=MD
 !    numpar%recalculate_MFPs = .true. ! force program to recalculated MFPs
    
    ! Allocate the array of objects containing the data for all MC iterations:
