@@ -670,15 +670,16 @@ end subroutine Verlet_step_OLD
 
 
 
-pure subroutine find_which_potential(MD_atoms, atom_1, atom_2, MD_pots, KOP1, KOP2)
+subroutine find_which_potential(MD_atoms, atom_1, atom_2, MD_pots, KOP1, KOP2)
    type(Atom), dimension(:), intent(in) :: MD_atoms	! all atoms in MD as objects
    integer, intent(in) :: atom_1, atom_2    ! indices of the atoms in the MD array
    type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
    integer, intent(out) :: KOP1, KOP2    ! indices of the potentials in the Pot array
    !-------------------------------
    integer :: i, j
+   logical :: found_pot
    
-!    print*, 'find_which_potential', trim(adjustl(MD_atoms(atom_1)%Name))//' '//trim(adjustl(MD_atoms(atom_2)%Name))
+   found_pot = .false. ! to start with
    
    i = 0    ! to start
    j = 0    ! to start
@@ -690,10 +691,17 @@ pure subroutine find_which_potential(MD_atoms, atom_1, atom_2, MD_pots, KOP1, KO
             ! save indices of the potential:
             KOP1 = i
             KOP2 = j
+            found_pot = .true.   ! mark the potential as found
             exit FP ! potential indices found, stop the subroutine
          endif
       enddo ! j
    enddo FP
+
+   if (.not.found_pot) then   ! there is no potential given for this pair of atoms:
+      print*, 'ERROR in find_which_potential: no potential found for atoms '// &
+               trim(adjustl(MD_atoms(atom_1)%Name))//'-'// &
+               trim(adjustl(MD_atoms(atom_2)%Name))
+   endif
 !    pause 'Pause find_which_potential'
 end subroutine find_which_potential
 

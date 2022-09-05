@@ -174,7 +174,6 @@ subroutine d_SW_potential(MDPar, r, i, j, R_ij, numpar, U_ij, dU_ij, Pot, Pot_3b
          dF_jik_dr_ji = d_cos_theta_dr(cos_theta_jik, Rij, -R_ij, Rjk, R_jk)   ! below
 
          ! Derivative of V^(3), collect the terms under the sum sign (part of Eq.(1) [3]):
-         !A = A + U_ij(i,atom_3)*cos3_ijk**2 + U_ij(j,atom_3)*cos3_jik**2
          A = A + Pot_3 + U_ij(j,atom_3)*cos3_jik**2
 
          C(:) = C(:) + U_ij(i, atom_3)*2.0d0*cos3_ijk*dF_ijk_dr_ij(:) - U_ij(j, atom_3)*2.0d0*cos3_jik*dF_jik_dr_ji(:)
