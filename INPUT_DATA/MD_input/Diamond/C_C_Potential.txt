@@ -1,0 +1,9 @@
+1				! How many potentials for Si-Si interaction
+
+[Potential from: DOI: 10.1080/00268970110109853 ]
+SW
+3.8e0	0.1e0						! d_cut > 1.5*sigma*a [A], dd [A]
+3.551e0	1.368e0	1.846285e0			! E [eV/atom], sigma [A], a
+5.3789794e0	0.5933864e0         	! A, B
+4.0e0	0.0e0                		! p, q
+26.19934e0	1.055116e0              ! lambda, gamma

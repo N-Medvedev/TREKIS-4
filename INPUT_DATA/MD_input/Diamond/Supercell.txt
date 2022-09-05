@@ -1,0 +1,27 @@
+Supercell
+-10.0	10.0	1	! Start and end of simulation box along X [A]; 0=free boundary, 1=periodic boundary
+-10.0	10.0	1	! Start and end of simulation box along Y [A]; 0=free boundary, 1=periodic boundary
+0.0e0	10.0	1	! Start and end of simulation box along Z [A]; 0=free boundary, 1=periodic boundary
+
+Recenter			! Let the program recenter supercell around 0
+XY					! Around these axes
+
+
+MC_MD_coupling		! Parameters for exchange of info between MC and MD
+Cartesian	0		! Which coord system: cartesian, spherical, cylindrical; what dimensionality (0,1,2,3)
+1	3.0				! Grid along which axis/axes: Cartesian:1=X,2=Y,3=Z; Spherical: 1=R,2=theta,3=phi; Cylindrical:1=R,2=L,3=phi; Grid step [A] or [deg]
+
+
+!Thermostat
+Berendsen
+300.0e0	100.0e0		! bath temperature [K]; characteristic time [fs]
+5.0e0	5.0e0		! Thickness of boundary with thermostat from X_start and from X_end of the supercell
+5.0e0	5.0e0		! Thickness of boundary with thermostat from Y_start and from Y_end of the supercell
+-2.0e0	-2.0e0		! Thickness of boundary with thermostat from Z_start and from Z_end of the supercell
+
+
+!Pressure_damp
+1000.0e0			! Characteristic time [fs]
+2.0e0	2.0e0		! Thickness of boundary with pressure damping from X_start and from X_end of the supercell
+2.0e0	2.0e0		! Thickness of boundary with pressure damping from Y_start and from Y_end of the supercell
+-2.0e0	-2.0e0		! Thickness of boundary with pressure damping from Z_start and from Z_end of the supercell
