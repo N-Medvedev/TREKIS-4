@@ -4617,33 +4617,37 @@ subroutine communicate_with_user(FN, time, numpar)
    real(8), intent(in) :: time ! current time [fs]
    type(Num_par), intent(inout), target :: numpar	! all numerical parameters
    !----------------------------------------------------------------------
-   integer Reason, i, MOD_TIM, errnum
+   integer :: Reason, i, MOD_TIM, errnum, sz
    character(200) :: readline, given_line, File_name
-   real(8) given_num
+   real(8) :: given_num
    logical :: read_well, read_well_2, file_opened
    
+   readline = ''  ! to start with
    File_name = trim(adjustl(numpar%FILE_communication))
-   if (numpar%path_sep .EQ. '\') then	! if it is Windows
-      inquire(UNIT=FN,opened=file_opened)
-      if (file_opened) close(FN) ! for windows, we have to close the file to let the user write into it
-      ! Check if the file was modified since the last time:
-      call get_file_stat(trim(adjustl(File_name)), Last_modification_time=MOD_TIM) ! module 'Dealing_with_files'
-      if (MOD_TIM /= numpar%MOD_TIME) then ! open file again only if it was modified by the user
-         numpar%MOD_TIME = MOD_TIM ! save new time of the last modification
-         open(UNIT=FN, FILE=trim(adjustl(File_name)),IOSTAT=errnum, SHARED, STATUS='old')
-      endif
-   else ! it is linux
-      inquire(UNIT=FN,opened=file_opened)
-      if (.not.file_opened) open(UNIT=FN,FILE=trim(adjustl(File_name)),ERR=7777, SHARED )
+
+   inquire(UNIT=FN,opened=file_opened)
+   if (file_opened) close(FN) ! for windows, we have to close the file to let the user write into it
+   ! Check if the file was modified since the last time:
+   call get_file_stat(trim(adjustl(File_name)), Last_modification_time=MOD_TIM) ! module 'Dealing_with_files'
+   if (MOD_TIM /= numpar%MOD_TIME) then ! open file again only if it was modified by the user
+      numpar%MOD_TIME = MOD_TIM ! save new time of the last modification
+      open(UNIT=FN, FILE=trim(adjustl(File_name)),IOSTAT=errnum, SHARED, STATUS='old')
    endif
 7777     continue ! in case if the program could not open the file
 
    inquire(UNIT=FN,opened=file_opened)
    COM_OPEN:if (file_opened) then ! read it
+      rewind(FN)  ! to start reading from the start
       ! read the first line
-      read(FN,'(a)',IOSTAT=Reason) readline
-      call read_file(Reason, i, read_well)  ! module "Dealing_with_files"
-      
+      read(FN,'(a)', IOSTAT=Reason, SIZE=sz, ADVANCE='no') readline
+      call read_file(Reason, i, read_well)
+
+      if ( (.not.read_well) .and. (numpar%path_sep == '/') ) then ! if it is Linux
+         rewind(FN)  ! to start reading from the start
+         read(FN, '(a)', IOSTAT=Reason) readline(1:sz) ! read it again, now knowing the size
+         call read_file(Reason, i, read_well)
+      endif
+
       if (read_well) then
          ! Interpret what user wrote:
          call pars_communications(trim(adjustl(readline)), given_line, given_num, read_well_2)   ! below
@@ -4664,13 +4668,13 @@ subroutine communicate_with_user(FN, time, numpar)
          write(FN,'(a)') ''
          rewind(FN)
       endif
-      if (numpar%path_sep .EQ. '\') then    ! if it is Windows
-         call get_file_stat(trim(adjustl(File_name)), Last_modification_time=MOD_TIM) ! module 'Dealing_with_files'
-         if (MOD_TIM /= numpar%MOD_TIME) then ! if it was modified by the user, then
-            numpar%MOD_TIME = MOD_TIM         ! save new time of the last modification
-         endif
-         close(FN) ! for windows, we have to close the file to let the user write into it
-      endif 
+
+      call get_file_stat(trim(adjustl(File_name)), Last_modification_time=MOD_TIM) ! module 'Dealing_with_files'
+      if (MOD_TIM /= numpar%MOD_TIME) then ! if it was modified by the user, then
+         numpar%MOD_TIME = MOD_TIM         ! save new time of the last modification
+      endif
+      close(FN) ! for windows, we have to close the file to let the user write into it
+
    endif COM_OPEN
 end subroutine communicate_with_user
 
