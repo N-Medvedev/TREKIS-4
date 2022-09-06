@@ -34,6 +34,7 @@ character(200) :: m_output_Compton, m_output_Rayleigh, m_output_pair, m_output_a
 character(200) :: m_output_Se, m_output_Range, m_output_Se_vs_range
 
 character(200) :: m_output_total, m_output_N_gnu, m_output_E_gnu, m_output_total_cutoff
+character(200) :: m_output_MD, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_MD_E_gnu
 character(200) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI
 character(200) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d
 
@@ -178,6 +179,10 @@ parameter (m_output_total = 'OUTPUT_total_')
 parameter (m_output_total_cutoff = 'OUTPUT_total_above_cutoff_')
 parameter (m_output_N_gnu = 'OUTPUT_total_numbers_')
 parameter (m_output_E_gnu = 'OUTPUT_total_energies_')
+parameter (m_output_MD = 'OUTPUT_MD_')
+parameter (m_output_MD_E_gnu = 'OUTPUT_MD_energies_')
+parameter (m_output_MD_T_gnu = 'OUTPUT_MD_temperature_')
+parameter (m_output_MD_MSD_gnu = 'OUTPUT_MD_displacements_')
 !rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
 parameter (m_folder_MFP = 'MFPs_and_Ranges_in_')
 parameter (m_output_Compton = 'OUTPUT_Compton_')
@@ -1551,14 +1556,317 @@ end subroutine total_values
 
 
 
-subroutine create_gnuplot_files(used_target, numpar)
+subroutine create_gnuplot_files(used_target, MD_pots, numpar)
    type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
    type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
    !---------------------------------
    ! Create gnuplot scripts for plotting total numbers and energies:
    call gnuplot_total_values(used_target, numpar)  ! below
+
+   ! Create gnuplot for MD part:
+   call gnuplot_MD_values(used_target, MD_pots, numpar)  ! below
    
 end subroutine create_gnuplot_files
+
+
+
+subroutine gnuplot_MD_values(used_target, MD_pots, numpar)
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   !---------------------------------
+   integer :: i_tar
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   i_tar = 1    ! for global target only, not each material
+      ! Create a file for atomic temperature:
+      call create_MD_energies_gnuplot(used_target%Material(i_tar), numpar, &
+      trim(adjustl(m_output_MD_energies)), numpar%t_start, numpar%t_total, log_x = .false.)   ! below
+
+      ! Create a file for atomic temperature:
+      call create_MD_temperature_gnuplot(used_target%Material(i_tar), numpar, &
+      trim(adjustl(m_output_MD_cell_params)), numpar%t_start, numpar%t_total, log_x = .false.)   ! below
+
+      ! Create a file for atomic displacements:
+      call create_MD_displacement_gnuplot(MD_pots, used_target%Material(i_tar), numpar, &
+      trim(adjustl(m_output_MD_displacements)), numpar%t_start, numpar%t_total, log_x = .false.)   ! below
+
+!    enddo TRGT
+end subroutine gnuplot_MD_values
+
+
+
+subroutine create_MD_energies_gnuplot(Material, numpar, Datafile, x_start, x_end, log_x)
+   type(Target_atoms), intent(in), target :: Material ! parameters of this material
+   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
+   character(*), intent(in) :: Datafile
+   real(8), intent(in) :: x_start, x_end
+   logical, intent(in), optional :: log_x
+   !------------------------
+   character(200) :: File_script, Out_file
+   character(50) :: Title, temp, temp2
+   character(10) :: units
+   character(5) ::  call_slash, sh_cmd, col_y
+   logical :: logx
+   integer :: FN_gnu, i_first, Reason
+   real(8) :: tics, ord
+
+   if (present(log_x)) then
+      if (log_x) then   ! user set it to make x-axis logscale
+         logx = .true.
+      else  ! x axis linear
+         logx = .false.
+      endif
+   else ! x axis linear
+      logx = .false.
+   endif
+
+   ! Set the grid step on the plots:
+   if (logx) then
+      tics = 10.0d0
+   else
+      ord = dble( find_order_of_number( abs(x_start-x_end) ) - 2 )   ! module "Little_subroutines"
+
+      !tics = 10.0d0**ord
+      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
+      temp = trim(adjustl(temp2))
+      read(temp(1:1),*,IOSTAT=Reason) i_first
+
+      if (i_first < 3) then
+         tics = 10.0d0**ord
+      else
+         tics = 10.0d0**(ord+1)
+      endif
+   endif
+
+   ! Get the extension and slash in this OS:
+   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
+
+   ! Printout total values in each target:
+   ! Get the paths and file names:
+   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_MD_E_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
+   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
+   Out_file = trim(adjustl(m_output_MD_E_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
+
+   ! Create the gnuplot-script header:
+   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Energies vs Time", "Time (fs)", "Energy (eV/atom)", &
+      trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0, &
+      logx=logx, logy=.false.)  ! module "Gnuplotting"
+
+   ! Create the plotting part:
+   write(Title, '(a)') ' Total'
+   write(col_y, '(i4)') 4   ! in this column there is Etot
+   if (numpar%path_sep == '\') then	! if it is Windows
+      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+   else
+      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+   endif
+   write(Title, '(a)') ' Potential'
+   write(col_y, '(i4)') 3   ! in this column there is Eph
+   if (numpar%path_sep == '\') then	! if it is Windows
+      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+   else
+      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+   endif
+
+   ! Create the gnuplot-script ending:
+   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
+
+   call close_file('save',FN=FN_gnu)
+end subroutine create_MD_energies_gnuplot
+
+
+
+
+subroutine create_MD_temperature_gnuplot(Material, numpar, Datafile, x_start, x_end, log_x)
+   type(Target_atoms), intent(in), target :: Material ! parameters of this material
+   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
+   character(*), intent(in) :: Datafile
+   real(8), intent(in) :: x_start, x_end
+   logical, intent(in), optional :: log_x
+   !------------------------
+   character(200) :: File_script, Out_file
+   character(50) :: Title, temp, temp2
+   character(10) :: units
+   character(5) ::  call_slash, sh_cmd, col_y
+   logical :: logx
+   integer :: FN_gnu, i_first, Reason
+   real(8) :: tics, ord
+
+   if (present(log_x)) then
+      if (log_x) then   ! user set it to make x-axis logscale
+         logx = .true.
+      else  ! x axis linear
+         logx = .false.
+      endif
+   else ! x axis linear
+      logx = .false.
+   endif
+
+   ! Set the grid step on the plots:
+   if (logx) then
+      tics = 10.0d0
+   else
+      ord = dble(find_order_of_number( abs(x_start-x_end) ) - 2)   ! module "Little_subroutines"
+      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
+      temp = trim(adjustl(temp2))
+      read(temp(1:1),*,IOSTAT=Reason) i_first
+      if (i_first < 3) then
+         tics = 10.0d0**ord
+      else
+         tics = 10.0d0**(ord+1)
+      endif
+   endif
+
+   ! Get the extension and slash in this OS:
+   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
+
+   ! Printout total values in each target:
+   ! Get the paths and file names:
+   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_MD_T_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
+   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
+   Out_file = trim(adjustl(m_output_MD_T_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
+
+   ! Create the gnuplot-script header:
+   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Temperature vs Time", "Time (fs)", "Temperature (K)", &
+                  trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, &
+                  setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
+
+   ! Create the plotting part:
+   write(Title, '(a)') ' Atoms'
+   write(col_y, '(i4)') 2   ! in this column there is mean atomic temperature
+   if (numpar%path_sep == '\') then	! if it is Windows
+      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+   else
+      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+   endif
+
+   ! Create the gnuplot-script ending:
+   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
+
+   call close_file('save',FN=FN_gnu)
+end subroutine create_MD_temperature_gnuplot
+
+
+
+subroutine create_MD_displacement_gnuplot(MD_pots, Material, numpar, Datafile, x_start, x_end, log_x)
+   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   type(Target_atoms), intent(in), target :: Material ! parameters of this material
+   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
+   character(*), intent(in) :: Datafile
+   real(8), intent(in) :: x_start, x_end
+   logical, intent(in), optional :: log_x
+   !------------------------
+   character(200) :: File_script, Out_file
+   character(50) :: Title, temp, temp2
+   character(10) :: units, chtemp
+   character(5) ::  call_slash, sh_cmd, col_y
+   logical :: logx
+   integer :: FN_gnu, i_first, Reason, N_KOA, i
+   real(8) :: tics, ord
+
+   ! Number of different kinds of atoms (defined by different potentials):
+   N_KOA = size(MD_pots,1)
+
+   if (present(log_x)) then
+      if (log_x) then   ! user set it to make x-axis logscale
+         logx = .true.
+      else  ! x axis linear
+         logx = .false.
+      endif
+   else ! x axis linear
+      logx = .false.
+   endif
+
+   ! Set the grid step on the plots:
+   if (logx) then
+      tics = 10.0d0
+   else
+      ord = dble(find_order_of_number( abs(x_start-x_end) ) - 2)   ! module "Little_subroutines"
+      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
+      temp = trim(adjustl(temp2))
+      read(temp(1:1),*,IOSTAT=Reason) i_first
+      if (i_first < 3) then
+         tics = 10.0d0**ord
+      else
+         tics = 10.0d0**(ord+1)
+      endif
+   endif
+
+   ! Get the extension and slash in this OS:
+   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
+
+   ! Printout total values in each target:
+   ! Get the paths and file names:
+   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_MD_MSD_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
+   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
+   Out_file = trim(adjustl(m_output_MD_MSD_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
+
+   ! Create the gnuplot-script header:
+   if (numpar%n_MSD /= 1) then
+      write(chtemp,'(i2)') numpar%n_MSD
+      call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Displacement vs Time", "Time (fs)", &
+                  "Displacement (A^"//trim(adjustl(chtemp))//')', &
+                  trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, &
+                  setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
+   else
+      call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Displacement vs Time", "Time (fs)", "Displacement (A)", &
+                  trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, &
+                  setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
+   endif
+
+   ! Create the plotting part:
+   if (N_KOA > 1) then ! many kinds of atoms
+      write(Title, '(a)') ' Average'
+      write(col_y, '(i4)') 2   ! in this column there is mean atomic temperature
+      if (numpar%path_sep == '\') then	! if it is Windows
+         call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+      else
+         call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+      endif
+      do i = 3, (2+N_KOA)-1 ! for all kinds of atoms
+         write(Title, '(a)') trim(adjustl(MD_pots(i-2,i-2)%El1))
+         write(col_y, '(i4)') i   ! in this column there is mean atomic temperature
+         if (numpar%path_sep == '\') then	! if it is Windows
+            call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+               x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+         else
+            call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+               x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+         endif
+      enddo
+      write(Title, '(a)') trim(adjustl(MD_pots(N_KOA,N_KOA)%El1))
+      write(col_y, '(i4)') 2+N_KOA   ! in this column there is mean atomic temperature
+      if (numpar%path_sep == '\') then	! if it is Windows
+         call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+      else
+         call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+      endif
+   else ! only one kind of atoms
+      write(Title, '(a)') ' Average'
+      write(col_y, '(i4)') 2   ! in this column there is mean atomic temperature
+      if (numpar%path_sep == '\') then	! if it is Windows
+         call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
+      else
+         call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
+            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
+      endif
+   endif ! (N_KOA > 1)
+
+   ! Create the gnuplot-script ending:
+   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
+
+   call close_file('save',FN=FN_gnu)
+end subroutine create_MD_displacement_gnuplot
+
 
 
 
@@ -1593,7 +1901,7 @@ subroutine create_total_numbers_gnuplot(Material, numpar, Datafile, x_start, x_e
    logical, intent(in), optional :: log_x
    !------------------------
    character(200) :: File_script, Out_file
-   character(50) :: Title, temp
+   character(50) :: Title, temp, temp2
    character(10) :: units
    character(5) ::  call_slash, sh_cmd, col_y
    logical :: logx
@@ -1615,7 +1923,8 @@ subroutine create_total_numbers_gnuplot(Material, numpar, Datafile, x_start, x_e
       tics = 10.0d0
    else
       ord = dble(find_order_of_number( abs(x_start-x_end) ) - 2)   ! module "Little_subroutines"
-      write(temp,'(e)')  abs(x_start-x_end) ! make it a string
+      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
+      temp = trim(adjustl(temp2))
       read(temp(1:1),*,IOSTAT=Reason) i_first
 !       print*, 'CHECK', i_first
 !       pause 'Check'
@@ -1691,7 +2000,7 @@ subroutine create_total_energies_gnuplot(Material, numpar, Datafile, x_start, x_
    logical, intent(in), optional :: log_x
    !------------------------
    character(200) :: File_script, Out_file
-   character(50) :: Title, temp
+   character(50) :: Title, temp, temp2
    character(10) :: units
    character(5) ::  call_slash, sh_cmd, col_y
    logical :: logx
@@ -1713,8 +2022,8 @@ subroutine create_total_energies_gnuplot(Material, numpar, Datafile, x_start, x_
       tics = 10.0d0
    else
       ord = dble( find_order_of_number( abs(x_start-x_end) ) - 2 )   ! module "Little_subroutines"
-      !tics = 10.0d0**ord
-      write(temp,'(e)')  abs(x_start-x_end) ! make it a string
+      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
+      temp = trim(adjustl(temp2))
       read(temp(1:1),*,IOSTAT=Reason) i_first
       if (i_first < 3) then
          tics = 10.0d0**ord
