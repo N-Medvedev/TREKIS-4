@@ -218,6 +218,8 @@ subroutine get_energy_from_electrons(MD_atoms, MD_supce)
                       MD_supce%E_h_from_MC(1,1,1)
       ! Find total kinetic energy of atoms (need it for velocity scaling):
       call get_total_energy(MD_atoms, Ekin, Epot) ! module "MD_general_tools"
+!      print*, 'get_energy_from_electrons', Ekin, E_transferred
+
       ! Rescale atomic velosities to deliver the energy to atoms:
       call rescale_velosities(MD_atoms, Ekin, E_transferred) ! module "MD_general_tools"
    endif

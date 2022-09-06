@@ -748,7 +748,7 @@ subroutine set_atomic_velocities(used_target, numpar, Path_to_MD, MD_atoms, Err)
    
    ! Get rid of the center-of-mass motion:
    call remove_CoM_velocity(MD_atoms)   ! module "MD_general_tools"
-   
+
    ! close opened input files:
 9998 continue
    call close_file('close', FN=FN)	! module "Dealing_with_files"

@@ -198,7 +198,7 @@ subroutine get_total_energy(MD_atoms, Ekin, Epot, atoms_mask)
       !$omp do reduction(+:Ekin) schedule(dynamic)
       do i = 1, Nat    ! for all atoms
          if (atoms_mask(i)) then    ! chose from subset
-            Vtot = dsqrt(SUM( MD_atoms(i)%V(:)*MD_atoms(i)%V(:) )) * 1.0d5       ! [A/fs] -> [m/s]
+            Vtot = dsqrt(SUM( MD_atoms(i)%V(:)*MD_atoms(i)%V(:) )) * g_Afs2ms   ! [A/fs] -> [m/s]
             Ekin_atom = kinetic_energy_from_velosity(Vtot, MD_atoms(i)%Mass)    ! module "Relativity"
             ! Total kinetic energy:
             Ekin = Ekin + Ekin_atom   ! [eV]
@@ -401,6 +401,10 @@ subroutine remove_CoM_velocity(atoms, print_out)
       atoms(i)%V(1) = atoms(i)%V(1) - vx
       atoms(i)%V(2) = atoms(i)%V(2) - vy
       atoms(i)%V(3) = atoms(i)%V(3) - vz
+      ! do the same for the previous time step:
+      atoms(i)%V0(1) = atoms(i)%V0(1) - vx
+      atoms(i)%V0(2) = atoms(i)%V0(2) - vy
+      atoms(i)%V0(3) = atoms(i)%V0(3) - vz
    enddo
    !$omp enddo
    !$omp end parallel
