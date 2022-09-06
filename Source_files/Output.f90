@@ -72,6 +72,7 @@ character(200) :: m_output_MD_coordinates
 character(200) :: m_output_MD_velocities
 character(200) :: m_output_MCMD
 character(200) :: m_output_MD_LAMMPS
+character(200) :: m_output_MD_displacements
 
 ! All output file names:
 parameter (m_output_parameters = '!OUTPUT_parameters.txt')
@@ -83,6 +84,7 @@ parameter (m_output_DOS_effm = 'OUTPUT_DOS_effective_mass_of_')
 !mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 parameter (m_output_MD_energies = 'OUTPUT_MD_energies.txt')
 parameter (m_output_MD_cell_params = 'OUTPUT_MD_average_parameters.txt')
+parameter (m_output_MD_displacements = 'OUTPUT_MD_mean_displacements.txt')
 parameter (m_output_MD_coordinates = 'OUTPUT_MD_coordinates.xyz')
 parameter (m_output_MD_velocities = 'OUTPUT_MD_velocities.xyz')
 parameter (m_output_MCMD = 'OUTPUT_MCMD_energy_transfer.txt')
@@ -247,7 +249,7 @@ subroutine MD_data_printout(used_target, numpar, out_data, MD_atoms, MD_supce, M
    
    if (numpar%DO_MD) then   ! only if MD module is active it makes sense to analyze the data
       ! MD energy ballance:
-      call MD_total_values(numpar, MD_supce, out_data, tim)    ! below
+      call MD_total_values(numpar, MD_supce, MD_pots, out_data, tim)    ! below
       
       ! Atomic coordinates:
       if (numpar%print_MD_R_xyz) then   ! if user requested atomic coordinates:
@@ -395,14 +397,17 @@ subroutine write_MCMD(numpar, MD_supce, tim)
 end subroutine write_MCMD
 
 
-subroutine MD_total_values(numpar, MD_supce, out_data, tim)
+subroutine MD_total_values(numpar, MD_supce, MD_pots, out_data, tim)
    type(Num_par), intent(inout) :: numpar    ! all numerical parameters
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters
+   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
    type(output_data), intent(in) :: out_data ! all output data (distributions etc.)
    real(8), intent(in) :: tim  ! simulation time step [fs]
    !---------------------------------
    real(8) :: Etot, Ptot
+   integer :: N_KOA, i
    logical :: file_exist
+   character(10) :: chtemp
 
    ! Create a file with energies, if does not exist yet:
    numpar%FILE_MD_totals = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_MD_energies))
@@ -425,14 +430,68 @@ subroutine MD_total_values(numpar, MD_supce, out_data, tim)
    
    if (.not. file_exist) then   ! it's the first time, create file and write the header
       open(newunit = numpar%FN_MD_average, FILE = trim(adjustl(numpar%FILE_MD_average)))
-      write(numpar%FN_MD_average,'(a)') '#Time    Temperature   Pressure  Pxx  Pxy    Pxz Pyx Pyy Pyz Pzx Pzy Pzz'
-      write(numpar%FN_MD_average,'(a)') '#fs    K   GPa   GPa   GPa GPa GPa GPa GPa GPa GPa GPa'
+      write(numpar%FN_MD_average,'(a)') '#Time    Temperature  Pressure  Pxx  Pxy    Pxz Pyx Pyy Pyz Pzx Pzy Pzz'
+      write(numpar%FN_MD_average,'(a)') '#fs    K  GPa   GPa   GPa GPa GPa GPa GPa GPa GPa GPa'
    endif
    ! Get the total pressure in the MD module to print out:
    Ptot = 1.0d0/3.0d0 * (MD_supce%Pressure(1,1) + MD_supce%Pressure(2,2) + MD_supce%Pressure(3,3))
    write(numpar%FN_MD_average,'(es24.16, $)') tim, MD_supce%T_kin, Ptot, MD_supce%Pressure(1:3,1:3)
    write(numpar%FN_MD_average,'(a)') ''
-   
+
+
+   ! Number of different kinds of atoms (elements) in MD:
+   N_KOA = size(out_data%MD_MSDP)
+
+   ! Create a file with mean atomic displacements:
+   numpar%FILE_MD_displacement = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_MD_displacements))
+   inquire(file=trim(adjustl(numpar%FILE_MD_displacement)),exist=file_exist) ! check if input file is there
+   if (.not. file_exist) then   ! it's the first time, create file and write the header
+      open(newunit = numpar%FN_MD_displacement, FILE = trim(adjustl(numpar%FILE_MD_displacement)))
+      if (numpar%n_MSD /= 1) then
+         write(chtemp,'(i2)') numpar%n_MSD
+         if (N_KOA > 1) then  ! many kinds of atoms
+            write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') '#Time    Mean_displacement  Displacement_'//trim(adjustl(MD_pots(1,1)%El1))//'  '
+            do i = 2, N_KOA
+               write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') 'Displacement_'//trim(adjustl(MD_pots(i,i)%El1))//' '
+            enddo
+            write(numpar%FN_MD_displacement,'(a)') ''
+            write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') '#fs    A^'//trim(adjustl(chtemp))//' A^'//trim(adjustl(chtemp))//'   '
+            do i = 2, N_KOA
+               write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') 'A^'//trim(adjustl(chtemp))//' '
+            enddo
+            write(numpar%FN_MD_displacement,'(a)') ''
+         else  ! only one kind of atoms
+            write(numpar%FN_MD_displacement,'(a)') '#Time    Mean_displacement'
+            write(numpar%FN_MD_displacement,'(a)') '#fs    A^'//trim(adjustl(chtemp))
+         endif
+      else
+         if (N_KOA > 1) then  ! many kinds of atoms
+            write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') '#Time    Mean_displacement  Displacement_'//trim(adjustl(MD_pots(1,1)%El1))//'  '
+            do i = 2, N_KOA
+               write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') 'Displacement_'//trim(adjustl(MD_pots(i,i)%El1))//' '
+            enddo
+            write(numpar%FN_MD_displacement,'(a)') ''
+            write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') '#fs    A A  '
+            do i = 2, N_KOA
+               write(numpar%FN_MD_displacement,'(a)', ADVANCE='no') 'A  '
+            enddo
+            write(numpar%FN_MD_displacement,'(a)') ''
+         else  ! only one kind of atoms
+            write(numpar%FN_MD_displacement,'(a)') '#Time    Mean_displacement'
+            write(numpar%FN_MD_displacement,'(a)') '#fs    A'
+         endif
+      endif
+   endif
+   ! Save the data into the file:
+   if (N_KOA > 1) then ! many kinds of atoms
+      write(numpar%FN_MD_displacement,'(es24.16, $)') tim, out_data%MD_MSD, out_data%MD_MSDP(:)
+      write(numpar%FN_MD_displacement,'(a)') ''
+   else ! only one kind of atoms
+      write(numpar%FN_MD_displacement,'(es24.16, es24.16)') tim, out_data%MD_MSD
+   endif
+
+
+
 end subroutine MD_total_values
 
 

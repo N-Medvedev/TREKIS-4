@@ -15,7 +15,7 @@ use Little_subroutines, only: Find_in_array_monoton, print_time_step
 use MD_general_tools, only: Verlet_step, get_nearest_neighbors_list, Quenching, find_which_potential, &
                             Fermi_cut_off, d_Fermi_cut_off, Check_MD_periodic_boundaries, rescale_supercell, &
                             get_temperature_from_energy, get_pressure, shortest_distance, Thermostat, Damp_pressure, &
-                            rescale_velosities, get_total_energy
+                            rescale_velosities, get_total_energy, transfer_atomic_data
 use MD_data_analysis, only: get_total_energies
 use MD_Pot_Simple, only: power_potential, d_power_potential, LJ_potential, d_LJ_potential, exp_potential, d_exp_potential
 use MD_Pot_Buck, only: Buck_potential, d_Buck_potential, Matsui_potential, d_Matsui_potential
@@ -265,6 +265,9 @@ subroutine prepare_MD_run(MD_atoms, MD_supce, MD_pots, numpar)
       case (2) ! something else
          ! not ready
       endselect
+
+      ! Save initial state of the supercell for analysis:
+      call transfer_atomic_data(MD_atoms, MD_supce%MD_atoms_0)   ! module "MD_general_tools"
 
       !------------------------------
       ! Get starting supercell parameters:

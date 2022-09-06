@@ -624,6 +624,82 @@ end subroutine shortest_distance
 
 
 
+pure subroutine shortest_distance_diff_arrays(i, j, MD_atoms, MD_atoms_0, MD_supce, r_shortest, x1, y1, z1, disp, ind_disp)
+   integer, intent(in) :: i, j  ! indices of atoms interacting
+   type(Atom), dimension(:), intent(in) :: MD_atoms, MD_atoms_0	! all atoms in MD as objects
+   type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters
+   real(8), intent(out) :: r_shortest   ! [A] shortest distance between two atoms, accounting for periodic boundaries
+   real(8), intent(out), optional :: x1, y1, z1 ! [A] distance along X, Y, Z
+   real(8), intent(in), optional :: disp  ! [A] displacement of atom i
+   integer, intent(in), optional :: ind_disp ! along which axis is the displacement
+   !---------------------
+   integer :: ix, iy, iz
+   real(8) :: r_min, x_min, y_min, z_min, x, y, z, r, x_min_0, y_min_0, z_min_0
+
+   ! To start with:
+   x_min = MD_atoms(i)%R(1) - MD_atoms_0(j)%R(1)
+   y_min = MD_atoms(i)%R(2) - MD_atoms_0(j)%R(2)
+   z_min = MD_atoms(i)%R(3) - MD_atoms_0(j)%R(3)
+   if (present(disp) .and. present(ind_disp)) then ! atom is displaeced:
+      select case (ind_disp)
+      case (1)
+         x_min = x_min + disp
+      case (2)
+         y_min = y_min + disp
+      case (3)
+         z_min = z_min + disp
+      end select
+   endif
+   r_min = sqrt(x_min*x_min + y_min*y_min + z_min*z_min)
+   ! Save to reuse below:
+   x_min_0 = x_min
+   y_min_0 = y_min
+   z_min_0 = z_min
+
+   ! And only if the boundaries are periodic, check if atoms in the image cells are closer:
+   if (any((MD_supce%boundary(:) == 1))) then
+      ! To start with:
+      x = x_min
+      y = y_min
+      z = z_min
+      r = r_min
+      ! Check all image cells around the supercell:
+      do ix = -1,1
+         do iy = -1,1
+            do iz = -1,1
+               if (MD_supce%boundary(1) == 1) then ! periodic along X
+                  !x = MD_atoms(i)%R(1) - MD_atoms(j)%R(1) + dble(ix)*MD_supce%vect(1)
+                  x = x_min_0 + dble(ix)*MD_supce%vect(1)
+               endif
+               if (MD_supce%boundary(2) == 1) then ! periodic along Y
+                  !y = MD_atoms(i)%R(2) - MD_atoms(j)%R(2) + dble(iy)*MD_supce%vect(2)
+                  y = y_min_0 + dble(iy)*MD_supce%vect(2)
+               endif
+               if (MD_supce%boundary(3) == 1) then ! periodic along Z
+                  !z = MD_atoms(i)%R(3) - MD_atoms(j)%R(3) + dble(iz)*MD_supce%vect(3)
+                  z = z_min_0 + dble(iz)*MD_supce%vect(3)
+               endif
+               r = sqrt(x*x + y*y + z*z)
+               ! If the distance is shorter to this image copy of the atom, save it:
+               if (r < r_min) then
+                  r_min = r
+                  x_min = x
+                  y_min = y
+                  z_min = z
+               endif
+            enddo ! iz = -1,1
+         enddo ! iy = -1,1
+      enddo ! ix = -1,1
+   endif ! (any((MD_supce%boundary(:) == 1)))
+   ! Out:
+   r_shortest = r_min
+   if (present(x1)) x1 = x_min
+   if (present(y1)) y1 = y_min
+   if (present(z1)) z1 = z_min
+end subroutine shortest_distance_diff_arrays
+
+
+
 pure subroutine Verlet_step(R, R0, V, V0, A, dt, dt_half, first_step)
    real(8), dimension(3), intent(inout) :: R    ! [A] coordinates
    real(8), dimension(3), intent(inout) :: R0   ! [A] coordinates on last timestep
@@ -882,6 +958,61 @@ pure function d_Fermi_cut_off(a_r, r_L, d_L) result(d_f_cut) ! derivative of cut
       d_f_cut = -exp_r/(d_L*exp_r2*exp_r2)
    endif
 end function d_Fermi_cut_off
+
+
+
+subroutine transfer_atomic_data(MD_atoms, MD_atoms_0)
+   type(Atom), dimension(:), intent(in) :: MD_atoms     ! all atoms in MD as objects
+   type(Atom), dimension(:), allocatable, intent(inout) :: MD_atoms_0     ! all atoms in MD as objects
+   !------------------
+   integer :: Nat, i
+
+   Nat = size(MD_atoms) ! total number of atoms
+
+   if (.not. allocated(MD_atoms_0)) then
+      allocate(MD_atoms_0(Nat))
+   endif
+
+   ! Copy the data into the second array:
+   MD_atoms_0 = MD_atoms
+end subroutine transfer_atomic_data
+
+
+subroutine get_mean_displacements(MD_supce, MD_pots, MD_atoms, MD_atoms_0, MSD_power, MD_MSD, MD_MSDP)
+   type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters
+   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   type(Atom), dimension(:), intent(in) :: MD_atoms, MD_atoms_0     ! all atoms in MD as objects, current and initial
+   real(8), intent(in) :: MSD_power ! power of mean displacement
+   real(8), intent(inout) :: MD_MSD  ! mean atomic displacements
+   real(8), dimension(:), allocatable, intent(inout) :: MD_MSDP  ! mean atomic displacements
+   !------------------
+   integer :: Nat, i, N_KOA, KOA1, KOA2
+   real(8), dimension(:), allocatable :: N_elem
+   real(8) :: r_shortest
+
+   Nat = size(MD_atoms) ! total number of atoms
+   ! Number of different kinds of atoms (defined by different potentials):
+   N_KOA = size(MD_pots,1)
+   if (.not.allocated(MD_MSDP)) allocate(MD_MSDP(N_KOA))
+   allocate(N_elem(N_KOA), source = 0.0d0)
+
+   MD_MSD = 0.0d0    ! to start with
+   MD_MSDP = 0.0d0   ! to start with
+
+   ! For each kind of atoms, define its mean displacement:
+   do i = 1, Nat
+      ! Kind of atom is defined by the kind of potential:
+      call find_which_potential(MD_atoms, i, i, MD_pots, KOA1, KOA2)    ! above
+      call shortest_distance_diff_arrays(i, i, MD_atoms, MD_atoms_0, MD_supce, r_shortest)   ! above
+      MD_MSD = MD_MSD + r_shortest**MSD_power ! mean displacement^N
+      MD_MSDP(KOA1) = MD_MSDP(KOA1) + r_shortest**MSD_power    ! mean displacement^N
+      ! Count elements of this kind:
+      N_elem(KOA1) = N_elem(KOA1) + 1.0d0
+   enddo
+   ! Normalize to the number of atoms (total and partial) in the simulation box:
+   MD_MSD = MD_MSD/dble(Nat)  ! averaged over all atoms
+   MD_MSDP(:) = MD_MSDP(:) / N_elem(:) ! average over the atoms of the selected kind
+end subroutine get_mean_displacements
 
 
    

@@ -250,6 +250,8 @@ type output_data
    real(8) :: Nph, Ne, Nh, Np, Eph, Ee, Eh_kin, Eh_pot, Ep, Eat  ! total numbers and energies of photons, electrons, holes (kinetic and potential), positrons, atoms
    real(8) :: Nph_high, Ne_high, Nh_high, Np_high, Eph_high, Ee_high, Eh_kin_high, Eh_pot_high, Ep_high  ! numbers and energies of photons, electrons, holes (kinetic and potential), positrons with energies above cut-off
    real(8) :: MD_Ekin, MD_Epot  ! total energies in MD supercell: kinetic and potential
+   real(8) :: MD_MSD    ! mean atomic displacements
+   real(8), dimension(:), allocatable :: MD_MSDP   ! partial atomic displacements for each element
    ! Energy disributions (spectra):
    real(8), dimension(:), allocatable :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI  ! energy spectra
    real(8), dimension(:,:), allocatable :: Spectrum_h ! VB spectra for each target material
@@ -469,6 +471,8 @@ type Num_par
    integer :: FN_MD_totals             ! file number with total numbers in MD
    character(200) :: FILE_MD_average   ! name of the file with average values in MD
    integer :: FN_MD_average            ! file number with average values in MD
+   character(200) :: FILE_MD_displacement   ! name of the file with mean atomic displacements
+   integer :: FN_MD_displacement            ! file number with mean atomic displacements
    character(200) :: FILE_MD_XYZ       ! name of the file with atomic coordinates from MD in XYZ
    integer :: FN_MD_XYZ                ! file number with atomic coordinates from MD in XYZ
    character(200) :: FILE_MD_V_XYZ     ! name of the file with atomic velocities from MD in XYZ
@@ -625,6 +629,7 @@ type Num_par
    real(8), dimension(:,:), allocatable :: Neighbors_Rij    ! distance between atoms in the nearest neighbors list [A]
    real(8), dimension(:,:,:), allocatable :: Neighbors_Xij  ! distance between atoms along 3 axes in the nearest neighbors list [A]
    real(8), dimension(:), allocatable :: Ewalds_kfac        ! exp(-k*b)/k^2 for Ewalds summation
+   integer :: n_MSD  ! power of the mean square displacement
 end type Num_par
 
 
@@ -701,6 +706,7 @@ type :: MD_supcell
    integer, dimension(3) :: boundary    ! index for boundary conditions: 0=free, 1=periodic
    real(8), dimension(3,3) :: SC_vec    ! [A] matrix of supercell vectors (must be consistent with coordinates): UNUSED
    ! Derived from MD and evolving properties of the supercell:
+   type(Atom), dimension(:), allocatable :: MD_atoms_0     ! initial state of all atoms in MD as objects
    real(8) :: Ekin_tot, Epot_tot    ! average kinetic and potential energy of all atoms [eV/atom]
    real(8) :: T_kin ! average kinetic temperature of all atoms [K]
    real(8), dimension(3,3) :: Pressure, P_kin, P_pot ! average pressure tensor [GPa], its kinetic and potential contributions

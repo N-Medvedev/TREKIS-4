@@ -847,7 +847,13 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
       else  !  (.not. read_well)
          
          select case (trim(adjustl(temp_ch)))
-         
+
+         !============================================
+         ! Printout atomic coordinates from MD in XYZ format:
+         case ('Displacement', 'DISPLACEMENT', 'displacement', 'MSD', 'msd')
+            read(FN,*,IOSTAT=Reason) numpar%n_MSD   ! power of mean displacement to print out (set integer N: <u^N>-<u0^N>)
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+
          !============================================
          ! Printout atomic coordinates from MD in XYZ format:
          case ('Numerical_potential', 'Numeric_potential', 'Numeric_pot', 'numeric_pot', 'numeric_force', 'Numeric_force')
@@ -1724,6 +1730,7 @@ subroutine set_default_grid_params(numpar)
    numpar%print_MD_V_xyz = .false.      ! don't printout XYZ file with atomic velocities
    numpar%print_MC_MD_energy = .false.  ! don't printout MC-MD energy transfer
    numpar%print_MD_LAMMPS = .false.     ! don't create LAMMPS input data
+   numpar%n_MSD = 1.0d0    ! power of mean displacement to print out (set integer N: <u^N>-<u0^N>)
    
    ! Set default energy grid parameters:
    numpar%NRG_grid_par%along_axis = .false.         ! does the user want to printout spectra?

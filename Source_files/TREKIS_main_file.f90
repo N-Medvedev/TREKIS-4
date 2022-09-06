@@ -202,7 +202,7 @@ call analyze_MC_output_data(g_target, g_numpar, g_MC, g_output, g_time)    ! mod
 
 ! print*, 'TEST -0.5'
 
-call analyze_MD_output_data(g_numpar, g_MD_atoms, g_output)       ! module "MD_data_analysis"
+call analyze_MD_output_data(g_numpar, g_MD_supce, g_MD_pots, g_MD_atoms, g_output)       ! module "MD_data_analysis"
 
 ! print*, 'TEST 0'
 
@@ -244,7 +244,7 @@ TP:do while (g_time+g_numpar%dt_MD <= g_numpar%t_total)
       call print_time_step('Simulation time (out):', g_time, msec=.true.)   ! module "Little_subroutines"
       ! Collect printable output data from raw MC data:
       call analyze_MC_output_data(g_target, g_numpar, g_MC, g_output, g_time)    ! module "MC_data_analysis"
-      call analyze_MD_output_data(g_numpar, g_MD_atoms, g_output)       ! module "MD_data_analysis"
+      call analyze_MD_output_data(g_numpar, g_MD_supce, g_MD_pots, g_MD_atoms, g_output)       ! module "MD_data_analysis"
 
 !       call print_time_step('Before printout:', g_time, msec=.true.)   ! module "Little_subroutines"
       ! Save current output data:
