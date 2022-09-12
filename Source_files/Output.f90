@@ -1558,15 +1558,16 @@ end subroutine total_values
 
 subroutine create_gnuplot_files(used_target, MD_pots, numpar)
    type(Matter), intent(in) :: used_target      ! parameters of the target
-   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   type(MD_potential), dimension(:,:), allocatable, intent(in) :: MD_pots    ! MD potentials
    type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
    !---------------------------------
    ! Create gnuplot scripts for plotting total numbers and energies:
    call gnuplot_total_values(used_target, numpar)  ! below
 
    ! Create gnuplot for MD part:
-   call gnuplot_MD_values(used_target, MD_pots, numpar)  ! below
-   
+   if (numpar%DO_MD) then
+      call gnuplot_MD_values(used_target, MD_pots, numpar)  ! below
+   endif
 end subroutine create_gnuplot_files
 
 

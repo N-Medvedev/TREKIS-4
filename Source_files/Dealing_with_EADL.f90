@@ -197,7 +197,7 @@ subroutine Read_EADL_data(path_sep, FN, File_name, INFO, Z, Mass, Shl_dsgnr, She
    integer :: Z0, A0, Yi0, Yo0, Date0, C0, I0, S0, X10
    real(8) :: AW0, temp
    character(72) test_line
-   
+
    ! Start by reading the header of the first block
    call Read_ENDL_header(FN, File_name, INFO, Z0, A0, Yi0, Yo0, AW0, Date0, C0, I0, S0, X10)	! see below
    if (INFO /= 0) goto 9998	! if there was any error, or end of file is reached, exit the subroutine
@@ -237,7 +237,34 @@ subroutine Read_EADL_data(path_sep, FN, File_name, INFO, Z, Mass, Shl_dsgnr, She
          ! Finaly, allocate arrays to the given number:
          Nsiz = counter-1
          call allocate_EADL_data_arrays(Nsiz, Shl_dsgnr0, Shell_name0, Ip0, Ek0, Ne_shell0, Radiat0, f_rad0, Auger0, f_auger0)	! see below
+
+         ! First, read all the shell designators to be used below:
+         ! Now we have all arrays allocated, read data into them:
+         EndCheck = 0
+         counter = 0
+         do while (EndCheck /= 1)	! read the entire block
+            counter = counter + 1
+            read(FN,9997,IOSTAT=INFO) EndCheck	! check if it is the end of a block
+            if (INFO /= 0) goto 9998	! if there was any error, or end of file is reached, exit the subroutine
+            if (EndCheck /= 1) then	! if it is not the end of a block, read the line
+               backspace(FN)	! get back to read this line again
+               select case (I0)	! which data are in this block:
+               case (912)	! number of electrons
+                  read(FN,*,IOSTAT=INFO) Shl_dsgnr0(counter), Ne_shell0(counter)
+                  ! Knowing the designator, fine shell name:
+                  call find_shell_names(path_sep, INFO, Shl_dsgnr0(counter), 0, Shell_name0(counter))	! see below
+                  if (INFO /= 0) goto 9998	! if there was any error, or end of file is reached, exit the subroutine
+               case default
+                  read(FN,*,IOSTAT=INFO) ! We already read it, so just skip such lines
+               end select
+            endif	! it is the end of the block, go to the next iteration of the cycle
+         enddo ! while (EndCheck /= 1)
+         ! Then, rewind the data back to read:
+         do j = 1, counter	! rewind back to the start of the block
+            backspace(FN)	! get back to read this line again
+         enddo
       endif
+
       
       ! Now we have all arrays allocated, read data into them:
       EndCheck = 0
@@ -250,9 +277,10 @@ subroutine Read_EADL_data(path_sep, FN, File_name, INFO, Z, Mass, Shl_dsgnr, She
             backspace(FN)	! get back to read this line again
             select case (I0)	! which data are in this block:
             case (912)	! number of electrons
-               read(FN,*,IOSTAT=INFO) Shl_dsgnr0(counter), Ne_shell0(counter)
+               read(FN,*,IOSTAT=INFO) ! We already read it, so just skip such lines
+               !read(FN,*,IOSTAT=INFO) Shl_dsgnr0(counter), Ne_shell0(counter)
                ! Knowing the designator, fine shell name:
-               call find_shell_names(path_sep, INFO, Shl_dsgnr0(counter), 0, Shell_name0(counter))	! see below
+               !call find_shell_names(path_sep, INFO, Shl_dsgnr0(counter), 0, Shell_name0(counter))	! see below
                if (INFO /= 0) goto 9998	! if there was any error, or end of file is reached, exit the subroutine
             case (913)	! binding energy
                read(FN,*,IOSTAT=INFO) temp, Ip0(counter)

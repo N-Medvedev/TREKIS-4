@@ -199,6 +199,44 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
          endif
       enddo
    enddo SHLS
+
+   ! In case EADL didn't have data for shell-resolved probabilities,
+   ! assume the nearest shells participate in Auger, as the most probable ones:
+   if (f_sum < 1.0e-10) then
+      if (NSH >= Nsiz-1) then ! no need to search, it's VB:
+         sh_selected_1 = Nsiz ! save the first shell number
+         sh_selected_2 = Nsiz ! save the second shell number
+      else  ! it may be a core shell
+         SHL2:do i_1 = NSH+1, Nsiz
+            if (Element%valent(i_1)) then ! VB
+               sh_selected_1 = Nsiz ! save the first shell number
+               sh_selected_2 = Nsiz ! save the second shell number
+            else
+               sh_selected_1 = i_1    ! save the first shell number
+               if (matter%Elements(KOA)%Ip(sh_selected_1) <= matter%Elements(KOA)%Ip(NSH)) then
+                  do i_2 = i_1, Nsiz
+                     sh_selected_1 = i_2    ! save the second shell number
+                     if (matter%Elements(KOA)%Ip(sh_selected_2) <= &
+                        (matter%Elements(KOA)%Ip(NSH) - matter%Elements(KOA)%Ip(sh_selected_1)) ) then
+                        exit SHL2   ! found shells, no need to continue
+                     endif
+                  enddo
+               endif
+            endif
+         enddo SHL2
+      endif
+   endif
+
+   if ((sh_selected_1 <= NSH) .or. (sh_selected_2 <= NSH)) then
+      print*, 'Error #1 in (Auger_decay):'
+      print*, 'Auger-electrons are from shells deeper than the original hole:'
+      print*, NSH, sh_selected_1, sh_selected_2
+      print*, f_tot, RN
+      print*, f_sum, f_sampled
+      print*, '-------------'
+      !print*, Element%f_auger(NSH,i_1,i_2)
+   endif
+
    ! In case the first one is a valence hole, sample from where within the valence band it is ionized according to DOS:
    if (Element%valent(sh_selected_1)) then
       call select_energy_DOS(matter%DOS%E, matter%DOS%DOS, matter%Integral_DOS_fe, &
@@ -242,7 +280,7 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
    
    if ((MC%MC_Electrons(MC%N_e)%ti < Prtcl%ti) .or. (MC%MC_Electrons(MC%N_e)%Ekin < 0.0d0)) then
-      print*, 'Error in (Auger_decay):'
+      print*, 'Error #2 in (Auger_decay):'
       print*, 'Electron got negative energy:', MC%MC_Electrons(MC%N_e)%Ekin
       print*, 'N=', MC%N_e, MC%N_h
       print*, MC%MC_Electrons(MC%N_e)%R(:)
@@ -250,6 +288,7 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
       print*, MC%MC_Electrons(MC%N_e)%V(:)
       print*, MC%MC_Electrons(MC%N_e)%V0(:)
       print*, MC%MC_Electrons(MC%N_e)%ti - MC%MC_Electrons(MC%N_e)%t0, MC%MC_Electrons(MC%N_e)%ti, MC%MC_Electrons(MC%N_e)%t0
+      print*, 'sh:', sh_selected_1, sh_selected_2
       print*, Element%valent(sh_selected_1), Element%valent(sh_selected_2)
       print*, Element%Ip(NSH), E_fin_1, E_fin_2
       print*, '-------------'

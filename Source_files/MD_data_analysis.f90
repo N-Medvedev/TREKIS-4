@@ -18,7 +18,7 @@ implicit none
 subroutine analyze_MD_output_data(numpar, MD_supce, MD_pots, MD_atoms, out_data)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters
-   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   type(MD_potential), dimension(:,:), allocatable, intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
    type(Atom), dimension(:), intent(inout), allocatable :: MD_atoms ! all atoms in MD as objects
    type(output_data), intent(inout) :: out_data  ! all output data (distributions etc.)
    !--------------------------

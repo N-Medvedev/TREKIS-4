@@ -1531,7 +1531,7 @@ subroutine add_cartesian_hole(used_target, MC_Prtcl, numpar, tim, Distr_R, E_Dis
          i_arr = 1
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr)
-      else if (Rcur(1) > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+      else if (Rcur(1) >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
          i_arr = N_siz
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr) - numpar%grids(i_ax)%spatial_grid1(i_arr-1)
@@ -1555,7 +1555,7 @@ subroutine add_cartesian_hole(used_target, MC_Prtcl, numpar, tim, Distr_R, E_Dis
          i_arr = 1
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr)
-      else if (Rcur(2) > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+      else if (Rcur(2) >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
          i_arr = N_siz
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr) - numpar%grids(i_ax)%spatial_grid1(i_arr-1)
@@ -1804,7 +1804,7 @@ subroutine add_cartesian_particle(MC_Prtcl, numpar, tim, Distr_R, E_Distr_R, S, 
          i_arr = 1
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr)
-      else if (Rcur(1) > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+      else if (Rcur(1) >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
          i_arr = N_siz
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr) - numpar%grids(i_ax)%spatial_grid1(i_arr-1)
@@ -1829,7 +1829,7 @@ subroutine add_cartesian_particle(MC_Prtcl, numpar, tim, Distr_R, E_Distr_R, S, 
          i_arr = 1
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr)
-      else if (Rcur(2) > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+      else if (Rcur(2) >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
          i_arr = N_siz
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr) - numpar%grids(i_ax)%spatial_grid1(i_arr-1)
@@ -1861,7 +1861,7 @@ subroutine add_cartesian_particle(MC_Prtcl, numpar, tim, Distr_R, E_Distr_R, S, 
          i_arr = 1
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr)
-      else if (Rcur(3) > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+      else if (Rcur(3) >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
          i_arr = N_siz
          ! Define the thickness of the cylindrical layer of the grid:
          dR = numpar%grids(i_ax)%spatial_grid1(i_arr) - numpar%grids(i_ax)%spatial_grid1(i_arr-1)
@@ -2025,7 +2025,7 @@ subroutine add_radial_hole(used_target, MC_Prtcl, numpar, tim, Distr_R, E_Distr_
       i_arr = 1
       ! Define the thickness of the cylindrical layer of the grid:
       dR2 = numpar%grids(i_ax)%spatial_grid1(1) * numpar%grids(i_ax)%spatial_grid1(1)
-   else if (R > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+   else if (R >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
       i_arr = N_siz
       ! Define the thickness of the cylindrical layer of the grid:
       dR2 = numpar%grids(i_ax)%spatial_grid1(i_arr)*numpar%grids(i_ax)%spatial_grid1(i_arr) - &
@@ -2105,7 +2105,7 @@ subroutine add_RL_hole(used_target, MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL)
       i_arr = 1
       ! Define the thickness of the cylindrical layer of the grid:
       dR2 = numpar%grids(i_ax)%spatial_grid1(1) * numpar%grids(i_ax)%spatial_grid1(1)
-   else if (R > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+   else if (R >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
       i_arr = N_siz
       ! Define the thickness of the cylindrical layer of the grid:
       dR2 = numpar%grids(i_ax)%spatial_grid1(i_arr)*numpar%grids(i_ax)%spatial_grid1(i_arr) - &
@@ -2122,7 +2122,7 @@ subroutine add_RL_hole(used_target, MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL)
    if (L < numpar%grids(i_ax)%spatial_grid2(1)) then   ! L below lower limit
       j_arr = 1
       dL = numpar%grids(i_ax)%spatial_grid2(j_arr+1) - numpar%grids(i_ax)%spatial_grid2(j_arr)
-   else if (L > numpar%grids(i_ax)%spatial_grid2(N_sizj)) then  ! above the max L grid point
+   else if (L >= numpar%grids(i_ax)%spatial_grid2(N_sizj)) then  ! above the max L grid point
       j_arr = N_sizj
       dL = numpar%grids(i_ax)%spatial_grid2(j_arr) - numpar%grids(i_ax)%spatial_grid2(j_arr-1)
    else ! inside the grid
@@ -2178,7 +2178,7 @@ subroutine add_radial_particle(MC_Prtcl, numpar, tim, Distr_R, E_Distr_R, L, neu
       i_arr = 1
       ! Define the thickness of the cylindrical layer of the grid:
       dR2 = numpar%grids(i_ax)%spatial_grid1(1) * numpar%grids(i_ax)%spatial_grid1(1)
-   else if (R > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+   else if (R >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
       i_arr = N_siz
       ! Define the thickness of the cylindrical layer of the grid:
       dR2 = numpar%grids(i_ax)%spatial_grid1(i_arr)*numpar%grids(i_ax)%spatial_grid1(i_arr) - &
@@ -2267,7 +2267,7 @@ subroutine add_RL_particle(MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, neutral)
    if (R < numpar%grids(i_ax)%spatial_grid1(1)) then   ! R below lower limit
       i_arr = 1
       dR2 = numpar%grids(i_ax)%spatial_grid1(1) * numpar%grids(i_ax)%spatial_grid1(1)
-   else if (R > numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
+   else if (R >= numpar%grids(i_ax)%spatial_grid1(N_siz)) then  ! above the max R grid point
       i_arr = N_siz
       dR2 = numpar%grids(i_ax)%spatial_grid1(i_arr)*numpar%grids(i_ax)%spatial_grid1(i_arr) - &
             numpar%grids(i_ax)%spatial_grid1(i_arr-1)*numpar%grids(i_ax)%spatial_grid1(i_arr-1)
@@ -2288,7 +2288,7 @@ subroutine add_RL_particle(MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, neutral)
    if (L < numpar%grids(i_ax)%spatial_grid2(1)) then   ! L below lower limit
       j_arr = 1
       dL = numpar%grids(i_ax)%spatial_grid2(j_arr+1) - numpar%grids(i_ax)%spatial_grid2(j_arr)
-   else if (L > numpar%grids(i_ax)%spatial_grid2(N_sizj)) then  ! above the max L grid point
+   else if (L >= numpar%grids(i_ax)%spatial_grid2(N_sizj)) then  ! above the max L grid point
       j_arr = N_sizj
       dL = numpar%grids(i_ax)%spatial_grid2(j_arr) - numpar%grids(i_ax)%spatial_grid2(j_arr-1)
    else ! inside the grid
@@ -2369,7 +2369,7 @@ subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta > numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2439,7 +2439,7 @@ subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta > numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2508,7 +2508,7 @@ subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta > numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2578,7 +2578,7 @@ subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta > numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2641,7 +2641,7 @@ subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
                if (theta < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%NRG_grid(1)
-               else if (theta > numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   d_theta = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -2696,7 +2696,7 @@ subroutine get_photon_spectrum(MC, numpar, Spectrum_ph)
                if (MC%MC_Photons(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   dE = numpar%NRG_grid(1)
-               else if (MC%MC_Photons(i)%Ekin > numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (MC%MC_Photons(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -2747,7 +2747,7 @@ subroutine get_electron_spectrum(MC, numpar, Spectrum_e)
                if (MC%MC_Electrons(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   dE = numpar%NRG_grid(1)
-               else if (MC%MC_Electrons(i)%Ekin > numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (MC%MC_Electrons(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -2803,7 +2803,7 @@ subroutine get_hole_spectrum(MC, numpar, Spectrum_h)
                if (MC%MC_Holes(i)%Ekin < numpar%NRG_grid_VB(1)) then   ! energies below lower limit
                   i_arr = 1
                   dE =numpar%NRG_grid_VB(i_arr+1) - numpar%NRG_grid_VB(i_arr)
-               else if (MC%MC_Holes(i)%Ekin > numpar%NRG_grid_VB(size(numpar%NRG_grid_VB))) then  ! above the max energy grid point
+               else if (MC%MC_Holes(i)%Ekin >= numpar%NRG_grid_VB(size(numpar%NRG_grid_VB))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid_VB)
                   dE = numpar%NRG_grid_VB(i_arr) - numpar%NRG_grid_VB(i_arr-1)
                else ! inside the grid
@@ -2855,7 +2855,7 @@ subroutine get_positron_spectrum(MC, numpar, Spectrum_p)
                if (MC%MC_Positrons(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   dE = numpar%NRG_grid(1)
-               else if (MC%MC_Positrons(i)%Ekin > numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (MC%MC_Positrons(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -2906,7 +2906,7 @@ subroutine get_SHI_spectrum(MC, numpar, Spectrum_SHI)
                if (MC%MC_SHIs(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   dE = numpar%NRG_grid(1)
-               else if (MC%MC_SHIs(i)%Ekin > numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (MC%MC_SHIs(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -2991,7 +2991,7 @@ subroutine get_electron_spectra_1d(MC, numpar, tim, Spectrum_e)
                if (MC%MC_Electrons(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   dE = numpar%NRG_grid(1)
-               else if (MC%MC_Electrons(i)%Ekin > numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (MC%MC_Electrons(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -3069,7 +3069,7 @@ function add_cartesian_particle_for_spectra_1d(MC_Prtcl, numpar, tim, coord_ind,
       Nsiz = size(numpar%Spectr_grid(1)%spatial_grid1)
       if (Rcur(1) < numpar%Spectr_grid(1)%spatial_grid1(1)) then
          i_arr = 1
-      elseif (Rcur(1) > numpar%Spectr_grid(1)%spatial_grid1(Nsiz)) then
+      elseif (Rcur(1) >= numpar%Spectr_grid(1)%spatial_grid1(Nsiz)) then
          i_arr = Nsiz
       else
          call Find_in_array_monoton(numpar%Spectr_grid(1)%spatial_grid1(:), Rcur(1), i_arr)  ! module "Little_subroutines"
@@ -3086,7 +3086,7 @@ function add_cartesian_particle_for_spectra_1d(MC_Prtcl, numpar, tim, coord_ind,
       Nsiz = size(numpar%Spectr_grid(2)%spatial_grid1)
       if (Rcur(2) < numpar%Spectr_grid(2)%spatial_grid1(1)) then
          i_arr = 1
-      elseif (Rcur(2) > numpar%Spectr_grid(2)%spatial_grid1(Nsiz)) then
+      elseif (Rcur(2) >= numpar%Spectr_grid(2)%spatial_grid1(Nsiz)) then
          i_arr = Nsiz
       else
          call Find_in_array_monoton(numpar%Spectr_grid(2)%spatial_grid1(:), Rcur(2), i_arr)  ! module "Little_subroutines"
@@ -3103,7 +3103,7 @@ function add_cartesian_particle_for_spectra_1d(MC_Prtcl, numpar, tim, coord_ind,
       Nsiz = size(numpar%Spectr_grid(3)%spatial_grid1)
       if (Rcur(3) < numpar%Spectr_grid(3)%spatial_grid1(1)) then
          i_arr = 1
-      elseif (Rcur(3) > numpar%Spectr_grid(3)%spatial_grid1(Nsiz)) then
+      elseif (Rcur(3) >= numpar%Spectr_grid(3)%spatial_grid1(Nsiz)) then
          i_arr = Nsiz
       else
          call Find_in_array_monoton(numpar%Spectr_grid(3)%spatial_grid1(:), Rcur(3), i_arr)  ! module "Little_subroutines"
