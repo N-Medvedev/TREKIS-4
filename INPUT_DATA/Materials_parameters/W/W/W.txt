@@ -1,0 +1,20 @@
+W
+
+19.3	! density of the material in [g/cm^3]
+0.0	! [eV] Pair Creation Energy (or band gap) of the solid
+0.0	! Fermi energy [eV]
+4620.0	! Speed of sound [m/s]
+
+Valence
+8	
+0.02187  3.68228  1.10489
+1.67925  9.84664  1.97160
+1.07080  15.42797  2.30544
+139.04274  25.50971  6.66713
+90.55426  43.05721  8.95084
+414.09054  41.79308  38.23695
+-22.04260  19.17431  13.88440
+7.81014  15.00645  5.37558
+
+DOS
+DOS_W.dat
