@@ -288,17 +288,17 @@ pure function form_factor(q, a, Z) result(FF)
    real(8), intent(in) :: q, Z, a(5)
    real(8) fxz, Fk, x, x2, x4, demf, b, CapQ, al, mc
    mc = g_me*g_cvel
-   x = q/mc*m_Thom_factor	! [1] Eq.(2.5)
+   x = q/mc*m_Thom_factor     ! [1] Eq.(2.5)
    x2 = x*x
    x4 = x2*x2
    demf = 1.0d0 + a(4)*x2 + a(5)*x4
-   fxz = Z*(1.0d0 + a(1)*x2 + a(2)*x*x2 + a(3)*x4) / (demf*demf)	! [1] Eq.(2.7)
+   fxz = Z*(1.0d0 + a(1)*x2 + a(2)*x*x2 + a(3)*x4) / (demf*demf)     ! [1] Eq.(2.7)
    FF = fxz
    if ((Z > 10.0d0) .and. (fxz < 2.0d0)) then
-      al = g_alpha*(Z - m_five_sixteenth)	! [1] Eq.(2.9)
-      b = sqrt(1.0d0 - al*al)	! [1] Eq.(2.9)
-      CapQ = q/(2.0d0*mc*al)	! [1] Eq.(2.9)
-      Fk = sin(2.0d0*b*atan(CapQ))/(b*CapQ*(1.0d0 + CapQ*CapQ))	! [1] Eq.(2.8)
+      al = g_alpha*(Z - m_five_sixteenth)    ! [1] Eq.(2.9)
+      b = sqrt(1.0d0 - al*al)    ! [1] Eq.(2.9)
+      CapQ = q/(2.0d0*mc*al)     ! [1] Eq.(2.9)
+      Fk = sin(2.0d0*b*atan(CapQ))/(b*CapQ*(1.0d0 + CapQ*CapQ)**b)   ! [1] Eq.(2.8)
       if (FF < Fk) FF = Fk
    endif
 end function form_factor

@@ -165,7 +165,7 @@ end function check_if_inside_box
 ! Subrtines related to scattering angles:
 
 subroutine deflect_velosity(u0, v0, w0, theta, phi, u, v, w)    ! Eq.(1.131), p.37 [1]
-   real(8), intent(in) :: u0, v0, w0    ! cosine directions of the old velosity
+   real(8), intent(in) :: u0, v0, w0     ! cosine directions of the old velosity
    real(8), intent(in) :: theta, phi     ! polar (0,Pi) and azimuthal (0,2Pi) angles
    real(8), intent(out) :: u, v, w       ! new cosine directions
    real(8) :: sin_theta, cos_theta, sin_phi, cos_phi, one_w, eps, sin_t_w, temp

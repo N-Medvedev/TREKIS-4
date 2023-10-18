@@ -203,14 +203,14 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
    ! In case EADL didn't have data for shell-resolved probabilities,
    ! assume the nearest shells participate in Auger, as the most probable ones:
    if (f_sum < 1.0e-10) then
-      if (NSH >= Nsiz-1) then ! no need to search, it's VB:
-         sh_selected_1 = Nsiz ! save the first shell number
-         sh_selected_2 = Nsiz ! save the second shell number
-      else  ! it may be a core shell
-         SHL2:do i_1 = NSH+1, Nsiz
+      sh_selected_1 = Nsiz ! save the first shell number (use as default)
+      sh_selected_2 = Nsiz ! save the second shell number (use as default)
+      if (NSH < Nsiz-1) then ! no need to search, it's VB:
+         SHL2:do i_1 = 1, Nsiz
             if (Element%valent(i_1)) then ! VB
                sh_selected_1 = Nsiz ! save the first shell number
                sh_selected_2 = Nsiz ! save the second shell number
+               exit SHL2   ! found shells, no need to continue
             else
                sh_selected_1 = i_1    ! save the first shell number
                if (matter%Elements(KOA)%Ip(sh_selected_1) <= matter%Elements(KOA)%Ip(NSH)) then
@@ -221,6 +221,8 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
                         exit SHL2   ! found shells, no need to continue
                      endif
                   enddo
+               else
+                  sh_selected_1 = Nsiz ! use default (valence band)
                endif
             endif
          enddo SHL2
