@@ -2497,7 +2497,7 @@ end subroutine copy_MC_array_electron
 !--------------------------------------------------------------------------------
 ! PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
 
-pure subroutine extend_MC_array_poly(Prtcl)
+subroutine extend_MC_array_poly(Prtcl)
    class(Particle), dimension(:), allocatable, intent(inout) :: Prtcl   ! array of undefined particles
    class(Particle), dimension(:), allocatable :: Prtcl_temp     ! temporary aray of undefined particles
    integer :: siz, siz2, j

@@ -3,6 +3,8 @@
 # This file was written by N.Medvedev 
 # in 2020-2021
 #----------------------------------------------------- 
+# To pass variables into the next make-file:
+export
 
 # Call makefile within the Source_files directory:
 subsystem:

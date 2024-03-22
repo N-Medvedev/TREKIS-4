@@ -697,7 +697,8 @@ subroutine renormalize_alpha_CDF(numpar, Material) ! module "CDF_get_from_data"
                           numpar%CDF_model)  ! below
                   case (1)  ! Plasmon pole
                      call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, g_me, Zeff, Ip, Material(i)%T_eV, Material(i)%CDF_valence, &
-                            g_me, Material(i)%DOS%k, Material(i)%DOS%Eff_m, .true., 1.0d0, Material(i)%At_Dens, Material(i)%DOS, & numpar%CDF_model, CDF_dispers=numpar%CDF_dispers, v_f=Material(i)%DOS%v_f)  ! below
+                            g_me, Material(i)%DOS%k, Material(i)%DOS%Eff_m, .true., 1.0d0, Material(i)%At_Dens, Material(i)%DOS, &
+                            numpar%CDF_model, CDF_dispers=numpar%CDF_dispers, v_f=Material(i)%DOS%v_f)  ! below
                   case (2)  ! Ritchie extended
                      call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, g_me, Zeff, Ip, Material(i)%T_eV, Material(i)%CDF_valence, &
                             g_me, Material(i)%DOS%k, Material(i)%DOS%Eff_m, .true., 1.0d0, Material(i)%At_Dens, Material(i)%DOS, &
