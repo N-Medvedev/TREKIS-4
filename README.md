@@ -3,7 +3,7 @@
 
 A hybrid code combining Monte Carlo and molecular dynamics simulation of the effects of radiation impact on matter. It can model swift-heavy ion, photon, electron or positron impacts.
 
-For all details and instruction, address the files TREKIS_4_manual_v1.2022.01.22.docx (currecntly only available in Russian)
+For all details and instruction, address the files TREKIS_4_manual_v1.2022.01.22.docx (available in English and Russian)
 
 ## Disclaimer
 
@@ -15,6 +15,7 @@ This code is distributed as is for non-commercial peaceful purposes only, such a
 
 The use of the code is at your own risk. Should you choose to use it, appropriate citations are mandatory:
 
-N Medvedev, F Akhmetov, RA Rymzhanov, R Voronkov, AE Volkov; https://arxiv.org/abs/2201.08023
+N Medvedev, F Akhmetov, RA Rymzhanov, R Voronkov, AE Volkov; Advanced Theory and Simulations 5 (8), 2200091 (2022) https://doi.org/10.1002/adts.202200091
+
 
 In a publication, we recommend that at least the following parameters should be mentioned for reproducibility of the results: material, its structure, density, speed of sound, the used CDF coefficients, which processes were included (active) in the simulation, ion type, its energy, the model for SHI charge, number of MC iterations.
