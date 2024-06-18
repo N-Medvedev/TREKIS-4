@@ -4111,7 +4111,7 @@ end subroutine make_output_folder
  
 !===================================================
 ! Printing out the title of the program:
-subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce, MD_pots)
+subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce, MD_pots, do_lable)
    integer, intent(in) :: print_to ! the screen, or file
    type(Matter), intent(in) :: used_target	! parameters of the target
    type(Num_par), intent(in) :: numpar	! all numerical parameters
@@ -4119,12 +4119,20 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    type(Atom), dimension(:), intent(inout), allocatable :: MD_atoms ! all atoms in MD as objects
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters
    type(MD_potential), dimension(:,:), intent(inout), allocatable :: MD_pots    ! MD potentials for each kind of atom-atom interactions
+   logical, intent(in) :: do_lable  ! printout lable or not
    !------------------------
    integer i , Nsiz, j, k
    character(100) :: text, text1, text2, text3
-   write(print_to,'(a)') trim(adjustl(m_starline))
-   write(print_to,'(a)') '*      TREKIS: Time-Resolved Kinetics in Irradiated Solids       *'
-   write(print_to,'(a)') trim(adjustl(m_starline))
+   !------------------------
+
+   if (do_lable) then   ! print TRKEIS lable
+      call print_TRKEIS4_lable(print_to)  ! below
+   else
+      write(print_to,'(a)') trim(adjustl(m_starline))
+   endif
+   !write(print_to,'(a)') trim(adjustl(m_starline))
+   !write(print_to,'(a)') '*      TREKIS: Time-Resolved Kinetics in Irradiated Solids       *'
+   !write(print_to,'(a)') trim(adjustl(m_starline))
    !**********************************************
    ! TARGET:
    write(print_to,'(a,a,a)') ' Performed for the following parameters:'
@@ -4817,22 +4825,22 @@ end subroutine set_OMP_number
 
 
 
-
 subroutine print_TRKEIS4_lable(print_to)
    integer, intent(in) :: print_to
    !------------------
    write(print_to, '(a)') trim(adjustl(m_starline))
-   write(print_to, '(a)') '        _______   ____    _____   _   _   _     ___         '
-   write(print_to, '(a)') '       |__   __| |  _ \  |  ___| | | / / | |   / __|    __  '
-   write(print_to, '(a)') '          | |    | |_) ) | |___  | |/ /  | |  ( (      /  | '
-   write(print_to, '(a)') '          | |    |  _ (  |  ___| |   (   | |   \ \    /   | '
-   write(print_to, '(a)') '          | |    | | \ \ | |___  | |\ \  | |  __) )  / /| | '
-   write(print_to, '(a)') '          |_|    |_| |_| |_____| |_| \_\ |_| |___/  / /_| | '
-   write(print_to, '(a)') '                                                    |___  | '
+   write(print_to, '(a)') '        _______   ____    _____   _   _   _    ___          '
+   write(print_to, '(a)') '       |__   __| |  _ \  |  ___| | | / / | |  / __|     __  '
+   write(print_to, '(a)') '          | |    | |_) ) | |___  | |/ /  | | ( (_      /  | '
+   write(print_to, '(a)') '          | |    |    /  |  ___| |   (   | |  \_ \    /   | '
+   write(print_to, '(a)') '          | |    | |\ \  | |___  | |\ \  | |  __) )  / /| | '
+   write(print_to, '(a)') '          |_|    |_| \_\ |_____| |_| \_\ |_| |___/  / /_| | '
+   write(print_to, '(a)') '                                                   |____  | '
    write(print_to, '(a)') '                                                        |_| '
    write(print_to, '(a)') trim(adjustl(m_starline))
    write(print_to, '(a)') '       TREKIS: Time-REsolved Kinetics in Irradiated Solids'
    write(print_to, '(a)') '       '//trim(adjustl(m_TREKIS_version))
+   write(print_to, '(a)') '       Available at: https://github.com/N-Medvedev/TREKIS-4'
    write(print_to, '(a)') trim(adjustl(m_starline))
 end subroutine print_TRKEIS4_lable
 

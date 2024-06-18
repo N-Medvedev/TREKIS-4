@@ -103,10 +103,10 @@ call Find_starting_targets(g_target, g_numpar, g_bunch, g_MC)  ! module "MC_gene
 
 !--------------------------------------------------------------
 ! Printout the title of the program on the screen:
-call Print_title(6, g_target, g_numpar, g_bunch, g_MD_atoms, g_MD_supce, g_MD_pots)    ! module "Output"
+call Print_title(6, g_target, g_numpar, g_bunch, g_MD_atoms, g_MD_supce, g_MD_pots, do_lable=.false.)    ! module "Output"
 ! and also printout the title into an output file:
 open(newunit = g_numpar%FN_parameters, FILE = trim(adjustl(g_numpar%FILE_parameters )))
-call Print_title(g_numpar%FN_parameters, g_target, g_numpar, g_bunch, g_MD_atoms, g_MD_supce, g_MD_pots)   ! module "Output"
+call Print_title(g_numpar%FN_parameters, g_target, g_numpar, g_bunch, g_MD_atoms, g_MD_supce, g_MD_pots, do_lable=.true.)   ! module "Output"
 ! Save the atomic parameters from EADL to the Parameters file:
 call Print_atomic_parameters(g_numpar%FN_parameters, g_target)  ! module "Output"
 
