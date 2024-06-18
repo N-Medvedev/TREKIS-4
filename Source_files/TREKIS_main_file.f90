@@ -33,13 +33,19 @@ PROGRAM TREKIS
 ! Initiate modules with all the 'use' statements collected in a separate file:
 include 'Use_statements.f90'    ! include parts of the code from an external file
 ! Open_MP related modules from external libraries:
-#ifdef OMP_inside
+#ifdef _OPENMP
    USE IFLPORT
    USE OMP_LIB
 #endif
 
 implicit none
+
 !--------------------------------------------------------------
+! Print the title on the screen:
+call print_TRKEIS4_lable(6) ! module "Output"
+!--------------------------------------------------------------
+
+
 ! The code is executed in multiple steps:
 ! 0) Define the basic variables used, initiate random seed and get the current time:
 call random_seed()  ! standard FORTRAN seeding of random numbers

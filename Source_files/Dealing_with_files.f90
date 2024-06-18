@@ -14,7 +14,8 @@ implicit none
 
 subroutine get_file_stat(File_name, device_ID, Inode_number, File_mode, Number_of_links, O_uid, O_gid, where_located, &
                          File_size, Last_access_time, Last_modification_time, Last_status_change, blocks_allocated)
-! See description here: https://software.intel.com/en-us/node/526830
+! See description here: https://www.intel.com/content/www/us/en/docs/fortran-compiler/developer-guide-reference/2024-1/stat.html
+! Note that gfortran uses different format: https://gcc.gnu.org/onlinedocs/gfortran/STAT.html
    character(*), intent(in) :: File_name ! which file we are checking?
    integer, intent(out), optional :: device_ID ! Device the file resides on
    integer, intent(out), optional :: Inode_number ! File inode number
@@ -30,11 +31,18 @@ subroutine get_file_stat(File_name, device_ID, Inode_number, File_mode, Number_o
    integer, intent(out), optional :: blocks_allocated ! Blocksize for file system I/O operations
    !(*) Times are in the same format returned by the TIME function (number of seconds since 00:00:00 Greenwich mean time, January 1, 1970).
    !=====================
+   ! The preprocessor option defining compilation with Gfortran: https://gcc.gnu.org/onlinedocs/gfortran/Preprocessing-Options.html
+#ifdef __GFORTRAN__
+   ! for gfortran compiler:
+   INTEGER :: info_array(13)
+#else
+   ! for intel fortran compiler:
    INTEGER :: info_array(12)
-   
+#endif
+
    ! Get the statistics on the file:
-   call STAT(trim(adjustl(File_name)), info_array) ! intrinsic fortran subroutine
-   
+   call STAT(trim(adjustl(File_name)), info_array) ! intrinsec fortran subroutine
+
    if (present(device_ID)) device_ID = info_array(1)  ! Device the file resides on
    if (present(Inode_number)) Inode_number = info_array(2) ! File inode number
    if (present(File_mode)) File_mode = info_array(3) ! Access mode of the file
@@ -48,6 +56,7 @@ subroutine get_file_stat(File_name, device_ID, Inode_number, File_mode, Number_o
    if (present(Last_status_change)) Last_status_change = info_array(11) ! Time of last file status change (*)
    if (present(blocks_allocated)) blocks_allocated = info_array(12) ! Blocksize for file system I/O operations
 end subroutine get_file_stat
+
 
 
 subroutine open_file(FN, File_name, Error_descript, status, action)

@@ -34,7 +34,6 @@ character(50) :: m_positron_inelast_CS, m_positron_elast_CS, m_positron_Brems_CS
 
 
 ! All input folders / directories:
-
 parameter(m_databases = 'Atomic_parameters')		! folder with the periodic table and ENDL databases
 parameter(m_photon_CS = 'Photon_cross_sections')	! folder with all photons cross sections and MFPs
 parameter(m_electron_CS = 'Electron_cross_sections')	! folder with all electron cross sections and MFPs
@@ -48,8 +47,10 @@ parameter(m_folder_MD = 'MD_input') ! folder with all parameters for MD simulati
 ! Databases and input files:
 parameter(m_input_data = 'INPUT_DATA.txt')		! file frim INPUT_DATA parameters
 parameter(m_numerical_parameters = 'NUMERICAL_PARAMETERS.txt')	! file with all numerical parameters
-parameter(m_EADL = 'EADL2017.all')				! file with EADL database
-parameter(m_EPDL = 'EPDL2017.all')				! file with EPDL database
+!parameter(m_EADL = 'EADL2017.all')				! file with EADL database OLD
+!parameter(m_EPDL = 'EPDL2017.all')				! file with EPDL database OLD
+parameter(m_EADL = 'EADL2023.ALL')				! file with EADL database
+parameter(m_EPDL = 'EPDL2023.ALL')				! file with EPDL database
 parameter(m_file_Compton_profiles = 'Compton_profiles.dat')	! database of Compton profiles to be used for calculations of Compton cross sections
 parameter(m_file_pair_coeffs = 'Pair_creation_coefficients.dat')	! database with coefficients to be used in photon pair creation cross sections
 parameter(m_file_form_factors  = 'Atomic_form_factors.dat')		! database with coefficients used to construct atomic form factors
@@ -101,18 +102,24 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
    integer :: Reason, INFO, i, N_elements, j, FN, FN2, k, FN3, m, Npoints, FN4, count_lines, FN5, FN6, FN7, N_size, N_size2
    character(200) :: File_name, File_name2, File_name3, File_name4, File_name5
    character(200) :: chemical_formula, Error_descript, Path, folder_photons, file_photons, command, file_interpolated, File_DOS
+   character(1200) :: Error_descript_extended
    character, pointer :: path_sep
    logical :: file_exist, file_opened, read_well
    integer, pointer :: Ntargets
    path_sep => numpar%path_sep
    
    ! 0) Check if the ENDL databases are present, and get their addresses:
-   call Check_EPICS2017(path_sep, File_name, File_name2, INFO, Error_descript)	! below
+   call Check_EPICS_database(path_sep, File_name, File_name2, INFO, Error_descript)	! below
    if (INFO /= 0) then	! there was some error with the ENDL databases
       ! print out the error into the log file:
       call Save_error_details(Err, 1, Error_descript)	! module "Objects"
-      print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
-      goto 9992	! skip executing the program, exit the subroutin
+      !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+      Error_descript_extended = trim(adjustl(Error_descript))//' TREKIS terminates. '// &
+      'Please download the EPICS databases (EADL2023.ALL and EPDL2023.ALL) from https://nds.iaea.org/epics/ '// &
+      'or  http://redcullen1.net/HOMEPAGE.NEW/index.htm '// &
+      'and place them into the directory: INPUT_DATA\Atomic_parameters'
+      call print_error(Error_descript_extended)   ! module "Little_subroutines"
+      goto 9992	! skip executing the program, exit the subroutine
    endif
    
    print*, 'Deciphering the chemical formula of the target, reading periodic table...'
@@ -127,7 +134,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       if (.not.file_exist) then
          Error_descript = 'Folder '//trim(adjustl(Path))//' not found'
          call Save_error_details(Err, 1, Error_descript)	! module "Objects"
-         print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+         call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif
       ! Folder with the particular material:
@@ -136,7 +145,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       if (.not.file_exist) then
          Error_descript = 'Folder '//trim(adjustl(Path))//' not found'
          call Save_error_details(Err, 1, Error_descript)	! module "Objects"
-         print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+         call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif
       ! Check if the file with the given name is present:
@@ -145,7 +156,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       if (.not.file_exist) then
          Error_descript = 'File '//trim(adjustl(File_name3))//' not found'
          call Save_error_details(Err, 1, Error_descript)	! module "Objects"
-         print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+         call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif
       open(newunit = FN, FILE = trim(adjustl(File_name3)), status = 'old', action='read')
@@ -186,7 +199,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       call Decompose_compound(Path, chemical_formula, path_sep, INFO, Error_descript, at_num=N_elements, at_numbers=Zat, at_percentage=at_percentage, at_short_names=at_short_names, at_masses=at_masses, at_NVB=at_NVB)	! module "Periodic_table"
       if (INFO /= 0) then
          call Save_error_details(Err, 4, Error_descript)	! module "Objects"
-         print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+         call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif
       ! Now we know how many elements are in this material of the target componen:
@@ -242,7 +257,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
                ! print out the error into the log file:
                Error_descript = 'Error while reading EADL file: '//trim(adjustl(File_name))
                call Save_error_details(Err, 2, Error_descript)	! module "Objects"
-               print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+               !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+               Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+               call print_error(Error_descript_extended)   ! module "Little_subroutines"
                goto 9992	! skip executing the program, exit the subroutin
             endif
             ! Save the data into arrays:
@@ -303,7 +320,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
          INFO = 2
          Error_descript = 'Could not open EADL database from: '//trim(adjustl(File_name))
          call Save_error_details(Err, 2, Error_descript)	! module "Objects"
-         print*, trim(adjustl(Error_descript))//', TREKIS terminates'
+         !print*, trim(adjustl(Error_descript))//', TREKIS terminates'
+         Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+         call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif
       
@@ -471,7 +490,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
          INFO = 2
          Error_descript = 'Could not open EPDL database from: '//trim(adjustl(File_name2))
          call Save_error_details(Err, 2, Error_descript)	! module "Objects"
-         print*, trim(adjustl(Error_descript))//', TREKIS terminates'
+         !print*, trim(adjustl(Error_descript))//', TREKIS terminates'
+         Error_descript_extended = trim(adjustl(Error_descript))//', TREKIS terminates'
+         call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif ! (file_opened)
       print*, 'EPDL database read successfully.'
@@ -973,7 +994,7 @@ end subroutine read_CDF_from_file
 
 
 
-subroutine Check_EPICS2017(path_sep, File_name, File_name2, INFO, Error_descript)
+subroutine Check_EPICS_database(path_sep, File_name, File_name2, INFO, Error_descript)
     character(1), intent(in) :: path_sep
     character(200), intent(inout) :: File_name
     character(200), intent(inout) :: File_name2
@@ -997,7 +1018,7 @@ subroutine Check_EPICS2017(path_sep, File_name, File_name2, INFO, Error_descript
        write(Error_descript,'(a,a,a)') 'File ',trim(adjustl(File_name2)),' is not found.'
        INFO = 2
     endif
-end subroutine Check_EPICS2017
+end subroutine Check_EPICS_database
 
 
 !DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD

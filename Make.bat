@@ -67,14 +67,14 @@ cd Source_files
          echo Started at: %date% %time%
          echo %Starline%
          
-         ifx.exe -c  /F9999999999 /QxHost /QaxAVX  /fpp /Qopenmp /D OMP_inside /Qmkl=parallel /real-size:64 /debug:all /Od /check:all /traceback /gen-interfaces /warn:interfaces /check:bounds /fpe:0 /Qfp-stack-check /fp:precise /Qvec  %List_of_files% /standard-semantics
+         ifx.exe -c  /F9999999999 /QxHost /QaxAVX  /fpp /Qopenmp /Qmkl=parallel /real-size:64 /debug:all /Od /check:all /traceback /gen-interfaces /warn:interfaces /check:bounds /fpe:0 /Qfp-stack-check /fp:precise /Qvec  %List_of_files% /standard-semantics
 
          echo %Starline%
          echo Assembling compiled modules into an executable: %Program_name%
          echo Started at: %date% %time%
          echo %Starline%
            
-         ifx.exe /F9999999999 /QxHost /QaxAVX  /fpp /Qopenmp /D OMP_inside /Qmkl=parallel /real-size:64 /debug:all /Od /check:all /traceback /gen-interfaces /warn:interfaces /check:bounds /fpe:0 /Qfp-stack-check /fp:precise /Qvec  *.obj   /exe:!Program_name! /standard-semantics
+         ifx.exe /F9999999999 /QxHost /QaxAVX  /fpp /Qopenmp /Qmkl=parallel /real-size:64 /debug:all /Od /check:all /traceback /gen-interfaces /warn:interfaces /check:bounds /fpe:0 /Qfp-stack-check /fp:precise /Qvec  *.obj   /exe:!Program_name! /standard-semantics
 
       ) ELSE (
          IF /I %arg1%==FAST (
@@ -86,14 +86,14 @@ cd Source_files
             echo %Starline%
 
             :: List compiler options
-            ifx.exe -c /F9999999999 /fpp /Qopenmp /D OMP_inside /Qmkl=parallel /real-size:64 /Od /fpe:0 /fp:precise /Qvec %List_of_files% /standard-semantics
+            ifx.exe -c /F9999999999 /fpp /Qopenmp /Qmkl=parallel /real-size:64 /Od /fpe:0 /fp:precise /Qvec %List_of_files% /standard-semantics
 
             echo %Starline%
             echo Assembling compiled modules into an executable: %Program_name%
             echo Started at: %date% %time%
             echo %Starline%
 
-            ifx.exe /F9999999999 /fpp /Qopenmp /D OMP_inside /Qmkl=parallel /real-size:64 /Od /fpe:0 /fp:precise /Qvec *.obj   /exe:!Program_name! /standard-semantics
+            ifx.exe /F9999999999 /fpp /Qopenmp /Qmkl=parallel /real-size:64 /Od /fpe:0 /fp:precise /Qvec *.obj   /exe:!Program_name! /standard-semantics
 
             del *.pdb
          ) ELSE (
@@ -104,14 +104,14 @@ cd Source_files
             echo Started at: %date% %time%
             echo %Starline%
          
-            ifx.exe -c /F9999999999 /fpp /Qopenmp /D OMP_inside /Qmkl=parallel  /Ot /O3 /Qvec /Qipo /real-size:64 /QxHost /QaxAVX  %List_of_files% /standard-semantics
+            ifx.exe -c /F9999999999 /fpp /Qopenmp /Qmkl=parallel  /Ot /O3 /Qvec /Qipo /real-size:64 /QxHost /QaxAVX  %List_of_files% /standard-semantics
           
             echo %Starline%
             echo Assembling compiled modules into an executable: %Program_name%
             echo Started at: %date% %time%
             echo %Starline%
           
-            ifx.exe /F9999999999 /fpp /Qopenmp /D OMP_inside /Qmkl=parallel  /Ot /O3 /Qvec /Qipo /real-size:64 /MP:4 /QxHost /QaxAVX   *.obj   /exe:!Program_name! /standard-semantics
+            ifx.exe /F9999999999 /fpp /Qopenmp /Qmkl=parallel  /Ot /O3 /Qvec /Qipo /real-size:64 /MP:4 /QxHost /QaxAVX   *.obj   /exe:!Program_name! /standard-semantics
             del *.pdb
          )
       )

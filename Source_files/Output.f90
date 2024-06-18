@@ -7,7 +7,7 @@
 MODULE Output
 
 ! Open_MP related modules from external libraries:
-#ifdef OMP_inside
+#ifdef _OPENMP
    USE IFLPORT
    USE OMP_LIB
 #endif
@@ -19,7 +19,7 @@ use Dealing_with_XYZ_files, only: write_XYZ
 use Dealing_with_LAMMPS, only: Write_LAMMPS_input_file
 use Gnuplotting
 use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy
-use Read_input_data, only: m_input_data, m_numerical_parameters, m_input_folder, m_databases ! use the names of input data files
+use Read_input_data, only: m_input_data, m_numerical_parameters, m_input_folder, m_databases, m_starline
 use Periodic_table, only : Atomic_data, Read_from_periodic_table
 use Initial_conditions, only: count_types_of_SHIs, repeated_type
 use CS_general_tools, only: get_ranges_from_Se
@@ -27,7 +27,6 @@ use CS_general_tools, only: get_ranges_from_Se
 implicit none
 
 ! In this module, all output file names are collected:
-character(100) :: m_starline    ! use this line throughout the module to separate different entries into the output files
 character(200) :: m_output_parameters, m_communication, m_output_DOS, m_output_DOS_k, m_output_DOS_effm
 character(200) :: m_folder_MFP, m_output_MFP, m_output_IMFP, m_output_EMFP, m_output_Brems, m_output_annihil
 character(200) :: m_output_Compton, m_output_Rayleigh, m_output_pair, m_output_absorb
@@ -74,6 +73,11 @@ character(200) :: m_output_MD_velocities
 character(200) :: m_output_MCMD
 character(200) :: m_output_MD_LAMMPS
 character(200) :: m_output_MD_displacements
+
+
+! code version:
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 18.06.2024)'
+
 
 ! All output file names:
 parameter (m_output_parameters = '!OUTPUT_parameters.txt')
@@ -197,7 +201,7 @@ parameter (m_output_annihil = 'OUTPUT_Annihilation_MFPs_')
 parameter (m_output_Range = 'OUTPUT_Ranges_')
 parameter (m_output_Se = 'OUTPUT_Stopping_')
 parameter (m_output_Se_vs_range = 'OUTPUT_Se_vs_range_')
-parameter (m_starline = '******************************************************************')
+
 
  contains
 
@@ -2558,7 +2562,7 @@ subroutine printout_Se_and_ranges(used_target, numpar, bunch)
          if (.not.file_exist) then ! to make sure that such a folder is present (even if empty)
             ! Create a new directory for output files:
             command='mkdir '//trim(adjustl(Path))  ! to create a folder use this command
-#ifdef OMP_inside
+#ifdef _OPENMP
             iret = system(command)   ! create the folder
 #else
             call system(command)   ! create the folder
@@ -2943,7 +2947,7 @@ subroutine printout_MFPs(used_target, numpar, bunch)
          if (.not.file_exist) then ! to make sure that such a folder is present (even if empty)
             ! Create a new directory for output files:
             command='mkdir '//trim(adjustl(Path))  ! to create a folder use this command
-#ifdef OMP_inside
+#ifdef _OPENMP
             iret = system(command)   ! create the folder
 #else
             call system(command)   ! create the folder
@@ -3934,7 +3938,7 @@ subroutine execute_all_gnuplots(numpar, out_path)
    else ! linux:
       command = "ls -t "//trim(adjustl(output_path))//" | grep '"//trim(adjustl(sh_cmd))//"' >"//trim(adjustl(File_name))
    endif
-#ifdef OMP_inside
+#ifdef _OPENMP
    iret = system(trim(adjustl(command)))   ! execute the command to save file names in the temp file
 #else
    call system(trim(adjustl(command))) ! execute the command to save file names in the temp file
@@ -3961,7 +3965,7 @@ subroutine execute_all_gnuplots(numpar, out_path)
    call close_file('delete',FN=FN) ! temp file is not needed anymore, erase it
    
    ! Execute all the gnuplot scripts:
-#ifdef OMP_inside
+#ifdef _OPENMP
    idir = chdir(trim(adjustl(output_path))) ! go into the directory with output files
 #else
    call chdir(trim(adjustl(output_path))) ! go into the directory with output files
@@ -3969,7 +3973,7 @@ subroutine execute_all_gnuplots(numpar, out_path)
 
    if (numpar%path_sep == '\') then	! if it is Windows
       do i = 1,N_f  ! execute all gnuplot scripts (for all targets)
-#ifdef OMP_inside
+#ifdef _OPENMP
          iret = system( '@echo off' )   ! create the folder
          iret = system(trim(adjustl(call_slash))//' '//trim(adjustl(All_files(i))))   ! create the folder
 #else
@@ -3980,7 +3984,7 @@ subroutine execute_all_gnuplots(numpar, out_path)
       enddo
    else ! linux:
       do i = 1,N_f  ! execute all gnuplot scripts (for all targets)
-#ifdef OMP_inside
+#ifdef _OPENMP
          iret = system( '#!/bin/bash' )
          iret = system(trim(adjustl(call_slash))//trim(adjustl(All_files(i))))
 #else
@@ -3995,7 +3999,7 @@ subroutine execute_all_gnuplots(numpar, out_path)
    ! Defined by the number of slashes in the path given:
    n_slash = count( (/ (trim(adjustl(output_path(i:i))), i=1,len_trim(output_path)) /) == trim(adjustl(numpar%path_sep)) )
    do i = 1, n_slash+1  ! go up in the directory tree as many times as needed
-#ifdef OMP_inside
+#ifdef _OPENMP
       idir = chdir("../")    ! exit the directory with output files
 #else
       call chdir("../")    ! exit the directory with output files
@@ -4073,7 +4077,7 @@ subroutine make_output_folder(used_target, numpar, bunch)
    
    ! Create a new directory for output files:
    command='mkdir '//trim(adjustl(File_name2))	! to create a folder use this command
-#ifdef OMP_inside
+#ifdef _OPENMP
    iret = system(trim(adjustl(command)))    ! create the folder
 #else
    CALL system(command)	! create the folder
@@ -4201,7 +4205,7 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       write(print_to,'(a,a)') ' TTM module is off (x)'
    endif
 
-#ifdef OMP_inside
+#ifdef _OPENMP
    write(text1,'(i10)') numpar%NOMP
    write(print_to,'(a,a)') ' Number of threads for OPENMP: ', trim(adjustl(text1))
 #else ! if you set to use OpenMP in compiling: 'make OMP=no'
@@ -4756,7 +4760,7 @@ subroutine act_on_communication(read_well, given_line, given_num, numpar, time)
          write(temp1,'(f12.3)') time
          write(temp2,'(i10)') INT(given_num)
          
-#ifdef OMP_inside
+#ifdef _OPENMP
          noth = OMP_GET_MAX_THREADS()   ! to chech if the function worked
          call set_OMP_number( numpar%NOMP, .true., 6, 'Reset number of threads in OpenMP to '//trim(adjustl(temp2)) )    ! below
          if ( noth /= OMP_GET_MAX_THREADS() ) then
@@ -4786,7 +4790,7 @@ subroutine set_OMP_number(NOMP, prnt, FN, lin)
    !------------------------------------
    character(10) :: temp2
    
-#ifdef OMP_inside
+#ifdef _OPENMP
    call OMP_SET_DYNAMIC(0) ! standard openmp subroutine
    if (NOMP <= 0) then ! use all available processors / threads:
       NOMP = OMP_GET_MAX_THREADS() ! number of threads for openmp defined in INPUT_PARAMETERS.txt
@@ -4812,6 +4816,25 @@ subroutine set_OMP_number(NOMP, prnt, FN, lin)
 end subroutine set_OMP_number
 
 
+
+
+subroutine print_TRKEIS4_lable(print_to)
+   integer, intent(in) :: print_to
+   !------------------
+   write(print_to, '(a)') trim(adjustl(m_starline))
+   write(print_to, '(a)') '        _______   ____    _____   _   _   _     ___         '
+   write(print_to, '(a)') '       |__   __| |  _ \  |  ___| | | / / | |   / __|    __  '
+   write(print_to, '(a)') '          | |    | |_) ) | |___  | |/ /  | |  ( (      /  | '
+   write(print_to, '(a)') '          | |    |  _ (  |  ___| |   (   | |   \ \    /   | '
+   write(print_to, '(a)') '          | |    | | \ \ | |___  | |\ \  | |  __) )  / /| | '
+   write(print_to, '(a)') '          |_|    |_| |_| |_____| |_| \_\ |_| |___/  / /_| | '
+   write(print_to, '(a)') '                                                    |___  | '
+   write(print_to, '(a)') '                                                        |_| '
+   write(print_to, '(a)') trim(adjustl(m_starline))
+   write(print_to, '(a)') '       TREKIS: Time-REsolved Kinetics in Irradiated Solids'
+   write(print_to, '(a)') '       '//trim(adjustl(m_TREKIS_version))
+   write(print_to, '(a)') trim(adjustl(m_starline))
+end subroutine print_TRKEIS4_lable
 
 
 subroutine pars_communications_old(readline, out_line, out_num, read_well)

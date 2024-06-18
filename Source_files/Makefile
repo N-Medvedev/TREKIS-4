@@ -21,7 +21,7 @@ else ifeq ($(c),if13)
 	ifneq (${OMP},) # OMP=no means no omp
 		F90FLAGS = -mkl
 	else  # there is omp by default
-		F90FLAGS = -qopenmp -D OMP_inside
+		F90FLAGS = -qopenmp
 		F90FLAGS += -mkl=parallel
 	endif
 	
@@ -40,7 +40,7 @@ else
 	ifneq (${OMP},) # OMP=no means no omp
 		F90FLAGS = -mkl
 	else  # there is omp by default
-		F90FLAGS = -qopenmp -D OMP_inside
+		F90FLAGS = -qopenmp
 		F90FLAGS += -mkl=parallel
 	endif
 	

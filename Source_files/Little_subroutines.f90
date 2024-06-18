@@ -12,8 +12,14 @@ use Universal_constants, only : g_Pi, g_h, g_e
 implicit none
 
 real(8) :: m_Pi_6
+character(100) :: m_starline, m_dashline, m_eqvlline
+
 
 parameter (m_Pi_6 = (g_Pi/6.0d0)**(1.0d0/3.0d0))
+parameter (m_starline = '******************************************************************')
+parameter (m_dashline = '------------------------------------------------------------------')
+parameter (m_eqvlline = '==================================================================')
+
 
 ! this interface finds by itself which of the two subroutine to use depending on the parameters passed:
 interface extend_array_size ! extend array size by factor of 2
@@ -64,9 +70,27 @@ end interface grid_count
 
 
 ! private :: ! hides items not listed on public statement 
-public :: Find_in_array, Find_in_array_monoton, extend_array_size, find_order_of_number, sort_array_bubble, extend_array_size_by_one
+public :: Find_in_array, Find_in_array_monoton, extend_array_size, find_order_of_number, sort_array_bubble, extend_array_size_by_one, print_error
 
  contains
+
+
+subroutine print_error(text_to_print, print_to) ! wrapper for error message printout
+   character(*), intent(in) :: text_to_print ! error message to printout
+   integer, optional, intent(in) :: print_to ! file number to print it into
+   !----------------------
+   integer :: FN
+   if (present(print_to)) then
+      FN = print_to
+   else ! default: print on the screen
+      FN = 6
+   endif
+
+   write(FN, '(a)') trim(adjustl(m_eqvlline))
+   write(FN, '(a)') '         ERROR:'
+   write(FN, '(a)') trim(adjustl(text_to_print))
+   write(FN, '(a)') trim(adjustl(m_eqvlline))
+end subroutine print_error
 
 
 
