@@ -1,5 +1,5 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! TREKIS: Time-REsolved Kinetics in Irradiated Solids
+! TREKIS-4: Time-REsolved Kinetics in Irradiated Solids
 ! The code is written in 2018 - 2021 by
 ! N. Medvedev, R. Rymzhanov, F. Akhmetov, R. Voronkov...
 ! 

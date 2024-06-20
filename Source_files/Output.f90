@@ -1,5 +1,9 @@
+! 0000000000000000000000000000000000000000000000000000000000000
+! This file is part of TREKIS-4
+! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
+! and R. Rymzhanov
 ! in 2018-2021
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to create output files:
@@ -4111,6 +4115,27 @@ end subroutine make_output_folder
  
 !===================================================
 ! Printing out the title of the program:
+subroutine print_TRKEIS4_lable(print_to)
+   integer, intent(in) :: print_to
+   !------------------
+   write(print_to, '(a)') trim(adjustl(m_starline))
+   write(print_to, '(a)') '        _______   ____    _____   _   _   _    ___          '
+   write(print_to, '(a)') '       |__   __| |  _ \  |  ___| | | / / | |  / __|     __  '
+   write(print_to, '(a)') '          | |    | |_) ) | |___  | |/ /  | | ( (_      /  | '
+   write(print_to, '(a)') '          | |    |    /  |  ___| |   (   | |  \_ \    /   | '
+   write(print_to, '(a)') '          | |    | |\ \  | |___  | |\ \  | |  __) )  / /| | '
+   write(print_to, '(a)') '          |_|    |_| \_\ |_____| |_| \_\ |_| |___/  / /_| | '
+   write(print_to, '(a)') '                                                   |____  | '
+   write(print_to, '(a)') '                                                        |_| '
+   write(print_to, '(a)') trim(adjustl(m_starline))
+   write(print_to, '(a)') '       TREKIS: Time-REsolved Kinetics in Irradiated Solids'
+   write(print_to, '(a)') '       '//trim(adjustl(m_TREKIS_version))
+   write(print_to, '(a)') '       Available at https://github.com/N-Medvedev/TREKIS-4'
+   write(print_to, '(a)') trim(adjustl(m_starline))
+end subroutine print_TRKEIS4_lable
+
+
+
 subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce, MD_pots, do_lable)
    integer, intent(in) :: print_to ! the screen, or file
    type(Matter), intent(in) :: used_target	! parameters of the target
@@ -4823,26 +4848,6 @@ subroutine set_OMP_number(NOMP, prnt, FN, lin)
 #endif
 end subroutine set_OMP_number
 
-
-
-subroutine print_TRKEIS4_lable(print_to)
-   integer, intent(in) :: print_to
-   !------------------
-   write(print_to, '(a)') trim(adjustl(m_starline))
-   write(print_to, '(a)') '        _______   ____    _____   _   _   _    ___          '
-   write(print_to, '(a)') '       |__   __| |  _ \  |  ___| | | / / | |  / __|     __  '
-   write(print_to, '(a)') '          | |    | |_) ) | |___  | |/ /  | | ( (_      /  | '
-   write(print_to, '(a)') '          | |    |    /  |  ___| |   (   | |  \_ \    /   | '
-   write(print_to, '(a)') '          | |    | |\ \  | |___  | |\ \  | |  __) )  / /| | '
-   write(print_to, '(a)') '          |_|    |_| \_\ |_____| |_| \_\ |_| |___/  / /_| | '
-   write(print_to, '(a)') '                                                   |____  | '
-   write(print_to, '(a)') '                                                        |_| '
-   write(print_to, '(a)') trim(adjustl(m_starline))
-   write(print_to, '(a)') '       TREKIS: Time-REsolved Kinetics in Irradiated Solids'
-   write(print_to, '(a)') '       '//trim(adjustl(m_TREKIS_version))
-   write(print_to, '(a)') '       Available at: https://github.com/N-Medvedev/TREKIS-4'
-   write(print_to, '(a)') trim(adjustl(m_starline))
-end subroutine print_TRKEIS4_lable
 
 
 subroutine pars_communications_old(readline, out_line, out_num, read_well)

@@ -1,3 +1,6 @@
+# 0000000000000000000000000000000000000000000000000000000000000
+# This file is part of TREKIS-4
+# available at: https://github.com/N-Medvedev/TREKIS-4
 # The makefile calles for another makefile within Source_files directory
 # which compiles and makes an executable called TREKIS.x
 # This file was written by N.Medvedev 
