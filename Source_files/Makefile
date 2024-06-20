@@ -1,6 +1,9 @@
+# 0000000000000000000000000000000000000000000000000000000000000
+# This file is part of TREKIS-4
+# available at: https://github.com/N-Medvedev/TREKIS-4
 # The makefile compiles (type make) and makes an executable called TREKIS.x
 # This file was written by N.Medvedev 
-# in 2018-2022
+# in 2018-2024
 #----------------------------------------------------- 
 
 EXEPATH = .
@@ -11,10 +14,10 @@ LD = ld
 # choose the compiles among gfortran, gfortran6.1.0, ifort2011, ifort2013
 ifeq ($(c),gf)
 	F90 = gfortran
-	F90FLAGS = -ffree-line-length-0
+	F90FLAGS = -ffree-line-length-0 -fdec-format-defaults -cpp -fdefault-real-8 -fdefault-double-8 -O2
 else ifeq ($(c),gf6)
 	F90 = gfortran6.1.0
-	F90FLAGS = -ffree-line-length-0
+	F90FLAGS = -ffree-line-length-0 -fdec-format-defaults -cpp -fdefault-real-8 -fdefault-double-8 -O2
 else ifeq ($(c),if13)
 	F90 = ifort2013
 	

@@ -1,3 +1,6 @@
+! 0000000000000000000000000000000000000000000000000000000000000
+! This file is part of TREKIS-4
+! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
 ! in 2018-2020
@@ -458,7 +461,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
    endif
    
    !==================================================
-   ! Skipe line
+   ! skip line
    read(FN,*,IOSTAT=Reason) !::: MODEL PARAMETERS FOR CDF :::
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
