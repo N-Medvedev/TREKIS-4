@@ -1,4 +1,7 @@
-# TREKIS-4
+![TRKEIS_4_logo_small](https://github.com/N-Medvedev/TREKIS-4/assets/104917286/be4f6483-de9b-4a05-b0c7-d2d978b06048)
+
+## TREKIS-4
+
  Time-REsolved Kinetics in Irradiated Solids
 
 A hybrid code combining Monte Carlo and molecular dynamics simulation of the effects of radiation impact on matter. It can model swift-heavy ion, photon, electron or positron impacts.
