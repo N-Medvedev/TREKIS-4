@@ -1,5 +1,7 @@
 ![TRKEIS_4_logo_small](https://github.com/N-Medvedev/TREKIS-4/assets/104917286/be4f6483-de9b-4a05-b0c7-d2d978b06048)
 
+[![DOI](https://zenodo.org/badge/490267082.svg)](https://zenodo.org/doi/10.5281/zenodo.12591763)
+
 ## TREKIS-4
 
  Time-REsolved Kinetics in Irradiated Solids
