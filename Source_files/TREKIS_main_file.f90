@@ -42,7 +42,7 @@ implicit none
 
 !--------------------------------------------------------------
 ! Print the title on the screen:
-call print_TRKEIS4_lable(6) ! module "Output"
+call print_TREKIS4_label(6) ! module "Output"
 !--------------------------------------------------------------
 
 
