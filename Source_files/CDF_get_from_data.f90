@@ -220,7 +220,8 @@ subroutine get_CDF(numpar, used_target, Err)
             allocate(used_target%Material(i)%Ph_absorption_valent%Total_MFP(Nsiz))
             ! Check file with CSs:
             inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
-            if (file_exist) then	! just read from the file, no need to recalculate:
+            !if (file_exist) then	! just read from the file, no need to recalculate:
+            if ( (file_exist) .and. (.not.numpar%recalculate_MFPs) ) then ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
                ! Get the cross section points:
                count_lines = 0
@@ -234,7 +235,7 @@ subroutine get_CDF(numpar, used_target, Err)
                   endif
                enddo
             else	! no such file => create it
-8391        open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+8391           open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                if (.not.allocated(lambda)) allocate(lambda(Nsiz))
                lambda = 1.0d30  ! to start with
                do m = 1, Nsiz	! for all energy grid points:
@@ -346,10 +347,12 @@ subroutine get_CDF(numpar, used_target, Err)
          ! E0 is set at plasma frequency:
          !used_target%Material(i)%CDF_phonon%E0(1) = sqrt((g_h/g_e)*(g_h/g_e) * Omega)
          !used_target%Material(i)%CDF_phonon%E0(1) = used_target%Material(i)%Edebye
-         ! Set it at Einstein frequency:
-         used_target%Material(i)%CDF_phonon%E0(1) = used_target%Material(i)%E_eistein   ! [eV]
-         ! Gamma set equal to 0.1*E0 (empirical approximation):
-         used_target%Material(i)%CDF_phonon%Gamma(1) = used_target%Material(i)%CDF_phonon%E0(1) * 0.1d0
+         ! Set it at [2 x Einstein frequency]:
+         used_target%Material(i)%CDF_phonon%E0(1) = 2.0d0 * used_target%Material(i)%E_eistein   ! [eV]
+
+         ! Gamma set equal to 0.5*E0 (empirical approximation):
+         used_target%Material(i)%CDF_phonon%Gamma(1) = used_target%Material(i)%CDF_phonon%E0(1) * 0.5d0
+
          ! A is set vie normalization (sum rule):
          used_target%Material(i)%CDF_phonon%A(1) = 1.0d0   ! just to get sum rule to renormalize below
          Omega = w_plasma( 1d6*used_target%Material(i)%At_Dens/dble(SUM(used_target%Material(i)%Elements(:)%percentage)), &

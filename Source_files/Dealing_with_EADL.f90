@@ -566,7 +566,7 @@ subroutine find_shell_by_designator(shl_dsgntr, sch_array, shl_num)
    integer, intent(in) :: shl_dsgntr	! shell designator
    integer, dimension(:), intent(in) :: sch_array	! array of all designators
    integer, intent(out) :: shl_num	! shell number in arrays
-   call Find_in_array_monoton(dble(sch_array), dble(shl_dsgntr), shl_num)	! module "Little_subroutines"
+   call Find_in_array_monoton(dble(sch_array), dble(shl_dsgntr), shl_num)    ! module "Little_subroutines"
 end subroutine find_shell_by_designator
 
 

@@ -925,6 +925,7 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
       else  ! effective mass from DOS
          call interpolate_data_single(DOS%E, DOS%Eff_m, (DOS%E_VB_top - Ekin), mass_temp) ! module "Little_subroutines"
          M_in = mass_temp * g_me
+         !print*, 'M_eff:', Ekin, mass_temp, DOS%E_VB_top - Ekin
       endif
       ! Incident particle mass in the energy units:
       Mc2 = rest_energy(M_in)   ! module "Relativity"

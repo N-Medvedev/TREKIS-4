@@ -323,7 +323,7 @@ subroutine construct_free_electron_DOS(DOS)
          DOS%DOS(i) = sqrt(abs(DOS%E(i) - DOS%E_f))
       enddo
       ! Find the point on the grid where the conduction band starts:
-      call Find_in_array_monoton(DOS%E, E_CB_bottom, DOS%N_CB_bottom)  ! module "Little_subroutines"
+      call Find_in_array_monoton(DOS%E, E_CB_bottom, DOS%N_CB_bottom, from_above=.true.)  ! module "Little_subroutines"
       do i = DOS%N_CB_bottom, size(DOS%E)    ! CB is filled from bottom to top
          DOS%DOS(i) = sqrt(abs(DOS%E(i) - E_CB_bottom))
       enddo

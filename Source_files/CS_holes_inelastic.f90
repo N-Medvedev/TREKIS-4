@@ -122,7 +122,7 @@ subroutine get_hole_IMFP(Material, numpar, Err)
               Material(i)%H_inelastic_total%Total_MFP(m) = MFP_from_sigma(Material(i)%H_inelastic_total%Total(m),  Material(i)%At_Dens) ! [A] module "CS_general_tools"
             enddo
          else	! no such file => create it
-8391     open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+8391        open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
             do m = 1, Ngrid	! for all energy grid points:
                E => Material(i)%H_inelastic_total%E(m)	! electron energy [eV]
                call get_h_inelastic_CS(E, Material(i), Material(i)%DOS, numpar, j, k, Material(i)%DOS%Egap, sigma, CDF_dispers=numpar%CDF_dispers, Se=Se)	! see below
