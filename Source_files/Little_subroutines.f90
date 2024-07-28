@@ -168,8 +168,9 @@ pure subroutine create_energy_grid(x_start, x_end, array1d, special_points)
    x_0 = 10.0d0**(deg0-1)	! starting point of the grid
    deg1 = find_order_of_number(x_end) - 1	! function below
    x_1 = 10.0d0**deg1	! ending point of the grid
+
    ! Count how many grid points will be in such a grid:
-   if (present(special_points)) then	! add spectial points to the grid
+   if (present(special_points)) then	! add special points to the grid
       call energy_grid_count(x_0, x_1, deg0, deg1, siz=siz, special_points=special_points)	! below
    else ! no special points, smooth grid
       call energy_grid_count(x_0, x_1, deg0, deg1, siz=siz)	! below
@@ -177,7 +178,7 @@ pure subroutine create_energy_grid(x_start, x_end, array1d, special_points)
    ! Allocate array correspondingly:
    allocate(array1d(siz))
    ! Fill array with grid points:
-   if (present(special_points)) then	! add spectial points to the grid
+   if (present(special_points)) then	! add special points to the grid
       call energy_grid_count(x_0, x_1, deg0, deg1, array1d=array1d, special_points=special_points)	! below
    else ! no special points, smooth grid
       call energy_grid_count(x_0, x_1, deg0, deg1, array1d=array1d)	! below
@@ -208,7 +209,7 @@ pure subroutine energy_grid_count(x_0, x_1, deg0, deg1, array1d, siz, special_po
    x_cur = x_0
    i = deg0
    if (present(array1d)) array1d(k) = x_cur
-   MN:do while (x_cur < x_1)
+   MN:do while (x_cur <= x_1)
       k = k + 1
       if (x_cur < 0.01d0) then
          dx = 10.0d0**(find_order_of_number(x_cur)-2)	! function below
@@ -219,6 +220,8 @@ pure subroutine energy_grid_count(x_0, x_1, deg0, deg1, array1d, siz, special_po
       else
          dx = 10.0d0**(find_order_of_number(x_cur)-2)	! function below
       endif
+
+      !print*, k, x_cur, dx, x_1
       
       ! Check if we need a finer grid around special points:
       if (present(special_points)) then
@@ -849,14 +852,24 @@ end function SASE_pulse
 
 
 
-subroutine interpolate_data_single(given_array_x, given_array_y, x_value_in, y_value_out, x0, y0)
+subroutine interpolate_data_single(given_array_x, given_array_y, x_value_in, y_value_out, x0, y0, printout)
    real(8), dimension(:), intent(in) :: given_array_x, given_array_y
    real(8), intent(in) :: x_value_in    ! value of x, corresponging to which the value of y should be interpolated
    real(8), intent(out) :: y_value_out  ! interpolated value
    real(8), intent(in), optional :: x0, y0 ! assume value for extrapolation outside of the array
+   logical, intent(in), optional :: printout ! additional info for testing purposes
+   !-------------------
    integer :: i_closest
+   logical :: do_printout
+   if (present(printout)) then
+      do_printout = printout
+   else  ! default
+      do_printout = .false.
+   endif
+
    y_value_out = 0.0d0  ! initiate to start
-   call Find_in_array_monoton(given_array_x,  x_value_in, i_closest)	! see below   
+   call Find_in_array_monoton(given_array_x,  x_value_in, i_closest, from_above=.true.)	! see below
+
    if (present(x0) .and. present(y0)) then
       call linear_interpolation(given_array_x, given_array_y, x_value_in, y_value_out, i_closest, x0, y0)	! see below
    elseif (present(x0)) then
@@ -882,10 +895,12 @@ subroutine interpolate_data_on_grid(given_array_x, given_array_y, given_grid, ar
    !N = min(size(given_grid), size(array_to_fill), size(given_array_x))
    N = min(size(given_grid), size(array_to_fill))
 
-!    print*, 'interpolate_data_on_grid', N, size(given_array_x)
+   !print*, 'interpolate_data_on_grid', N, size(given_array_x), size(given_grid)
 
    do i = 1, N
-      call Find_in_array_monoton(given_array_x,  given_grid(i), i_closest)	! see below
+      call Find_in_array_monoton(given_array_x, given_grid(i), i_closest)	! see below
+      !print*, i, given_grid(i), i_closest, size(given_array_x)
+      !print*, given_array_x(i_closest)
       if (given_grid(i) >= given_array_x(i_closest)) then
          if (i_closest > 1) then
             do while (ABS(given_array_x(i_closest) - given_array_x(i_closest-1)) < eps) ! exclude the same value
@@ -1072,12 +1087,29 @@ pure subroutine Find_in_2D_array(Array, Value, Indx, Number)
    Number = i
 end subroutine Find_in_2D_array
 
-subroutine Find_in_monotonous_1D_array(Array, Value0, Number)
+
+subroutine Find_in_monotonous_1D_array(Array, Value0, Number, from_above, printout)
    REAL(8), dimension(:), INTENT(in) :: Array ! in which we are looking for the Value
    REAL(8), INTENT(in) :: Value0   ! to be found in the array as near as possible
    integer, INTENT(out) :: Number ! number of the element which we are looking for 
+   logical, intent(in), optional :: from_above  ! get the closest point from above or from below
+   logical, intent(in), optional :: printout ! printout for testing
+   !-----------------------------
    integer i, N, i_cur, i_1, i_2, coun
    real(8) temp_val, val_1, val_2
+   logical :: do_from_above, do_printout
+
+   if (present(from_above)) then
+      do_from_above = from_above
+   else  ! default
+      do_from_above = .false.
+   endif
+
+   if (present(printout)) then
+      do_printout = printout
+   else ! default
+      do_printout = .false.
+   endif
 
    if (isnan(Value0)) then
         print*, 'The subroutine Find_in_monotonous_1D_array'
@@ -1105,6 +1137,9 @@ subroutine Find_in_monotonous_1D_array(Array, Value0, Number)
                 i_cur = FLOOR((i_1+i_2)/2.0)
                 temp_val = Array(i_cur)
                 coun = coun + 1
+
+                if (do_printout) print*, coun, i_cur, i_1, i_2, Value0, Array(i_cur), Array(i_cur+1)
+
                 if (coun .GT. 1e3) then
                     print*, 'PROBLEM WITH CONVERGANCE IN'
                     print*, 'Find_in_monotonous_1D_array', coun
@@ -1114,8 +1149,17 @@ subroutine Find_in_monotonous_1D_array(Array, Value0, Number)
            enddo
        endif
    endif    ! isnan
-   Number = i_cur
+
+   if (do_from_above) then
+      Number = i_cur+1  ! closest point from above
+      if (Number > N) Number = N ! make sure it is within array bounds
+   else ! default
+      Number = i_cur    ! closest point from below
+   endif
+
+   !print*, 'Find_in_monotonous_1D_array', Number, i_cur, N
 end subroutine Find_in_monotonous_1D_array
+
 
 subroutine Find_in_monotonous_2D_array(Array, Value0, Indx, Number)
    REAL(8), dimension(:,:), INTENT(in) :: Array ! in which we are looking for the Value
@@ -1168,7 +1212,7 @@ subroutine Find_in_monotonous_2D_array(Array, Value0, Indx, Number)
            enddo
        endif
    endif    ! isnan
-   Number = i_cur+1
+   Number = i_cur  ! closest point from below
 end subroutine Find_in_monotonous_2D_array
 
 

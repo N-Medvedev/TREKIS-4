@@ -4622,7 +4622,7 @@ subroutine Print_CDF_parameters(print_to, used_target)
       if (allocated(used_target%Material(i)%CDF_phonon%A)) then
          write(print_to,'(a)') 'Phonons, A E0 Gamma alpha'
          do k = 1, size(used_target%Material(i)%CDF_phonon%A)	! all coefficients
-            write(print_to,'(f12.4, f12.4, f12.4, f12.4)') used_target%Material(i)%CDF_phonon%A(k),  used_target%Material(i)%CDF_phonon%E0(k), &
+            write(print_to,'(f16.6, f16.6, f16.6, f16.6)') used_target%Material(i)%CDF_phonon%A(k),  used_target%Material(i)%CDF_phonon%E0(k), &
                                             used_target%Material(i)%CDF_phonon%Gamma(k), used_target%Material(i)%CDF_phonon%alpha(k)
          enddo
       endif

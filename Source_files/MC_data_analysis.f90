@@ -3416,13 +3416,15 @@ subroutine get_size_VB_output(used_target, N_size_VB, NRG_grid_VB)
    N_size_VB = i_DOS    ! set them all equal
 
    ! Allocate the grid for VB spectra:
-   if (present(NRG_grid_VB) .and. .not.allocated(NRG_grid_VB)) then
-      allocate(NRG_grid_VB(i_DOS))
-      ! Set the grid array values:
-      NRG_grid_VB(1) = abs(maxval(used_target%Material(:)%DOS%E_VB_top))
-      do i = 2, i_DOS
-         NRG_grid_VB(i) = NRG_grid_VB(i-1) + dE
-      enddo
+   if (present(NRG_grid_VB)) then
+      if (.not.allocated(NRG_grid_VB)) then
+         allocate(NRG_grid_VB(i_DOS))
+         ! Set the grid array values:
+         NRG_grid_VB(1) = abs(maxval(used_target%Material(:)%DOS%E_VB_top))
+         do i = 2, i_DOS
+            NRG_grid_VB(i) = NRG_grid_VB(i-1) + dE
+         enddo
+      endif
    endif
 
    ! For all targets, define VB grids according to DOSes:
