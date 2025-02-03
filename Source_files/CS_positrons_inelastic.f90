@@ -533,10 +533,12 @@ end function get_integral_inelastic_CS_pos
    case (1:3,5)	! CDF with delta-functions
        VAL2:if ( (Material%Elements(j)%valent(k)) .and. (allocated(Material%CDF_valence%A)) ) then    ! Valence band
          sigma = CDF_total_CS_delta(Pos_inelast,Ee, g_me, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, .false.)    ! module "CDF_delta"
-         if (present(Se)) Se = energy_loss_delta(Pos_inelast,Ee, g_me, 1.0d0, Zeff, Ip, Material%At_Dens, g_me, Material%CDF_valence, .false.) ! module "CDF_delta"
+         if (present(Se)) Se = energy_loss_delta(Pos_inelast,Ee, g_me, 1.0d0, Zeff, Ip, Material%At_Dens, g_me, &
+            Material%CDF_valence, .false., 0) ! module "CDF_delta"
       else VAL2  ! core shells:
          sigma = CDF_total_CS_delta(Pos_inelast,Ee, g_me, Zeff, Ip, Material%At_Dens, Material%Elements(j)%CDF(k), g_me, .false.)    ! module "CDF_delta"
-         if (present(Se)) Se = energy_loss_delta(Pos_inelast,Ee, g_me, 1.0d0, Zeff, Ip, Material%At_Dens, g_me, Material%Elements(j)%CDF(k), .false.) ! module "CDF_delta"
+         if (present(Se)) Se = energy_loss_delta(Pos_inelast,Ee, g_me, 1.0d0, Zeff, Ip, Material%At_Dens, g_me, &
+            Material%Elements(j)%CDF(k), .false., 0) ! module "CDF_delta"
       endif VAL2
    
    case (4)  ! Non-relativistic Ritchie CDF

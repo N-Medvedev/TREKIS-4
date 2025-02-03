@@ -348,6 +348,10 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
 end subroutine get_ion_IMFP
 
 
+
+
+
+
 ! Interface to select the model of SHI inelastic scattering cross section:
 subroutine get_SHI_inelastic_CS(Ekin, ZSHI, MSHI_amu, Material, DOS, numpar, bunch, ibunch, j, k, Ip, sigma, Se)
    real(8), intent(in) :: Ekin ! [eV] SHI kinetic energy
@@ -357,7 +361,7 @@ subroutine get_SHI_inelastic_CS(Ekin, ZSHI, MSHI_amu, Material, DOS, numpar, bun
    type(Density_of_states), intent(in):: DOS	! DOS of the material
    type(Num_par), intent(in) :: numpar	! all numerical parameters
    type(Radiation_param), dimension(:), intent(in) :: bunch	! incomming radiation
-   integer, intent(in) :: ibunch    ! number of kinds of SHI
+   integer, intent(in) :: ibunch    ! index of SHI in the bunch
    integer, intent(in) :: j, k  ! number or element and its shell
    real(8), intent(in) :: Ip    ! [eV] ionization potential or band gap
    real(8), intent(out) :: sigma	! [A^2] cross section
@@ -399,11 +403,13 @@ subroutine get_SHI_inelastic_CS(Ekin, ZSHI, MSHI_amu, Material, DOS, numpar, bun
    
    case (1:3,5) ! CDF with delta-functions
       VAL2:if ( (Material%Elements(j)%valent(k)) .and. (allocated(Material%CDF_valence%A)) ) then    ! Valence band
-         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, .false.)    ! module "CDF_delta"
-         if (present(Se)) Se = energy_loss_delta(SHI_inelast, Ekin, MSHI, dble(ZSHI), Zeff, Ip, Material%At_Dens, g_me, Material%CDF_valence, .false.) ! module "CDF_delta"
+         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, .false., used_SHI=ZSHI)    ! module "CDF_delta"
+         if (present(Se)) Se = energy_loss_delta(SHI_inelast, Ekin, MSHI, dble(ZSHI), Zeff, Ip, Material%At_Dens, g_me, &
+            Material%CDF_valence, .false., ZSHI) ! module "CDF_delta"
       else VAL2  ! core shells:
-         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%Elements(j)%CDF(k), g_me, .false.)    ! module "CDF_delta"
-         if (present(Se)) Se = energy_loss_delta(SHI_inelast, Ekin, MSHI, dble(ZSHI), Zeff, Ip, Material%At_Dens, g_me, Material%Elements(j)%CDF(k), .false.) ! module "CDF_delta"
+         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%Elements(j)%CDF(k), g_me, .false., used_SHI=ZSHI)    ! module "CDF_delta"
+         if (present(Se)) Se = energy_loss_delta(SHI_inelast, Ekin, MSHI, dble(ZSHI), Zeff, Ip, Material%At_Dens, g_me, &
+            Material%Elements(j)%CDF(k), .false., ZSHI) ! module "CDF_delta"
       endif VAL2
    
    case (4) ! non-relativistic CDF Ritchie
@@ -535,7 +541,7 @@ function get_SHI_inelastic_energy_transfer(Ekin, ZSHI, MSHI_amu, Material, DOS, 
 !    do i = 1, 200    ! Testing
 !    RN = dble(i)/200 ! Testing
    
-!    CS_tot = get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, dispers, m_eff, E_right)   ! below
+!    CS_tot = get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, ZSHI, dispers, m_eff, E_right)   ! below
 !    print*, 'SHI', k, CS_tot, CS_total
    CS_tot = CS_total    ! use precalculated value
    
@@ -546,7 +552,7 @@ function get_SHI_inelastic_energy_transfer(Ekin, ZSHI, MSHI_amu, Material, DOS, 
    
       ! Start finding CS:
       E_cur = (E_left + E_right)*0.5d0
-      CS_cur = get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, dispers, m_eff, E_cur)   ! below
+      CS_cur = get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, ZSHI, dispers, m_eff, E_cur)   ! below
    
 !        call get_SHI_inelastic_CS(Ekin, ZSHI, MSHI_amu, Material, DOS, numpar, bunch, ibunch, j, k, Ip, sigma)	! see below
 !       write(*,'(f,f,f,f,f,f)') Ekin, E_cur, CS_cur, CS_sampled, CS_tot, sigma
@@ -570,7 +576,7 @@ function get_SHI_inelastic_energy_transfer(Ekin, ZSHI, MSHI_amu, Material, DOS, 
          endif
          E_cur = (E_left + E_right)*0.5d0
          if (abs(E_left - E_right) < eps) exit  ! precise enough
-         CS_cur = get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, dispers, m_eff, E_cur)   ! below
+         CS_cur = get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, ZSHI, dispers, m_eff, E_cur)   ! below
 !          if (RN > 0.99d0) write(*,'(f,f,f,f,f,f)') Ekin, E_cur, CS_cur, CS_sampled, CS_tot, RN
       enddo
 
@@ -626,7 +632,7 @@ function get_SHI_inelastic_energy_transfer(Ekin, ZSHI, MSHI_amu, Material, DOS, 
 end function get_SHI_inelastic_energy_transfer
 
 
-function get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, dispers, m_eff, Emax) result (sigma)
+function get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SHI_inelast, MSHI, Zeff, ZSHI, dispers, m_eff, Emax) result (sigma)
    real(8) :: sigma	! [A^2] cross section
    real(8), intent(in) :: Ekin	! [eV] electron kinetic energy
    type(Target_atoms), intent(in) :: Material	!material parameters of each target that it's constructed of
@@ -637,6 +643,7 @@ function get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SH
    integer, intent(in) :: SHI_inelast    ! model for the inelastic cross section
    real(8), intent(in) :: MSHI  ! [kg] SHI mass
    real(8), intent(in) :: Zeff  ! effective charge of the incident particle
+   integer, intent(in) :: ZSHI  ! Z atomic number of SHI
    integer, intent(in) :: dispers, m_eff	! dispersion relation and effective mass
    real(8), intent(in) :: Emax  ! [eV] upper integration limit
    !---------------------------------------
@@ -646,11 +653,14 @@ function get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SH
    select case (SHI_inelast)  ! chose which model for electron inelastic cross section to use
    case (1:3,5)	! CDF with delta-functions
       VAL2: if ( (k == 0) .and. (allocated(Material%CDF_valence%A)) ) then    ! Valence band
-         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, .false., Emax_in = Emax)    ! module "CDF_delta"
+         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, &
+            .false., used_SHI=ZSHI, Emax_in = Emax)    ! module "CDF_delta"
       elseif ( (Material%Elements(j)%valent(k)) .and. (allocated(Material%CDF_valence%A)) ) then    ! Valence band, another definition
-         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, .false., Emax_in = Emax)    ! module "CDF_delta"
+         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, &
+            .false., used_SHI=ZSHI, Emax_in = Emax)    ! module "CDF_delta"
       else VAL2  ! core shells:
-         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%Elements(j)%CDF(k), g_me, .false., Emax_in = Emax)    ! module "CDF_delta"
+         sigma = CDF_total_CS_delta(SHI_inelast, Ekin, MSHI, Zeff, Ip, Material%At_Dens, Material%Elements(j)%CDF(k), g_me, &
+            .false., used_SHI=ZSHI, Emax_in = Emax)    ! module "CDF_delta"
       endif VAL2
    
    case (4) ! nonrelativistic Ritchie CDF
@@ -690,6 +700,159 @@ function get_SHI_integral_inelastic_CS(Ekin, Material, DOS, numpar, j, k, Ip, SH
       sigma = 0.0d0
    end select
 end function get_SHI_integral_inelastic_CS
+
+
+
+subroutine renormalize_alpha_SHI_CDF(numpar, Material, bunch) ! module "CDF_get_from_data"
+   type(Num_par), intent(in) :: numpar	! all numerical parameters
+   type(Target_atoms), dimension(:), intent(inout) :: Material  !material parameters of each target that it's constructed of
+   type(Radiation_param), dimension(:), intent(in) :: bunch	! incomming radiation
+   !---------------------------------------
+   integer :: ibunch, N_bunch
+
+   ! Find how many sources of radiation are used:
+   N_bunch = size (bunch)
+   ! Check for all of them whether there are ions (do we need to include ions here or not):
+   BNCH:do ibunch = 1, N_bunch
+      if (bunch(ibunch)%KOP == 3) then ! it is an ion
+
+         call renormalize_alpha_SHI_CDF_single(numpar, Material, bunch, ibunch) ! below
+
+      endif ! (bunch(ibunch)%KOP == 3)
+   enddo BNCH
+
+!    pause 'renormalize_alpha_SHI_CDF'
+end subroutine renormalize_alpha_SHI_CDF
+
+
+
+subroutine renormalize_alpha_SHI_CDF_single(numpar, Material, bunch, ibunch)
+   type(Num_par), intent(in) :: numpar	! all numerical parameters
+   type(Target_atoms), dimension(:), intent(inout), target :: Material  !material parameters of each target that it's constructed of
+   type(Radiation_param), dimension(:), intent(in) :: bunch ! incomming radiation
+   integer, intent(in) :: ibunch    ! index of the ion in the bunch
+   !---------------------------------------
+   real(8) :: CS_Ritchie, CS_Delta, Ee, MSHI, Mc2, mtc2
+   real(8) :: Se1, Zeff, Ip, Eeq, max_E0, hw_ph_max
+   integer :: i, j, k, N_targets, N_elements, N_shells, N_bunch, i_1, i_2
+   type(Atom_kind), pointer :: Element
+
+   ! Set the model parameters:
+   MSHI = bunch(ibunch)%Meff*g_amu    ! [kg] SHI mass
+   Mc2 = rest_energy(MSHI)    ! module "Relativity"
+   mtc2 = rest_energy(g_me)   ! module "Relativity"
+
+   select case (numpar%El_inelast)  ! choose which model for electron inelastic cross section to use
+      case (3:5)   ! in case Delta-CDF is used
+
+      N_targets = size(Material)	! that's how many different targets user specified
+
+      ! Go through all the shells of all elements of all targets:
+      TRGT:do i = 1, N_targets      ! for each target
+
+         ! Inelastic CDF:
+         N_elements = size(Material(i)%Elements)	! that's how many different elements are in this target
+
+         LMNT:do j =1, N_elements	! for each element
+            Element => Material(i)%Elements(j)	! all information about this element
+            N_shells = Element%N_shl
+
+            ! Calculate total cross sections for all shells of this element:
+            ALLSHL:do k = 1, N_shells
+
+               ! Define the switching energy for this shell:
+               VAL0:if ( (Material(i)%Elements(j)%valent(k)) .and. (allocated(Material(i)%CDF_valence%A)) ) then    ! Valence band
+                  max_E0 = maxval(Material(i)%CDF_valence%E0(:))
+               else VAL0
+                  max_E0 = maxval(Material(i)%Elements(j)%CDF(k)%E0(:))
+               endif VAL0
+               Ip = 0.0d0 ! unused here
+               call find_Wmax_equal_Wmin(Mc2, mtc2, .false., 100.0d0*Mc2/mtc2, Ip, max_E0, Eeq)   ! module "CS_integration_limits"
+               ! The energy where cross section switches from Ritchie to Delta:
+               Ee = numpar%CDF_Eeq_factor * Eeq
+
+               ! Effective ion charge:
+               Zeff = Equilibrium_charge_SHI(Ee, MSHI, dble(bunch(ibunch)%Z), Material(i)%Mean_Z, numpar%SHI_ch_st, bunch(ibunch)%Zeff) ! module "SHI_charge_state"
+
+               ! Get Ritchie CDF cross secion:
+               VAL3:if ( (Material(i)%Elements(j)%valent(k)) .and. (allocated(Material(i)%CDF_valence%A)) ) then    ! Valence band
+                  Ip = Material(i)%DOS%Egap ! [eV] band gap
+
+                  select case (numpar%CDF_dispers)  ! dispersion relation: 0=free electron, 1=plasmon-pole, 2=Ritchie
+                  case default  ! free electron
+                     call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, MSHI, Zeff, Ip, Material(i)%T_eV, Material(i)%CDF_valence, g_me, &
+                        Material(i)%DOS%k, Material(i)%DOS%Eff_m, .false., 0.0d0, Material(i)%At_Dens, Material(i)%DOS, numpar%CDF_model)  ! module "CS_electrons_inelastic"
+                  case (1)  ! Plasmon pole
+                     call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, MSHI, Zeff, Ip, Material(i)%T_eV, Material(i)%CDF_valence, g_me, &
+                        Material(i)%DOS%k, Material(i)%DOS%Eff_m, .false., 0.0d0, Material(i)%At_Dens, Material(i)%DOS, numpar%CDF_model, &
+                     CDF_dispers=numpar%CDF_dispers, v_f=Material(i)%DOS%v_f) ! module "CS_electrons_inelastic"
+                  case (2)  ! Ritchie extended
+                     call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, MSHI, Zeff, Ip, Material(i)%T_eV, Material(i)%CDF_valence, g_me, &
+                        Material(i)%DOS%k, Material(i)%DOS%Eff_m, .false., 0.0d0, Material(i)%At_Dens, Material(i)%DOS, numpar%CDF_model, &
+                        CDF_dispers=numpar%CDF_dispers)  ! module "CS_electrons_inelastic"
+                  end select ! (numpar%CDF_dispers)
+
+                  ! Get Delta CDF cross secion:
+                  CS_Delta = CDF_total_CS_delta(numpar%SHI_inelast, Ee, MSHI, Zeff, Ip, Material(i)%At_Dens, Material(i)%CDF_valence, &
+                                g_me, .false.) ! module "CDF_delta"
+
+                  ! Rescale alpha coefficients for this shell to match the cross-sections:
+                  if (.not.allocated(Material(i)%CDF_valence%alpha_SHI)) then ! check if it is allocated first
+                     i_1 = size(Material(i)%CDF_valence%A)
+                     i_2 = maxval(bunch(:)%Z)
+                     allocate(Material(i)%CDF_valence%alpha_SHI(i_1,i_2))
+                     Material(i)%CDF_valence%alpha_SHI(:,:) = 0.0d0     ! to start with
+                  endif
+                  Material(i)%CDF_valence%alpha_SHI(:,bunch(ibunch)%Z) = &
+                     Material(i)%CDF_valence%alpha(:) * CS_Ritchie/CS_Delta
+
+!                      print*, 'CDF:', i, ibunch, size(Material(i)%CDF_valence%alpha_SHI, 1), size(Material(i)%CDF_valence%alpha_SHI, 2), bunch(ibunch)%Z, Ee
+!                      print*, 'R:', Material(i)%CDF_valence%alpha_SHI(:,bunch(ibunch)%Z)
+!                      print*, 'A:', Material(i)%CDF_valence%alpha(:)
+!                      print*, '---------------'
+
+               else VAL3 ! core shells
+                  Ip = Material(i)%Elements(j)%Ip(k)    ! [eV] ionization potential
+
+                  select case (numpar%CDF_dispers)  ! dispersion relation: 0=free electron, 1=plasmon-pole, 2=Ritchie
+                  case default  ! free electron
+                     call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, MSHI, Zeff, Ip, Material(i)%T_eV, Material(i)%Elements(j)%CDF(k), &
+                        g_me, Material(i)%DOS%k, Material(i)%DOS%Eff_m, .false., 0.0d0, Material(i)%At_Dens, Material(i)%DOS, numpar%CDF_model)  ! module "CS_electrons_inelastic"
+                  case (1)  ! Plasmon pole
+                     call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, MSHI, Zeff, Ip, Material(i)%T_eV, Material(i)%Elements(j)%CDF(k), &
+                        g_me, Material(i)%DOS%k, Material(i)%DOS%Eff_m, .false., 0.0d0, Material(i)%At_Dens, Material(i)%DOS, &
+                        numpar%CDF_model, CDF_dispers=numpar%CDF_dispers, v_f=Material(i)%DOS%v_f) ! module "CS_electrons_inelastic"
+                  case (2)  ! Ritchie extended
+                     call CDF_total_CS_nonrel(numpar, CS_Ritchie, Se1, Ee, MSHI, Zeff, Ip, Material(i)%T_eV, Material(i)%Elements(j)%CDF(k), &
+                        g_me, Material(i)%DOS%k, Material(i)%DOS%Eff_m, .false., 0.0d0, Material(i)%At_Dens, Material(i)%DOS, &
+                        numpar%CDF_model, CDF_dispers=numpar%CDF_dispers)  ! module "CS_electrons_inelastic"
+                  end select ! (numpar%CDF_dispers)
+
+                  ! Get Delta CDF cross secion:
+                  CS_Delta = CDF_total_CS_delta(numpar%SHI_inelast, Ee, MSHI, Zeff, Ip, Material(i)%At_Dens, &
+                                Material(i)%Elements(j)%CDF(k), g_me, .false.) ! module "CDF_delta"
+
+                  ! Rescale alpha coefficients for this shell to match the cross-sections:
+                  if (.not.allocated(Material(i)%Elements(j)%CDF(k)%alpha_SHI)) then ! allocate first if needed
+                     i_1 = size(Material(i)%Elements(j)%CDF(k)%A)
+                     i_2 = maxval(bunch(:)%Z)
+                     allocate(Material(i)%Elements(j)%CDF(k)%alpha_SHI(i_1,i_2))
+                     Material(i)%Elements(j)%CDF(k)%alpha_SHI(:,:) = 0.0d0     ! to start with
+                  endif
+                  Material(i)%Elements(j)%CDF(k)%alpha_SHI(:,bunch(ibunch)%Z) = &
+                     Material(i)%Elements(j)%CDF(k)%alpha(:) * CS_Ritchie/CS_Delta
+
+                  ! SKIP ALPHA RENORMALIZATION, RENORMALIZE A(:) INSTEAD: (Testing)
+                  ! Rescale A coefficients for this shell to match delta-cross-sections: (Testing)
+!                   Material(i)%Elements(j)%CDF(k)%A = Material(i)%Elements(j)%CDF(k)%A * CS_Delta/CS_Ritchie (Testing)
+               endif VAL3
+
+            enddo ALLSHL
+         enddo LMNT
+      enddo TRGT
+      nullify(Element)
+   end select ! Inelastic
+end subroutine renormalize_alpha_SHI_CDF_single
 
 
 

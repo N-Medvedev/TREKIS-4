@@ -449,6 +449,9 @@ subroutine get_CDF(numpar, used_target, Err)
             if (.not.allocated(Element%CDF(m)%alpha)) then
                allocate(Element%CDF(m)%alpha(size(Element%CDF(m)%A)))
             endif
+            !if (.not.allocated(Element%CDF(m)%alpha_SHI)) then
+            !   allocate(Element%CDF(m)%alpha_SHI(size(Element%CDF(m)%A)))
+            !endif
             if (.not.Element%valent(m)) then ! only for core orbitals
                print*, trim(adjustl(Element%Name)), ' '//trim(adjustl(Element%Shell_name(m))), ' CDF parameters for delta-function:'
             endif
@@ -465,7 +468,9 @@ subroutine get_CDF(numpar, used_target, Err)
                   print*, k, 'E0:', Element%CDF(m)%E0(k)
                   print*, k, 'alpha:', Element%CDF(m)%alpha(k)
                endif
-               
+               !! Save for SHI:
+               !Element%CDF(m)%alpha_SHI(k) = Element%CDF(m)%alpha(k)
+
             enddo
             if (.not.Element%valent(m)) print*, '------------------------'
          enddo ! m = 1, Element%N_shl
@@ -475,6 +480,9 @@ subroutine get_CDF(numpar, used_target, Err)
          if (.not.allocated(used_target%Material(i)%CDF_valence%alpha)) then
             allocate(used_target%Material(i)%CDF_valence%alpha(size(used_target%Material(i)%CDF_valence%A)))
          endif
+         !if (.not.allocated(used_target%Material(i)%CDF_valence%alpha_SHI)) then
+         !   allocate(used_target%Material(i)%CDF_valence%alpha_SHI(size(used_target%Material(i)%CDF_valence%A)))
+         !endif
          print*, 'Valence band CDF parameters for delta-function:'
          do k = 1, size(used_target%Material(i)%CDF_valence%A)   ! for all oscillators describing valence CDF
 !             call define_alpha(used_target%Material(i)%CDF_valence%A(k), used_target%Material(i)%CDF_valence%Gamma(k), used_target%Material(i)%CDF_valence%E0(k), used_target%Material(i)%DOS%Egap, used_target%Material(i)%CDF_valence%alpha(k))  ! module "CDF_delta"
@@ -489,7 +497,9 @@ subroutine get_CDF(numpar, used_target, Err)
 !                 used_target%Material(i)%CDF_valence%E0(k), 1.5d0*used_target%Material(i)%DOS%Egap, used_target%Material(i)%CDF_valence%alpha(k))  ! module "CDF_delta"
                print*, k, 'E0:', used_target%Material(i)%CDF_valence%E0(k)
                print*, k, 'alpha:', used_target%Material(i)%CDF_valence%alpha(k)
-            
+               !! Save for SHI:
+               !used_target%Material(i)%CDF_valence%alpha_SHI(k) = used_target%Material(i)%CDF_valence%alpha(k)
+
          enddo
          print*, '------------------------'
       endif
@@ -498,6 +508,10 @@ subroutine get_CDF(numpar, used_target, Err)
          if (.not.allocated(used_target%Material(i)%CDF_phonon%alpha)) then
             allocate(used_target%Material(i)%CDF_phonon%alpha(size(used_target%Material(i)%CDF_phonon%A)))
          endif
+         !if (.not.allocated(used_target%Material(i)%CDF_phonon%alpha_SHI)) then
+         !   allocate(used_target%Material(i)%CDF_phonon%alpha_SHI(size(used_target%Material(i)%CDF_phonon%A)))
+         !endif
+
          print*, 'Phonons CDF parameters for delta-function:'
          do k = 1, size(used_target%Material(i)%CDF_phonon%A)   ! for all oscillators describing valence CDF
             ! For scattering on atoms, also account for the mass factor in the sum rule:
@@ -513,6 +527,8 @@ subroutine get_CDF(numpar, used_target, Err)
                                       used_target%Material(i)%CDF_phonon%alpha(k), mass_target = used_target%Material(i)%Mean_Mass)  ! module "CDF_delta"
             print*, k, 'E0,A:', used_target%Material(i)%CDF_phonon%E0(k), used_target%Material(i)%CDF_phonon%A(k)
             print*, k, 'alpha:', used_target%Material(i)%CDF_phonon%alpha(k) !, used_target%Material(i)%Mean_Mass
+            !! Save for SHI:
+            !used_target%Material(i)%CDF_phonon%alpha_SHI(k) = used_target%Material(i)%CDF_phonon%alpha(k)
             
          enddo
          ! Save the coefficient of the atomic plasma frequency (phonons):

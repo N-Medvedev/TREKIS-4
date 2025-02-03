@@ -27,7 +27,7 @@ implicit none
 
 !-----------------------------------------------------------------------------
 ! Relativistic CDF cross section from [1], using Delta-CDF
-function CDF_total_CS_delta(El_inelast, Ekin, Mass, Zeff, Ip, n_target, CDF, Mt, identical, hw_phonon, Emax_in) result(sigma)
+function CDF_total_CS_delta(El_inelast, Ekin, Mass, Zeff, Ip, n_target, CDF, Mt, identical, used_SHI, hw_phonon, Emax_in) result(sigma)
    real(8) :: sigma    ! [A^2]
    integer, intent(in) :: El_inelast    ! type of cross section to be used
    real(8), intent(in) :: Ekin, Zeff ! [eV] kinetic energy of incident particle, effective charge 
@@ -35,23 +35,33 @@ function CDF_total_CS_delta(El_inelast, Ekin, Mass, Zeff, Ip, n_target, CDF, Mt,
    real(8), intent(in) :: Ip, n_target      ! [eV] ionization potential;  [1/cm^3] atomic density
    type(Ritchi_CDF), intent(in) :: CDF	! CDF coefficients
    logical, intent(in) :: identical   ! identical particles, true or not
+   integer, intent(in), optional :: used_SHI  ! Z atomic number of SHI, if SHI is used (0 if it is not an SHI)
    real(8), intent(in), optional :: hw_phonon   ! maximal phonon frequency [eV]
    real(8), intent(in), optional :: Emax_in ! [eV] integration limit, used for defining transfered energy
-   
+   !-------------------------------
+   integer :: used_SHI_local
+
+   if (present(used_SHI)) then ! it is an SHI:
+      used_SHI_local = used_SHI
+   else ! it is not an SHI (assume electron):
+      used_SHI_local = 0
+   endif
+
    if (present(hw_phonon) .and. present(Emax_in) ) then
-      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, hw_phonon=hw_phonon, Emax_in=Emax_in)   ! below
+      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, used_SHI_local, &
+         hw_phonon=hw_phonon, Emax_in=Emax_in)   ! below
    elseif (present(hw_phonon)) then
-      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, hw_phonon=hw_phonon)   ! below
+      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, used_SHI_local, hw_phonon=hw_phonon)   ! below
    elseif (present(Emax_in)) then
-      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, Emax_in=Emax_in)   ! below
+      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, used_SHI_local, Emax_in=Emax_in)   ! below
    else
-      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical)   ! below
+      sigma = Integral_CDF_delta_CS(El_inelast, Mass, Mt, Ekin, CDF, Ip, n_target, identical, used_SHI_local)   ! below
    endif
    sigma = sigma*(Zeff*Zeff)    ! include effective charge
 end function CDF_total_CS_delta
 
 
-function Integral_CDF_delta_CS(El_inelast, M, mt, E, CDF, Ip, nat, identical, hw_phonon, Emax_in) result(Sigma)
+function Integral_CDF_delta_CS(El_inelast, M, mt, E, CDF, Ip, nat, identical, used_SHI, hw_phonon, Emax_in) result(Sigma)
    real(8) Sigma    ! [A^2]
    integer, intent(in) :: El_inelast    ! type of cross section to be used
    real(8), intent(in) :: M, mt ! [kg] indident and target (scatterrer) particles masses
@@ -60,6 +70,7 @@ function Integral_CDF_delta_CS(El_inelast, M, mt, E, CDF, Ip, nat, identical, hw
    real(8), intent(in) :: Ip    ! [eV] ionization potential
    real(8), intent(in) :: nat   ! [1/cm^3] atomic density
    logical, intent(in) :: identical   ! identical particles, true or not
+   integer, intent(in) :: used_SHI  ! Z atomic number of SHI, if SHI is used (0 if it is not an SHI)
    real(8), intent(in), optional :: hw_phonon   ! maximal phonon frequency [eV]
    real(8), intent(in), optional :: Emax_in ! [eV] integration limit, used for defining transfered energy
    !---------------------------------------
@@ -80,7 +91,11 @@ function Integral_CDF_delta_CS(El_inelast, M, mt, E, CDF, Ip, nat, identical, hw
 !       alpha => CDF%h_omega_e2
 !    else  ! Delta CDF
       E0 = CDF%E0
+   if (used_SHI > 0) then ! it is an SHI, use its renormalized alpha:
+      alpha => CDF%alpha_SHI(:,used_SHI)
+   else ! it is not an SHI, use electron's renormalized alpha:
       alpha => CDF%alpha
+   endif
 !    endif
 !    E0 = CDF%E0
 !    print*, E0, sqrt(CDF%h_omega_e2), (CDF%h_omega_e2), CDF%alpha
@@ -200,12 +215,13 @@ end function integrated_delta_CDF_CS
 
 
 
-function energy_loss_delta(El_inelast, E, M, ZSHI, Zeff, Ip, nat, Mt, CDF, identical, hw_phonon) result(Se)
+function energy_loss_delta(El_inelast, E, M, ZSHI, Zeff, Ip, nat, Mt, CDF, identical, used_SHI, hw_phonon) result(Se)
    real(8) :: Se    ! [eV/A] energy loss
    integer, intent(in) :: El_inelast    ! type of cross section to be used
    real(8), intent(in) :: E, M, ZSHI, Zeff, Ip, nat, Mt
    type(Ritchi_CDF), intent(in), target :: CDF	! CDF coefficients
    logical, intent(in) :: identical   ! identical particles, true or not
+   integer, intent(in) :: used_SHI ! Z atomic number of SHI (0 if it is not an SHI)
    real(8), intent(in), optional :: hw_phonon   ! [eV]
    !---------------------------------------
    real(8) :: M_units, Mc2, mtc2, S_cur, P, Mc22, Emin, Emax, Eeq, dEed, Estart
@@ -246,7 +262,12 @@ function energy_loss_delta(El_inelast, E, M, ZSHI, Zeff, Ip, nat, Mt, CDF, ident
 !       alpha => CDF%h_omega_e2
 !    else  ! Delta CDF
       E0 = CDF%E0
+      !alpha => CDF%alpha
+   if (used_SHI > 0) then ! it is an SHI, use its renormalized alpha:
+      alpha => CDF%alpha_SHI(:,used_SHI)
+   else ! it is not an SHI, use electron's renormalized alpha:
       alpha => CDF%alpha
+   endif
 !    endif
 
    S_cur = 0.0d0   ! to start with
