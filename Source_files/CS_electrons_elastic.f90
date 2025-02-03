@@ -294,7 +294,7 @@ subroutine get_el_elastic_CS(Ee, Material, Element, numpar, sigma, mu_max_in, E_
                                                         Material%Mean_Mass, .false., hw_phonon=hw_ph_max)    ! module "CDF_delta"
          endif
          if (present(Se)) Se = energy_loss_delta(El_elast, Ee, g_me, 1.0d0, Zeff, 1.0d-16, Material%At_Dens, Material%Mean_Mass, &
-                                          Material%CDF_phonon, .false., hw_ph_max) ! module "CDF_delta"
+                                          Material%CDF_phonon, .false., 0, hw_ph_max) ! module "CDF_delta"
       case (4) ! nonrelativistic Ritchie or Mermin CDF
          if (present (E_max)) then
             call CDF_total_CS_nonrel(numpar, sigma, Se1, Ee, g_me, Zeff, 1.0d-20, Material%T_eV, Material%CDF_phonon, Material%Mean_Mass, &

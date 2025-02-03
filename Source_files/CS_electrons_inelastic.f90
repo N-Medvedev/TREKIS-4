@@ -372,12 +372,12 @@ end subroutine get_electron_IMFP
        VAL2:if ( (Material%Elements(j)%valent(k)) .and. (allocated(Material%CDF_valence%A)) ) then    ! Valence band
          sigma = CDF_total_CS_delta(El_inelast, Ee, g_me, Zeff, Ip, Material%At_Dens, Material%CDF_valence, g_me, .true.)    ! module "CDF_delta"
          if (present(Se)) Se = energy_loss_delta(El_inelast, Ee, g_me, 1.0d0, Zeff, Ip, Material%At_Dens, &
-            g_me, Material%CDF_valence, .true.) ! module "CDF_delta"
+            g_me, Material%CDF_valence, .true., 0) ! module "CDF_delta"
       else VAL2  ! core shells:
          sigma = CDF_total_CS_delta(El_inelast, Ee, g_me, Zeff, Ip, Material%At_Dens, Material%Elements(j)%CDF(k), &
          g_me, .true.)    ! module "CDF_delta"
          if (present(Se)) Se = energy_loss_delta(El_inelast, Ee, g_me, 1.0d0, Zeff, Ip, Material%At_Dens, &
-            g_me, Material%Elements(j)%CDF(k), .true.) ! module "CDF_delta"
+            g_me, Material%Elements(j)%CDF(k), .true., 0) ! module "CDF_delta"
       endif VAL2
    
    case (4) ! nonrelativistic Ritchie CDF
@@ -652,14 +652,24 @@ end function get_inelastic_energy_transfer_OLD
 
 
 
-subroutine renormalize_alpha_CDF(numpar, Material) ! module "CDF_get_from_data"
+subroutine renormalize_alpha_CDF(numpar, Material, switch_SHI) ! module "CDF_get_from_data"
    type(Num_par), intent(in) :: numpar	! all numerical parameters
    type(Target_atoms), dimension(:), intent(inout), target :: Material  !material parameters of each target that it's constructed of
+   logical, intent(in), optional :: switch_SHI  ! if it is SHI
    !---------------------------------------
    real(8) :: CS_Ritchie, CS_Delta, Ee
    real(8) :: Se1, Zeff, Ip, Eeq, max_E0, hw_ph_max
    integer :: i, j, k, N_targets, N_elements, N_shells
    type(Atom_kind), pointer :: Element
+   logical :: it_is_SHI
+
+   ! Identify if this subroutine is used for SHI:
+   if (present(switch_SHI)) then    ! if user provided
+      it_is_SHI = switch_SHI
+   else ! by default
+      it_is_SHI = .false.
+   endif
+   Ip = 0.0d0 ! unused
    
    select case (numpar%El_inelast)  ! chose which model for electron inelastic cross section to use
       case (3:5)   ! in case Delta-CDF is used
@@ -713,7 +723,11 @@ subroutine renormalize_alpha_CDF(numpar, Material) ! module "CDF_get_from_data"
                                 g_me, .true.) ! module "CDF_delta"
                  
                   ! Rescale alpha coefficients for this shell to match the cross-sections:
-                  Material(i)%CDF_valence%alpha = Material(i)%CDF_valence%alpha * CS_Ritchie/CS_Delta
+                  if (it_is_SHI) then
+                     Material(i)%CDF_valence%alpha_SHI = Material(i)%CDF_valence%alpha_SHI * CS_Ritchie/CS_Delta
+                  else ! for electrons:
+                     Material(i)%CDF_valence%alpha = Material(i)%CDF_valence%alpha * CS_Ritchie/CS_Delta
+                  endif
                   
                else VAL3 ! core shells
                   Ip = Material(i)%Elements(j)%Ip(k)    ! [eV] ionization potential
@@ -738,7 +752,12 @@ subroutine renormalize_alpha_CDF(numpar, Material) ! module "CDF_get_from_data"
                                 Material(i)%Elements(j)%CDF(k), g_me, .true.) ! module "CDF_delta"
                   
                   ! Rescale alpha coefficients for this shell to match the cross-sections:
-                  Material(i)%Elements(j)%CDF(k)%alpha = Material(i)%Elements(j)%CDF(k)%alpha * CS_Ritchie/CS_Delta
+                  if (it_is_SHI) then
+                     Material(i)%Elements(j)%CDF(k)%alpha_SHI = Material(i)%Elements(j)%CDF(k)%alpha_SHI * CS_Ritchie/CS_Delta
+                  else ! for electrons:
+                     Material(i)%Elements(j)%CDF(k)%alpha = Material(i)%Elements(j)%CDF(k)%alpha * CS_Ritchie/CS_Delta
+                  endif
+
                   ! SKIP ALPHA RENORMALIZATION, RENORMALIZE A(:) INSTEAD: (Testing)
                   ! Rescale A coefficients for this shell to match delta-cross-sections: (Testing)
 !                   Material(i)%Elements(j)%CDF(k)%A = Material(i)%Elements(j)%CDF(k)%A * CS_Delta/CS_Ritchie (Testing)
@@ -1392,7 +1411,7 @@ end function CDF_total_CS
          ! Add up the contributions according to Simpson-3/8 scheme:
          sigma_cur = sigma_cur + expfac*dW/6.0d0*(dSigma0 + 4.0d0*dSigma_mid + dSigma)
 
-         write(*,'(a,es,es,es,es,es)')  'S', W_cur, dW, ABS(dSigma - dSigma0), dS*dSigma0
+         !write(*,'(a,es,es,es,es,es)')  'S', W_cur, dW, ABS(dSigma - dSigma0), dS*dSigma0
          
          ! Save the data for the next point of integration:
          dSigma0 = dSigma

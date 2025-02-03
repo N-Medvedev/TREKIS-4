@@ -124,6 +124,8 @@ call get_CDF(g_numpar, g_target, g_Err) ! module "CDF_get_from_data"
 ! a.2) renormalize alpha parameters in Delta-CDF to match Ritchie-CDF cross-section at the switching point:
 ! Commented out for Testing (uncomment for release):
 call renormalize_alpha_CDF(g_numpar, g_target%Material) ! module "CS_electrons_inelastic"
+! and the same for all kinds of SHI:
+call renormalize_alpha_SHI_CDF(g_numpar, g_target%Material, g_bunch) ! module "CS_ions_inelastic"
 
 !--------------------------------------------------------------
 ! Save CDF parameters into the output file:

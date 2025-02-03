@@ -69,10 +69,11 @@ end type Geom_array
 type :: Ritchi_CDF 
    ! parameters entering Ritchi-CDF:
    real(8), dimension(:), allocatable :: E0		! parameter E0
-   real(8), dimension(:), allocatable :: A			! parameter A
+   real(8), dimension(:), allocatable :: A		! parameter A
    real(8), dimension(:), allocatable :: Gamma	! parameter gamma
    ! parameters entering delta-CDF:
-   real(8), dimension(:), allocatable :: alpha  ! normalization coefficient
+   real(8), dimension(:), allocatable :: alpha      ! normalization coefficient
+   real(8), dimension(:,:), allocatable :: alpha_SHI  ! normalization coefficient, renormalized for each SHI
    ! parameters entering single-pole delta-CDF:
    real(8), dimension(:), allocatable :: h_omega_e2    ! [eV^2] (h*Omega_e)^2 where Omega_e is the electron plasma frequency
 end type Ritchi_CDF
