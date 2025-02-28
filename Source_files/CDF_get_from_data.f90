@@ -27,8 +27,8 @@ subroutine get_CDF(numpar, used_target, Err)
    type(Error_handling), intent(inout) :: Err	! error log
    !---------------------------------------------------------------
    real(8), dimension(:), allocatable :: lambda, CDF_data
-   real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin
-   integer :: i, j, k, m, Nat, Nsiz, FN, FN2, N_CDF, Reason, count_lines, N_elem
+   real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin, temp(3)
+   integer :: i, j, k, m, Nat, Nsiz, FN, FN2, N_CDF, Reason, count_lines, N_elem, N_temp
    character(200) :: folder, folder_with_cdf, file_with_cdf, command, file_with_coefs, Path_valent, File_name
    logical :: file_exist, read_well
    real(8), pointer :: E
@@ -44,6 +44,9 @@ subroutine get_CDF(numpar, used_target, Err)
                   
       ELMNT:do j = 1, used_target%Material(i)%N_Elements	! for all elements from this target consituent
          Element => used_target%Material(i)%Elements(j)	! all information about this element
+
+         !print*, 'test 0', Element%Phot_absorption%E(size(Element%Phot_absorption%E))
+
          ! Check if folder for this element already exists:
          folder_with_cdf = trim(adjustl(folder))//path_sep//trim(adjustl(Element%Name))
          inquire(DIRECTORY=trim(adjustl(folder_with_cdf)),exist=file_exist)    ! check if input file excists
@@ -62,22 +65,37 @@ subroutine get_CDF(numpar, used_target, Err)
             ! Check file with optical data:
             file_with_cdf = trim(adjustl(folder_with_cdf))//path_sep//trim(adjustl(m_optical_data))//'_'//trim(adjustl(Element%Shell_name(m)))//'.dat'
             inquire(file=trim(adjustl(file_with_cdf)),exist=file_exist) ! check if this file is there
+!            print*, trim(adjustl(file_with_cdf)), file_exist
             if (file_exist) then	! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(file_with_cdf)),action='read')
+
+               ! Check if the file format is consistent with the arrays used:
+               ! How many lines are in the file:
+               call Count_lines_in_file(FN, N_temp)  ! module "Dealing_with_files"
+               if (N_temp /= Nsiz) then ! mismatch in the formats
+                  close(FN) ! redo the file
+                  goto 8392
+               endif
+
                ! Get the MFP and CDF points:
                count_lines = 0
                do k = 1, Nsiz
                   E => Element%Phot_absorption%E(k)	! photon energy [eV]
-                  read(FN,'(es,es,es)',IOSTAT=Reason) E, lambda(k), CDF_data(k)
+                  read(FN,'(es,es,es)',IOSTAT=Reason) temp     ! variable to read
                   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
-                  if (.not.read_well) then
+                  if ((.not.read_well) .or. (Reason /= 0)) then
                      close(FN)	! redo the file
                      goto 8392
                   endif
+                  ! Save read variables:
+                  E = temp(1)
+                  lambda(k) = temp(2)
+                  CDF_data(k) = temp(3)
+                  !print*, k, E, Element%Phot_absorption%E(k), Nsiz
                enddo
                close(FN)
             else	! no such file => create it
-8392        open(newunit = FN, FILE = trim(adjustl(file_with_cdf)))
+8392           open(newunit = FN, FILE = trim(adjustl(file_with_cdf)))
                ! Get the MFP and CDF points:
                GRD:do k = 1, Nsiz
                   E => Element%Phot_absorption%E(k)	! photon energy [eV]
@@ -90,10 +108,15 @@ subroutine get_CDF(numpar, used_target, Err)
                   ! Loss function is accordingly normalized to the same density: 
                   CDF_data(k) = g_cvel*1.0d10*g_h/(E*g_e*lambda(k))
                   write(FN,'(es,es,es)') E, lambda(k), CDF_data(k)
+                  !print*, k, E, Element%Phot_absorption%E(k)
                enddo GRD
                close(FN)
             endif ! (file_exist)
             
+            !print*, 'test 1', Element%Phot_absorption%E(size(Element%Phot_absorption%E))
+            !pause 'test 1'
+
+
             ! Allocate CDF arrays:
             if (.not.allocated(Element%CDF)) allocate(Element%CDF(Element%N_shl))
             ! Check if the files with fitted CDF coefficients already exist:
@@ -121,7 +144,7 @@ subroutine get_CDF(numpar, used_target, Err)
                   goto 8393
                endif
             else	! Fit the oscillator CDF to those data:
-8393        print*, 'Coefficients of CDF are going to be fitted - they need CHECKING before use!'
+8393           print*, 'Coefficients of CDF are going to be fitted - they need CHECKING before use!'
                print*, 'Fitting '//trim(adjustl(Element%Name))//' shell '//trim(adjustl(Element%Shell_name(m)))
                call fit_oscillators_CDF(Element%Phot_absorption%E, CDF_data, Element%CDF(m), Element%Ne_shell(m))		! see below
                ! And save them in the output files:
@@ -210,6 +233,9 @@ subroutine get_CDF(numpar, used_target, Err)
 !          print*, '------------------------'
       endif ! if (allocated(used_target%Material(i)%CDF_valence%A))
       
+      !print*, 'test 2', Element%Phot_absorption%E(size(Element%Phot_absorption%E))
+
+
       ! Deal with the valence band
       if (allocated(used_target%Material(i)%CDF_valence%A)) then    ! just to check
          ! Save the total valence band cross section:
@@ -248,6 +274,9 @@ subroutine get_CDF(numpar, used_target, Err)
                   endif
                   lambda(m) = MFP_from_sigma(sigma, used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
                   used_target%Material(i)%Ph_absorption_valent%Total_MFP(m) = lambda(m)  ! [1/A]
+
+                  !print*, m, E, used_target%Material(i)%Ph_absorption_valent%Total(m), lambda(m)
+
                enddo ! m = 1, Nsiz
                
                ! Combine valence CDF (at low energy) with the atomic one (at the high energy):
@@ -270,8 +299,13 @@ subroutine get_CDF(numpar, used_target, Err)
                            sigma_cur = 0.0d0
                         endif
                         sigma = sigma + sigma_cur*elem_contrib
+                        !print*, k, sigma, sigma_cur, elem_contrib
+                        !print*, 'E=', k, Element%Phot_absorption%E(size(Element%Phot_absorption%E))
                      enddo ! k
                   enddo ! j
+
+                  !pause 'sigma_cur'
+
                   ! At sufficiently low energy (100 eV), a peak in valence CDF should cross the atomic one:
                   if ( (E < 100.0d0) .and. (sigma < used_target%Material(i)%Ph_absorption_valent%Total(m))) then ! replace atomic sigma with valent one:
                      exit ! the rest we leave equal to the valence CS precalculated above
@@ -280,6 +314,9 @@ subroutine get_CDF(numpar, used_target, Err)
 !                   print*, j, E, Element%valent
                   lambda(m) = MFP_from_sigma(sigma, used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
                   used_target%Material(i)%Ph_absorption_valent%Total_MFP(m) = lambda(m)  ! [1/A]
+
+                  !print*, 'a', E, sigma, lambda(m)
+
                enddo ! m
                
                ! Write the combined valence CDF into the file:
