@@ -183,6 +183,10 @@ pure subroutine create_energy_grid(x_start, x_end, array1d, special_points)
    else ! no special points, smooth grid
       call energy_grid_count(x_0, x_1, deg0, deg1, array1d=array1d)	! below
    endif
+
+   !print*, 'special_points=', special_points(:)
+   !print*, 'array1d=', array1d(:)
+   !pause 'create_energy_grid'
 end subroutine create_energy_grid
 
 

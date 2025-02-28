@@ -527,6 +527,10 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       used_target%Material(i)%Ph_absorption_total%E = used_target%Material(i)%Ph_absorption_valent%E
       print*, 'Valence and total grids constructed successfully.'
 
+      !print*, 'Val=', used_target%Material(i)%Ph_absorption_valent%E(:)
+      !print*, 'Tot=', used_target%Material(i)%Ph_absorption_total%E(:)
+      !pause 'PHOTON_VAL'
+
       
       print*, 'Reading Compton profiles database...'      
       !--------------------------------------------------
