@@ -1,0 +1,54 @@
+TARGET
+Al2O3            ! Whole sample name
+1                ! how many target components there are
+Al2O3            ! Material of this part of the target
+0.0              ! Temperature of the target [K]
+0                ! type of the first component: Rectangle
+0.0   0.0   0.0     ! coordinates of its center
+-1e20   1e20        ! Length: its beginning and its end along X axis [A]
+-1e20   1e20        ! Length: its beginning and its end along Y axis [A]
+-1e20   1e20        ! Length: its beginning and its end along Z axis [A]
+0.0e0           ! its rotation around X-axis (degree)
+0.0e0           ! its rotation around Y-axis (degree)
+0.0e0           ! its rotation around Z-axis (degree)
+1               ! Type of surface potential barrier: 0=step, 1=Eckart
+RADIATION
+1           ! How many different incoming particles/pulses to model
+1           ! How many particles are in the 1st bunch of radiation
+0           ! Type of incoming particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole
+0.0     0.0     0.0            ! [A] coordinates of impact: X, Y, Z
+0.0     0.0     0.0            ! [A] spread (or uncertainty) of coordinates of impact along X, Y, Z
+0.0     0.0                    ! [degrees] angles of impact: from Z [0:180], from Y [0:360]
+92.0          ! [eV] energy of the incoming particle / pulse
+0.0           ! [eV] spread of energies (or energy uncertainty)
+0.0           ! [fs] arrival time of the incoming particle / center of the pulse
+0.0           ! [fs] FWHM-duration of the pulse (ignorred for single particles)
+54            ! Z atomic number of SHI
+1  -1.0       ! Zeff,  Meff
+NUMERICS
+1           ! number of MC iterations to be performed
+64            ! number of threads for parallel calculations with OpenMP (1 = nonparallelized; <=0 = all available processors)
+1.0           ! [fs] Time-step or dt_grid.txt
+10.0          ! [fs] How often to print out data into files; 1.0d0 or Tgrid.txt
+0.0           ! [fs] when to start simulation
+500.0       ! [fs] when to stop simulation
+1           ! Activate MC module (1) or not (0)
+0           ! Activate MD module (1) or not (0)
+0           ! Activate TTM module (1) or not (0)
+F           ! Recalculate cross sections and MFPs (T=true; F=false)
+-1.0e10     1.0e10  F   ! Simulation box size along X [A], reset it to coincide with MD supercel (True;False)
+-1.0e10     1.0e10  F   ! Simulation box size along Y [A], reset it to coincide with MD supercel (True;False)
+0.0e0       10.0e0  F   ! Simulation box size along Z [A]  (for SHI set default:  0    10.0e0 ; for other particles may use -1.0e10 1.0e10)
+1   1   1               ! Kind of boundary along X, Y, Z (0=absorbing; 1=periodic; 2=reflective; 3=white)
+OUTPUT
+png         ! format of figures prepared by gnuplot (eps, jpeg, gif, png, pdf); set 0 if no gnuplots scripts are required
+T           ! printout DOS (T=true, F=false)
+T           ! printout MFPs (T=true, F=false)
+T           ! printout Ranges (T=true, F=false)
+! Optional input
+! Here one can add all further model parameters...
+! Optional output:
+OPTIONAL
+Energy      ! To print specta out
+F           ! use logscale (T=true, F=false)
+0.0d0   95.0d0  0.1d0           ! Start grid, End grid, Step coeff

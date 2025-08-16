@@ -1140,7 +1140,6 @@ subroutine Read_input(used_target, numpar, bunch, Err)
    numpar%input_path = Folder_name	! save the address with input files
 
 
-
    !---------------------------
    ! Reading new format of input file using Fortran Namelists (still in the testing mode!):
    call set_defaults(used_target, bunch, numpar)  ! to start with, set all default flags; below

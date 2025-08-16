@@ -4171,9 +4171,10 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    !write(print_to,'(a)') trim(adjustl(m_starline))
    !**********************************************
    if (numpar%new_input_format) then ! new format used
-      write(print_to,'(a)') 'Input read from the file: INPUT.txt'
+      write(print_to,'(a)') 'Input read from the file: '//trim(adjustl(m_input_minimal))
    else
-      write(print_to,'(a)') 'Input read from files: INPUT_DATA.txt and NUMERICAL_PARAMETERS.txt'
+      write(print_to,'(a)') 'Input read from files: '//trim(adjustl(m_input_data))//' and '//&
+                                                       trim(adjustl(m_numerical_parameters))
    endif
 
    ! TARGET:
