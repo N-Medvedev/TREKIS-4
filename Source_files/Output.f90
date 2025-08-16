@@ -23,7 +23,8 @@ use Dealing_with_XYZ_files, only: write_XYZ
 use Dealing_with_LAMMPS, only: Write_LAMMPS_input_file
 use Gnuplotting
 use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy
-use Read_input_data, only: m_input_data, m_numerical_parameters, m_input_folder, m_databases, m_starline
+use Read_input_data, only: m_input_minimal, m_input_data, m_numerical_parameters, m_input_folder, m_databases, m_starline, &
+                           m_EADL, m_EPDL
 use Periodic_table, only : Atomic_data, Read_from_periodic_table
 use Initial_conditions, only: count_types_of_SHIs, repeated_type
 use CS_general_tools, only: get_ranges_from_Se
@@ -80,7 +81,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 18.06.2024)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 16.08.2025)'
 
 
 ! All output file names:
@@ -4088,17 +4089,26 @@ subroutine make_output_folder(used_target, numpar, bunch)
 #endif
    
    ! Copy the input parameters files into this folder, to store all the details for reproducibility:
-   chtest = trim(adjustl(numpar%input_path))//trim(adjustl(m_input_data))
-   chtest1 = trim(adjustl(numpar%input_path))//trim(adjustl(m_numerical_parameters))
-   if (numpar%path_sep .EQ. '\') then	! if it is Windows
-      call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path)),1) ! module "Dealing_with_files"
-      call copy_file(trim(adjustl(chtest1)),trim(adjustl(numpar%output_path)),1) ! module "Dealing_with_files"
-   else ! it is linux
-      call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path))) ! module "Dealing_with_files"
-      call copy_file(trim(adjustl(chtest1)),trim(adjustl(numpar%output_path))) ! module "Dealing_with_files"
+   if (numpar%new_input_format) then ! new format used
+      chtest = trim(adjustl(numpar%input_path))//trim(adjustl(m_input_minimal))
+      if (numpar%path_sep .EQ. '\') then	! if it is Windows
+         call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path)),1) ! module "Dealing_with_files"
+      else ! it is linux
+         call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path))) ! module "Dealing_with_files"
+      endif
+   else     ! old format used
+      chtest = trim(adjustl(numpar%input_path))//trim(adjustl(m_input_data))
+      chtest1 = trim(adjustl(numpar%input_path))//trim(adjustl(m_numerical_parameters))
+      if (numpar%path_sep .EQ. '\') then	! if it is Windows
+         call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path)),1) ! module "Dealing_with_files"
+         call copy_file(trim(adjustl(chtest1)),trim(adjustl(numpar%output_path)),1) ! module "Dealing_with_files"
+      else ! it is linux
+         call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path))) ! module "Dealing_with_files"
+         call copy_file(trim(adjustl(chtest1)),trim(adjustl(numpar%output_path))) ! module "Dealing_with_files"
+      endif
    endif
 
-   ! Save name for the parametrs file:
+   ! Save name for the parameters file:
    numpar%FILE_parameters = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_parameters))
 
    ! Open communication channel for the user:
@@ -4148,6 +4158,7 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    !------------------------
    integer i , Nsiz, j, k
    character(100) :: text, text1, text2, text3
+   logical :: MC_output, MD_output
    !------------------------
 
    if (do_lable) then   ! print TRKEIS lable
@@ -4159,6 +4170,13 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    !write(print_to,'(a)') '*      TREKIS: Time-Resolved Kinetics in Irradiated Solids       *'
    !write(print_to,'(a)') trim(adjustl(m_starline))
    !**********************************************
+   if (numpar%new_input_format) then ! new format used
+      write(print_to,'(a)') 'Input read from the file: '//trim(adjustl(m_input_minimal))
+   else
+      write(print_to,'(a)') 'Input read from files: '//trim(adjustl(m_input_data))//' and '//&
+                                                       trim(adjustl(m_numerical_parameters))
+   endif
+
    ! TARGET:
    write(print_to,'(a,a,a)') ' Performed for the following parameters:'
    write(print_to,'(a,a)') ' Material : ', trim(adjustl(used_target%Name))
@@ -4256,6 +4274,10 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    else
       write(print_to,'(a)') ' Cross sections are read from files (if exist)'
    endif
+   !**********************************************
+
+   write(print_to,'(a)') ' Databases used: '//trim(adjustl(m_EADL))//' and '//trim(adjustl(m_EPDL))
+
    !**********************************************
    ! MODELS:
    write(print_to,'(a)') trim(adjustl(m_starline)) 
@@ -4541,9 +4563,115 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
          write(print_to,'(a)') ' No pressure dampening viscosity is used in MD'
       endif
 
+      if (numpar%MD_force_ind == 1) then
+         write(print_to,'(a)') ' Interatomic forces calcualted as numerical derivative of the potential'
+      else
+         write(print_to,'(a)') ' Interatomic forces calcualted analytically'
+      endif
+
    endif
-   
-   
+
+   !**********************************************
+   MC_output = .false. ! to start with
+   MD_output = .false. ! to start with
+   write(print_to,'(a)') trim(adjustl(m_starline))
+   write(print_to,'(a)') 'Optional output: '
+   !---------------------
+   write(print_to,'(a)') ' In MC module: '
+
+   if (numpar%vel_theta_grid_par%along_axis) then
+      write(print_to,'(a)') '  Angular velosity distribution: theta=acos(Vz/V)'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%NRG_grid_par%along_axis) then
+      write(print_to,'(a)') '  Energy spectrum of particles'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Spectr_grid_par(1)%along_axis) then
+      write(print_to,'(a)') '  Spectrum resolved along X'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Spectr_grid_par(2)%along_axis) then
+      write(print_to,'(a)') '  Spectrum resolved along Y'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Spectr_grid_par(3)%along_axis) then
+      write(print_to,'(a)') '  Spectrum resolved along Z'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Spectr_grid_par(8)%along_axis) then
+      write(print_to,'(a)') '  Spectrum resolved along R (cylindric coordinates)'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%grid_par(1)%along_axis) then
+      write(print_to,'(a)') '  Distribution along X'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%grid_par(2)%along_axis) then
+      write(print_to,'(a)') '  Distribution along Y'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%grid_par(3)%along_axis) then
+      write(print_to,'(a)') '  Distribution along Z'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%grid_par(8)%along_axis) then
+      write(print_to,'(a)') '  Distribution along R (cylindric coordinates)'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%grid_par(11)%along_axis) then
+      write(print_to,'(a)') '  2d-distribution along R and Z (cylindric coordinates)'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+
+   if (.not.MC_output) then
+      write(print_to,'(a)') '  none'
+   endif
+
+   !---------------------
+   if (numpar%DO_MD) then
+      write(print_to,'(a)') ' In MD module: '
+
+      if (numpar%print_MC_MD_energy) then
+         write(print_to,'(a)') '  MC-MD energy transfer'
+         MD_output = .true.   ! mark that there was any optional output
+      endif
+
+      if (numpar%n_MSD > 0) then
+         write(print_to,'(a)') '  Mean atomic displacements'
+         MD_output = .true.   ! mark that there was any optional output
+      endif
+
+      if (numpar%print_MD_R_xyz) then
+         write(print_to,'(a)') '  Atomic coordinates in XYZ format'
+         MD_output = .true.   ! mark that there was any optional output
+      endif
+
+      if (numpar%print_MD_V_xyz) then
+         write(print_to,'(a)') '  Atomic velosities in XYZ format'
+         MD_output = .true.   ! mark that there was any optional output
+      endif
+
+      if (numpar%print_MD_LAMMPS) then
+         write(print_to,'(a)') '  Input file for LAMMPS at the final time instant'
+         MD_output = .true.   ! mark that there was any optional output
+      endif
+
+      if (.not.MD_output) then
+         write(print_to,'(a)') '  none'
+      endif
+   endif
    
    !**********************************************
 9999   write(print_to,'(a)') trim(adjustl(m_starline))

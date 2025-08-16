@@ -3,7 +3,6 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2018-2020
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to read input files:
 
@@ -13,7 +12,8 @@ use Objects
 use Dealing_with_files
 use Dealing_with_cdf_files
 use Dealing_with_EADL
-use Read_numerical_parameters, only: m_input_folder, read_num_pars
+use Read_numerical_parameters, only: m_input_folder, read_num_pars, read_output_grid_coord, &
+                set_MD_step_grid, set_time_grid
 use Read_MD_parameters, only: read_supercell_parameters, set_atomic_coordinates, &
                 set_atomic_velocities, set_MD_potential
 use MD_general_tools, only: get_nearest_neighbors_list
@@ -24,7 +24,7 @@ use Little_subroutines
 implicit none
 
 ! All paths to input data and databases are collected here within this module:
-character(50) :: m_databases, m_input_data, m_numerical_parameters, m_EADL, m_EPDL
+character(50) :: m_databases, m_input_minimal, m_input_data, m_numerical_parameters, m_EADL, m_EPDL
 character(50) :: m_photon_CS, m_electron_CS, m_ion_CS, m_positron_CS, m_hole_CS
 character(50) :: m_raw_EPDL, m_interpolated_Ph_CS, m_folder_materials
 character(50) :: m_folder_normalized_CDF, m_folder_DOS, m_folder_MD
@@ -48,12 +48,17 @@ parameter(m_folder_normalized_CDF = 'Normalized_CDF')	! folder with normalized C
 parameter(m_folder_DOS = 'DOS')	    ! folder with all material DOSes
 parameter(m_folder_MD = 'MD_input') ! folder with all parameters for MD simulations
 ! Databases and input files:
+! New format (minimal) input:
+parameter(m_input_minimal = 'INPUT.txt')		! file frim INPUT parameters
+! Old format (complete) input:
 parameter(m_input_data = 'INPUT_DATA.txt')		! file frim INPUT_DATA parameters
 parameter(m_numerical_parameters = 'NUMERICAL_PARAMETERS.txt')	! file with all numerical parameters
 !parameter(m_EADL = 'EADL2017.all')				! file with EADL database OLD
 !parameter(m_EPDL = 'EPDL2017.all')				! file with EPDL database OLD
-parameter(m_EADL = 'EADL2023.ALL')				! file with EADL database
-parameter(m_EPDL = 'EPDL2023.ALL')				! file with EPDL database
+!parameter(m_EADL = 'EADL2023.ALL')				! file with EADL database OLD
+!parameter(m_EPDL = 'EPDL2023.ALL')				! file with EPDL database OLD
+parameter(m_EADL = 'EADL2025.ALL')				! file with EADL database
+parameter(m_EPDL = 'EPDL2025.ALL')				! file with EPDL database
 parameter(m_file_Compton_profiles = 'Compton_profiles.dat')	! database of Compton profiles to be used for calculations of Compton cross sections
 parameter(m_file_pair_coeffs = 'Pair_creation_coefficients.dat')	! database with coefficients to be used in photon pair creation cross sections
 parameter(m_file_form_factors  = 'Atomic_form_factors.dat')		! database with coefficients used to construct atomic form factors
@@ -118,7 +123,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       call Save_error_details(Err, 1, Error_descript)	! module "Objects"
       !print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
       Error_descript_extended = trim(adjustl(Error_descript))//' TREKIS terminates. '// &
-      'Please download the EPICS databases (EADL2023.ALL and EPDL2023.ALL) from https://nds.iaea.org/epics/ '// &
+      'Please download the EPICS databases (EADL2025.ALL and EPDL2025.ALL) from https://nds.iaea.org/epics/ '// &
       'or  http://redcullen1.net/HOMEPAGE.NEW/index.htm '// &
       'and place them into the directory: INPUT_DATA\Atomic_parameters'
       call print_error(Error_descript_extended)   ! module "Little_subroutines"
@@ -194,7 +199,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
             numpar%H_elast = 5   ! use SPDelta for electrons instead
          endif
       endif
-!       print*, chemical_formula, used_target%Material(i)%Dens, used_target%Material(i)%Egap, used_target%Material(i)%CDF_valence%E0(:)
+      !print*, chemical_formula, used_target%Material(i)%Dens, used_target%Material(i)%CDF_valence%E0(:)
       
       ! Interprete the target chemical formula, and read data for each element from the periodic table:
       Path = trim(adjustl(m_input_folder))//path_sep//trim(adjustl(m_databases))
@@ -1133,51 +1138,61 @@ subroutine Read_input(used_target, numpar, bunch, Err)
    ! Define initial files:
    Folder_name = trim(adjustl(m_input_folder))//numpar%path_sep	! folder with all input files
    numpar%input_path = Folder_name	! save the address with input files
-   FN = 101
-   FN2 = 102
-   File_name = trim(adjustl(Folder_name))//trim(adjustl(m_input_data))	!'INPUT_DATA.txt'
-   File_name_2 = trim(adjustl(Folder_name))//trim(adjustl(m_numerical_parameters))	!'NUMERICAL_PARAMETERS.txt'
+
+
    !---------------------------
+   ! Reading new format of input file using Fortran Namelists (still in the testing mode!):
+   call set_defaults(used_target, bunch, numpar)  ! to start with, set all default flags; below
+
+   numpar%new_input_format = .false. ! to start with, assumed new format wasn't used
+   File_name_new = trim(adjustl(Folder_name))//trim(adjustl(m_input_minimal))
+   print*, 'Reading file: '//trim(adjustl(File_name_new))
+   FN3 = 103
    ! Check if files exist and open them:
-   call open_file(FN, File_name, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
+   call open_file(FN3, File_name_new, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
    if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
-      ! print out the error into the log file:
-      call Save_error_details(Err, 1, Error_descript)	! module "Objects"
-      print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
-      goto 9999	! skip executing the program, exit the subroutine
+      Error_descript = ''    ! renew it, and just skip the file
+      print*, 'Could not read it, checking if old format of input exists...'
+   else
+      call Read_single_file_input(FN3, File_name_new, used_target, bunch, numpar, Err)   ! below
+      numpar%new_input_format = .true. ! new format was used
    endif
-   
-   call open_file(FN2, File_name_2, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
-   if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
-      ! print out the error into the log file:
-      call Save_error_details(Err, 1, Error_descript)	! module "Objects"
-      print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
-      goto 9999	! skip executing the program, exit the subroutine
-   endif
-   
+   call close_file('close', FN=FN3)	! module "Dealing_with_files"
+
+
    !---------------------------
-!    ! Reading new format of input file using Fortran Namelists (still in the testing mode!):
-!    File_name_new = trim(adjustl(Folder_name))//'INPUT.txt'
-!    print*, 'Reading file: '//trim(adjustl(File_name_new))
-!    FN3 = 103
-!    ! Check if files exist and open them:
-!    call open_file(FN3, File_name_new, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
-!    if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
-!       Error_descript = ''    ! renew it, and just skip the file
-!    else
-!       call read_new_format_input(FN3, File_name_new, used_target, bunch, Err)
-!    endif
-!    call close_file('close', FN=FN3)	! module "Dealing_with_files"
+   ! Check old format of input:
+   if (.not.numpar%new_input_format) then ! only if didn't read the data in new format, use the old one:
+      FN = 101
+      FN2 = 102
+      File_name = trim(adjustl(Folder_name))//trim(adjustl(m_input_data))	!'INPUT_DATA.txt'
+      File_name_2 = trim(adjustl(Folder_name))//trim(adjustl(m_numerical_parameters))	!'NUMERICAL_PARAMETERS.txt'
+      !---------------------------
+      ! Check if files exist and open them:
+      call open_file(FN, File_name, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
+      if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
+         ! print out the error into the log file:
+         call Save_error_details(Err, 1, Error_descript)	! module "Objects"
+         print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         goto 9999	! skip executing the program, exit the subroutine
+      endif
    
-   !---------------------------
-   ! Read the file with input data:
-   print*, 'Reading file: '//trim(adjustl(File_name))
-   call read_input_parameters(FN, File_name, used_target, bunch, Err)	! see below
-   
-   !---------------------------
-   ! Read the file with all numerical parameters:
-   print*, 'Reading file: '//trim(adjustl(File_name_2))
-   call read_num_pars(FN2, File_name_2, numpar, Err)	! module "Read_numerical_parameters"
+      call open_file(FN2, File_name_2, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
+      if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
+         ! print out the error into the log file:
+         call Save_error_details(Err, 1, Error_descript)	! module "Objects"
+         print*, trim(adjustl(Error_descript)), ', TREKIS terminates'
+         goto 9999	! skip executing the program, exit the subroutine
+      endif
+      !---------------------------
+      ! Read the file with input data:
+      print*, 'Reading file: '//trim(adjustl(File_name))
+      call read_input_parameters(FN, File_name, used_target, bunch, Err)	! see below
+      !---------------------------
+      ! Read the file with all numerical parameters:
+      print*, 'Reading file: '//trim(adjustl(File_name_2))
+      call read_num_pars(FN2, File_name_2, numpar, Err)	! module "Read_numerical_parameters"
+   endif ! (.not.numpar%new_input_format)
    
    !---------------------------
    ! close opened input files:
@@ -1187,7 +1202,1267 @@ subroutine Read_input(used_target, numpar, bunch, Err)
 end subroutine Read_input
 
 
-subroutine read_new_format_input(FN, File_name, used_target, bunch, Err)
+
+! If all input data are provided in a single file (new format, not all data needed to be provided):
+subroutine Read_single_file_input(FN, File_name, used_target, bunch, numpar, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Matter), intent(inout) :: used_target	! parameters of the target
+   type(Radiation_param), dimension(:), allocatable, intent(inout) :: bunch	! incomming radiation
+   type(Num_par), intent(inout) :: numpar	! all numerical parameters
+   type(Error_handling), intent(inout) :: Err	! error log
+   !----------------------
+   integer :: Reason, count_lines, i, N_rp, i_rp
+   character(200) :: Error_descript, read_line
+   logical :: read_well, stay_in_the_loop
+
+   Error_descript = ''  ! to start with
+   count_lines = 0	! to start counting lines in the file
+
+   !----------------------
+   ! Read all line in file, until find a block keyword:
+
+   !----------------------
+   ! I) Mandatory sections:
+   !----------------------
+
+   stay_in_the_loop = .true.  ! to start with
+   ML:do while (stay_in_the_loop)   ! check all possible entries
+      read(FN,*,IOSTAT=Reason) read_line  ! read line to interprete it
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then     ! probably, end of the file reached
+         stay_in_the_loop = .false. ! time to leave
+         exit ML  ! exit the main loop
+      endif
+
+
+      ! Interprete the line:
+      select case (trim(adjustl(read_line)))
+      !----------------------
+      case ('TARGET', 'Target', 'target', '::: TARGET :::', '::: Target :::', '::: target :::')
+         ! 1) Material definition
+         call read_target_definition(FN, File_name, used_target, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('RADIATION', 'Radiation', 'radiation', '::: RADIATION :::', '::: Radiation :::', '::: radiation :::')
+         ! 2) Radiation definition
+         call read_radiation_definition(FN, File_name, bunch, count_lines, read_well, Err) ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('::: NUMERICAL PARAMETERS :::', '::: NUMERICS:::', 'NUMERICAL PARAMETERS', 'numerical parameters', 'NUMERICS', 'numerics')
+         ! 3) Mandatory numerical parameters
+         call read_numerics_definition(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('OUTPUT', 'Output', 'output', '::: OUTPUT DATA :::', '::: output data :::', '::: OUTPUT :::', '::: output:::')
+         ! 4) Mandatory output
+         call read_mandatory_output(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('ELECTRONS', 'Electrons', 'electrons', '::: MODELS FOR ELECTRONS :::')
+         ! 5) Optional numerical details for electrons
+         call read_optional_electrons_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('PHOTONS', 'Photons', 'photons', '::: MODELS FOR PHOTONS :::')
+         ! 6) Optional numerical details for photons
+         call read_optional_photons_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('SHI', 'SHIs', 'Ions', 'IONS', 'ions', '::: MODELS FOR SHI :::')
+         ! 7) Optional numerical details for SHIs
+         call read_optional_SHI_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('Positrons', 'POSITRONS', 'positrons', '::: MODELS FOR POSITRONS :::')
+         ! 8) Optional numerical details for positrons
+         call read_optional_positrons_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('Holes', 'HOLES', 'holes', '::: MODELS FOR HOLES :::')
+         ! 9) Optional numerical details for positrons
+         call read_optional_holes_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('CDF', 'cdf', '::: MODELS FOR CDF :::')
+         ! 10) Optional numerical details for CDF
+         call read_optional_CDF_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('Quenching', 'QUENCHING', 'quenching', 'MD', '::: MODELS FOR MD :::')
+         ! 11) Optional numerical details for CDF
+         call read_optional_MD_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
+      case ('Optional', 'OPTIONAL', 'optional')
+         ! All mandatory optional were read, proceed to the optional
+         exit ML  ! exit the main loop
+
+      end select
+
+   enddo ML
+   if (Err%Err) return    ! if an error occured while reading input file, terminate the program
+
+   !----------------------
+   ! II) Optional optput section:
+   !----------------------
+   ! Optional output
+   call read_output_grid_coord(FN, File_name, numpar, Err, count_lines) ! module "Read_numerical_parameters"
+
+end subroutine Read_single_file_input
+
+
+
+subroutine read_optional_MD_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+   ! Use quenching in MD (T=true; F=false), when to start [fs], how often nullify velocities [fs]:
+   read(FN,*,IOSTAT=Reason) numpar%do_quenching, numpar%t_quench_start, numpar%dt_quench
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+   numpar%t_quench_run = 0.0d0  ! starting
+
+end subroutine read_optional_MD_numerics
+
+
+
+subroutine read_optional_CDF_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+   ! CDF model: 0 = Drude / Lindhard CDF, 1=Mermin CDF, 2=Full conserving CDF (not ready)
+   read(FN,*,IOSTAT=Reason) numpar%CDF_model
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! target dispersion relation: 0=free electron, 1=plasmon-pole, 2=Ritchie; effective mass [in me] (0=effective mass from DOS of VB; -1=free-electron):
+   read(FN,*,IOSTAT=Reason) numpar%CDF_dispers, numpar%CDF_m_eff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Include plasmon integration limit (0=no, 1=yes):
+   read(FN,*,IOSTAT=Reason) numpar%CDF_plasmon
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (INELASTIC):
+   read(FN,*,IOSTAT=Reason) numpar%CDF_Eeq_factor
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (ELASTIC):
+   read(FN,*,IOSTAT=Reason) numpar%CDF_Eeq_elast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+    ! Flag to use for target atoms Zeff (set 0), or Z=1 (set 1):
+   read(FN,*,IOSTAT=Reason) numpar%CDF_elast_Zeff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! effective number of grid points for inelastic cross section integration over energy
+   read(FN,*,IOSTAT=Reason) numpar%CDF_int_n_inelastE
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! effective number of grid points for inelastic cross section integration over momentum
+   read(FN,*,IOSTAT=Reason) numpar%CDF_int_n_inelastQ
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! effective number of grid points for elastic cross section integration over energy
+   read(FN,*,IOSTAT=Reason) numpar%CDF_int_n_elastE
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! effective number of grid points for elastic cross section integration over momentum
+   read(FN,*,IOSTAT=Reason) numpar%CDF_int_n_elastQ
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+end subroutine read_optional_CDF_numerics
+
+
+subroutine read_optional_holes_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+   ! Auger decays:  0=excluded, 1=EADL
+   read(FN,*,IOSTAT=Reason) numpar%H_Auger
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Radiative decays: 0=excluded, 1=EADL
+   read(FN,*,IOSTAT=Reason) numpar%H_Radiat
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [me] effective valence hole mass in units of electron mass
+   read(FN,*,IOSTAT=Reason) numpar%H_m_eff ! [me] effective valence hole mass (-1=from DOS; 0=free electron; >0=fixed mass in m_e)
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Valence hole inelastic scattering: 0=excluded, 1=CDF, 2=BEB, 3=Delta
+   read(FN,*,IOSTAT=Reason) numpar%H_inelast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Valence hole elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF (NOT READY YET!), 5=SP-CDF
+   read(FN,*,IOSTAT=Reason) numpar%H_elast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [eV] Cut-off energy (holes with lower energies are excluded from calculation):
+   read(FN,*,IOSTAT=Reason) numpar%H_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+end subroutine read_optional_holes_numerics
+
+
+
+
+subroutine read_optional_positrons_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+   ! Positron inelastic scattering: 0=excluded, 1=delta
+   read(FN,*,IOSTAT=Reason) numpar%Pos_inelast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Positron elastic scattering: 0=excluded, 1=delta
+   read(FN,*,IOSTAT=Reason) numpar%Pos_elastic
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Positron Bremsstrahlung scattering: 0=excluded, 1=delta
+   read(FN,*,IOSTAT=Reason) numpar%Pos_Brems
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Positron annihilation: 0=excluded, 1= Heitler
+   read(FN,*,IOSTAT=Reason) numpar%Pos_annih
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [eV] Cut-off energy (electrons with lower energies are excluded from calculation):
+   read(FN,*,IOSTAT=Reason) numpar%Pos_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+end subroutine read_optional_positrons_numerics
+
+
+
+subroutine read_optional_SHI_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+   ! SHI inelastic scattering: 0=excluded, 1:3=delta, 4=nonrelativ.CDF (DO NOT USE!), 5=SPdelta
+   read(FN,*,IOSTAT=Reason) numpar%SHI_inelast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Charge state: 0=Barkas; 1=Bohr; 2=Nikolaev-Dmitriev; 3=Schiwietz-Grande, 4=fixed Zeff, 5=charge exchange:
+   read(FN,*,IOSTAT=Reason) numpar%SHI_ch_st
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! SHI charge shape: 0=point-like charge; 1=Brandt-Kitagawa ion:
+   read(FN,*,IOSTAT=Reason) numpar%SHI_ch_shape
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [eV] Cut-off energy (SHIs with lower energies are excluded from calculation):
+   read(FN,*,IOSTAT=Reason) numpar%SHI_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+end subroutine read_optional_SHI_numerics
+
+
+
+subroutine read_optional_photons_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+   ! Photoabsorption CSs: 0=excluded, 1=CDF, 2=EPDL:
+   read(FN,*,IOSTAT=Reason) numpar%Ph_absorb
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Compton effect: 0=excluded, 1=PENELOPE
+   read(FN,*,IOSTAT=Reason) numpar%Ph_Compton
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Thomson / Rayleigh scattering: 0=excluded, 1=PENELOPE
+   read(FN,*,IOSTAT=Reason) numpar%Ph_Thomson
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Electron-positron pair creation: 0=excluded, 1=included, 2=included with 6) Landau-Pomeranchuk-Migdal suppression effect:
+   read(FN,*,IOSTAT=Reason) numpar%Ph_Pairs
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Photonuclear Physics: 0=excluded, 1=included:
+   read(FN,*,IOSTAT=Reason) numpar%Ph_Nucl
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [eV] Cut-off energy (photons with lower energies are excluded from calculation):
+   read(FN,*,IOSTAT=Reason) numpar%Ph_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [A] Effective photon attenuation length (<0 means do not use effective one, use real one from EPDL):
+   read(FN,*,IOSTAT=Reason) numpar%Ph_att_eff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+end subroutine read_optional_photons_numerics
+
+
+
+
+subroutine read_optional_electrons_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+
+   ! MC or MD target model: 0=MC, 1=MD
+   read(FN,*,IOSTAT=Reason) numpar%MC_vs_MD
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Include forces and fields among electrons: 0=exclude, 1=include
+   read(FN,*,IOSTAT=Reason) numpar%El_forces
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! inelastic scattering: 0=excluded, 1=relativ.CDF, 2=RBEB, 3=delta, 4=nonrelativ.CDF (DO NOT USE!), 5=SPdelta
+   read(FN,*,IOSTAT=Reason) numpar%El_inelast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF
+   read(FN,*,IOSTAT=Reason) numpar%El_elastic
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Bremsstrahlung: 0=excluded, 1=BHW
+   read(FN,*,IOSTAT=Reason) numpar%El_Brems
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Cherenkov radiation: 0=excluded, 1= ...
+   read(FN,*,IOSTAT=Reason) numpar%El_Cheren
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [eV] Cut-off energy (electrons with lower energies are excluded from calculation):
+   read(FN,*,IOSTAT=Reason) numpar%El_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+end subroutine read_optional_electrons_numerics
+
+
+
+subroutine read_mandatory_output(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: temp, Reason
+   character(200) :: Error_descript
+
+   ! Which format to use for gnuplot figures:
+   read(FN,*,IOSTAT=Reason) numpar%gnupl%gnu_extension
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Does user require to printout DOS of materials?
+   read(FN,*,IOSTAT=Reason) numpar%printout_DOS
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Does user require to printout MFPs in materials?
+   read(FN,*,IOSTAT=Reason) numpar%printout_MFPs
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Does user require to printout Ranges in materials?
+   read(FN,*,IOSTAT=Reason) numpar%printout_ranges
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+end subroutine read_mandatory_output
+
+
+
+subroutine read_numerics_definition(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason, temp
+   character(200) :: temp_ch, Error_descript
+
+   ! number of MC iterations
+   read(FN,*,IOSTAT=Reason) numpar%NMC
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! number of threads for parallel calculations with OpenMP (1 if nonparrelelized)
+   read(FN,*,IOSTAT=Reason) numpar%NOMP
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [fs] Time-step for MD
+   read(FN,*,IOSTAT=Reason) temp_ch  ! check whether there is time grid provided
+   !read(FN,*,IOSTAT=Reason) numpar%dt_MD
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   else
+      call set_MD_step_grid(temp_ch, numpar, read_well, Error_descript)  ! module "Read_numerical_parameters"
+      if (.not. read_well) then
+         call Save_error_details(Err, 2, Error_descript)    ! module "Objects"
+         return
+      endif
+   endif
+
+   ! [fs] How often to print out the data into files
+   read(FN,*,IOSTAT=Reason) temp_ch  ! check whether there is time grid provided
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      write(Error_descript,'(a)') trim(adjustl(Error_descript))//'. Setting printout timestep equal to simulation step.'
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      numpar%dt_printout = numpar%dt_MD ! printout data every timestep by default
+   else
+      call set_time_grid(temp_ch, numpar)   ! module "Read_numerical_parameters"
+   endif
+
+   ! [fs] when to start simulation
+   read(FN,*,IOSTAT=Reason) numpar%t_start
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [fs] when to stop simulation
+   read(FN,*,IOSTAT=Reason) numpar%t_total
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Activate MC module or not:
+   read(FN,*,IOSTAT=Reason) temp
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+   if (temp /= 0) then	! perform MC calculations:
+      numpar%DO_MC = .true.
+   else	! do NOT perform MC calculations:
+      numpar%DO_MC = .false.
+   endif
+
+   ! Activate MD module or not:
+   read(FN,*,IOSTAT=Reason) temp
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+   if (temp /= 0) then	! perform MD calculations:
+      numpar%DO_MD = .true.
+   else	! do NOT perform MD calculations:
+      numpar%DO_MD = .false.
+   endif
+
+   ! Activate TTM module or not:
+   read(FN,*,IOSTAT=Reason) temp
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+   if (temp /= 0) then	! perform MD calculations:
+      numpar%DO_TTM = .true.
+   else	! do NOT perform MD calculations:
+      numpar%DO_TTM = .false.
+   endif
+
+   ! Recalculate cross sections and MFPs (T=true; F=false):
+   read(FN,*,IOSTAT=Reason) numpar%recalculate_MFPs
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [A] coordinates of the left and right ends of the simulation window along X, and whether reset it via MD:
+   read(FN,*,IOSTAT=Reason) numpar%box_start_x, numpar%box_end_x, numpar%reset_from_MD(1)
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [A] coordinates of the left and right ends of the simulation window along Y, and whether reset it via MD:
+   read(FN,*,IOSTAT=Reason) numpar%box_start_y, numpar%box_end_y, numpar%reset_from_MD(2)
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [A] coordinates of the left and right ends of the simulation window along Z, and whether reset it via MD:
+   read(FN,*,IOSTAT=Reason) numpar%box_start_z, numpar%box_end_z, numpar%reset_from_MD(3)
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Bondary conditions along x,y,z: 0=free, 1=periodic
+   read(FN,*,IOSTAT=Reason) numpar%periodic_x, numpar%periodic_y, numpar%periodic_z
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+end subroutine read_numerics_definition
+
+
+
+subroutine read_radiation_definition(FN, File_name, bunch, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Radiation_param), dimension(:), allocatable, intent(inout) :: bunch   ! incomming radiation
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: N_rp, i_rp, Reason
+   character(200) :: Error_descript
+
+   ! Number of different types of incomming particles:
+   read(FN,*,IOSTAT=Reason) N_rp	! How many incoming particles/pulses to model
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Now we know how many incomming particles we have, allocate arrays:
+   if (allocated(bunch)) then
+      if (size(bunch) /= N_rp) deallocate(bunch)      ! if default doesn't coincide with defined
+   endif
+   if (.not. allocated(bunch)) allocate(bunch(N_rp))
+
+   ! Read the parameters of each of the incoming particles / pulses:
+   PULS:do i_rp = 1, N_rp	! for each of them
+      ! Type of radiation: 0=single particles, 1=pulse / bunch
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%NOP
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+      if (bunch(i_rp)%NOP < 1) bunch(i_rp)%NOP = 1  ! by default use 1 particle, not less
+
+      ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%KOP
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+      ! [A] coordinates of impact:
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%R(:)
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+      ! [A] spread (or uncertainty) of coordinates of impact
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%R_spread(:)
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+!       ! Spatial shape: 0 = rectangular, 1 = Gaussian, 2 = SASE
+!       read(FN,*,IOSTAT=Reason) bunch(i_rp)%Space_shape
+!       call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+!       if (.not. read_well) then
+!          write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+!          call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+!          return
+!       endif
+
+      ! [degrees] theta and phi angles of impact:
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%theta, bunch(i_rp)%phi
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+      ! Convert from degrees to radians:
+      bunch(i_rp)%theta = bunch(i_rp)%theta * g_deg2rad
+      bunch(i_rp)%phi = bunch(i_rp)%phi * g_deg2rad
+
+      ! [eV] energy of the incomming particle / pulse:
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%E
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+      ! [eV] spread of energies (or energy uncertainty):
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%E_spread
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+!       ! Spectral shape: 0 = rectangular, 1 = Gaussian, 2 = SASE:
+!       read(FN,*,IOSTAT=Reason) bunch(i_rp)%Spectr_shape
+!       call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+!       if (.not. read_well) then
+!          write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+!          call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+!          return
+!       endif
+
+      ! [fs] arrival time of the incomming particle / center of the pulse:
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%t
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+      ! [fs] FWHM-duration of the pulse (ignorred for single particles):
+      read(FN,*,IOSTAT=Reason) bunch(i_rp)%FWHM
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+!       ! Temporal shape: 0 = rectangular, 1 = Gaussian, 2 = SASE:
+!       read(FN,*,IOSTAT=Reason) bunch(i_rp)%Time_shape
+!       call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+!       if (.not. read_well) then
+!          write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+!          call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+!          return
+!       endif
+
+      ! In case of SHI, there are additional lines specifying
+      if (bunch(i_rp)%KOP == 3) then
+         ! Z, atomic number of ion in periodic table:
+         read(FN,*,IOSTAT=Reason) bunch(i_rp)%Z
+         call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+         if (.not. read_well) then
+            write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+            call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+            return
+         endif
+
+         ! User-provided fixed charge [e], and SHI mass [a.m.u]:
+         read(FN,*,IOSTAT=Reason) bunch(i_rp)%Zeff,  bunch(i_rp)%Meff
+         call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+         if (.not. read_well) then
+            write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+            call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+            return
+         endif
+      endif
+
+   enddo PULS
+
+end subroutine read_radiation_definition
+
+
+
+subroutine read_target_definition(FN, File_name, used_target, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Matter), intent(inout) :: used_target	! parameters of the target
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------------
+   integer :: Reason, i
+   character(200) :: Error_descript
+
+   ! Target name:
+   read(FN,*,IOSTAT=Reason) used_target%Name
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! how many target components there are:
+   read(FN,*,IOSTAT=Reason) used_target%NOC
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+   ! Now we know how many different types of the targets we have, allocate arrays for them:
+   If (allocated(used_target%Material)) then
+      if (size(used_target%Material) /= used_target%NOC) deallocate(used_target%Material) ! if default doesn't coincide with defined
+   endif
+   If (allocated(used_target%Mat_types)) then
+      if (size(used_target%Mat_types) /= used_target%NOC) deallocate(used_target%Mat_types) ! if default doesn't coincide with defined
+   endif
+   If (allocated(used_target%Geom)) then
+      if (size(used_target%Geom) /= used_target%NOC) deallocate(used_target%Geom) ! if default doesn't coincide with defined
+   endif
+   if (.not. allocated(used_target%Material)) allocate(used_target%Material(used_target%NOC))
+   if (.not. allocated(used_target%Mat_types)) allocate(used_target%Mat_types(used_target%NOC))
+   if (.not. allocated(used_target%Geom)) allocate(used_target%Geom(used_target%NOC))
+
+   ! Read parameters for all the types of the target, all components one by one:
+   TRGT:do i = 1, used_target%NOC
+      ! Read the chemical formula of this target component:
+      read(FN,*,IOSTAT=Reason) used_target%Material(i)%Name
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+      ! Read the temperature of this target component:
+      read(FN,*,IOSTAT=Reason) used_target%Material(i)%T		! [K]
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+      used_target%Material(i)%T_eV = used_target%Material(i)%T*g_kb_EV	! convert to [eV]
+
+      ! Read the type of the target:
+      read(FN,*,IOSTAT=Reason) used_target%Mat_types(i)
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+
+      ! Once we know the index, lets set the type for the geometry:
+      select case (used_target%Mat_types(i))
+      case default	! Rectangle:
+         allocate(Rectangle::used_target%Geom(i)%Set)
+      case (1)	! Sphere
+         allocate(Sphere::used_target%Geom(i)%Set)
+      case (2)	! Sphere_segment
+         allocate(Sphere_segment::used_target%Geom(i)%Set)
+      case (3)	! Cylinder
+         allocate(Cylinder::used_target%Geom(i)%Set)
+      case (4)	! Cylinder_segment
+         allocate(Cylinder_segment::used_target%Geom(i)%Set)
+      endselect
+
+      ! Now we can read the parameters of this given type:
+      ASSOCIATE (ARRAY => used_target%Geom(i)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
+       select type (ARRAY)	! Depending on the type of used_target%Geom(i)%Set
+         type is (Rectangle)
+            call read_param_Rectangle(FN, File_name, Reason, count_lines, array, Err)	! see below
+         type is (Sphere)
+            call read_param_Sphere(FN, File_name, Reason, count_lines, array, Err)	! see below
+         type is (Sphere_segment)
+            call read_param_Sphere_segment(FN, File_name, Reason, count_lines, array, Err)	! see below
+         type is (Cylinder)
+            call read_param_Cylinder(FN, File_name, Reason, count_lines, array, Err)		! see below
+         type is (Cylinder_segment)
+            call read_param_Cylinder_segment(FN, File_name, Reason, count_lines, array, Err)	! see below
+       endselect
+      END ASSOCIATE
+
+      ! Read type of potential barrier:
+      read(FN,*,IOSTAT=Reason) used_target%Material(i)%Surface_barrier%barr_type	! Type of emission barrier: 0=step, 1=Eckart
+      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+      if (.not. read_well) then
+         write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+         call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+         return
+      endif
+   enddo TRGT
+
+end subroutine read_target_definition
+
+
+
+
+subroutine set_defaults(used_target, bunch, numpar)
+   type(Matter), intent(inout) :: used_target   ! parameters of the target
+   type(Radiation_param), dimension(:), allocatable, intent(inout) :: bunch	! incomming radiation
+   type(Num_par), intent(inout) :: numpar       ! all numerical parameters
+   !---------------------------
+   ! Set default parameters:
+
+   ! Target:
+   used_target%Name = 'Test_target'
+   used_target%NOC = 1
+   allocate(used_target%Material(used_target%NOC))
+   allocate(used_target%Mat_types(used_target%NOC))
+   allocate(used_target%Geom(used_target%NOC))
+   used_target%Material(1)%Name = 'Null'    ! No target by default
+   used_target%Material(1)%T = 300.0d0      ! Temperature [K]
+   used_target%Material(1)%T_eV = used_target%Material(1)%T*g_kb_EV ! [eV]
+   used_target%Mat_types(1) = 0     ! rectangle
+   used_target%Material(1)%Surface_barrier%barr_type = 1    ! Eckart barrier
+
+   ! Radiation:
+   allocate(bunch(1))
+   bunch(1)%NOP = 1  ! by default use 1 particle
+   bunch(1)%KOP = 0  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole
+   bunch(1)%R(:) = 0.0d0   ! [A] coordinates of impact
+   bunch(1)%R_spread(:) = 0.0d0 ! [A] spread (or uncertainty) of coordinates of impact
+   bunch(1)%theta = 0.0d0 ! [degrees] theta and phi angles of impact:
+   bunch(1)%phi = 0.0d0
+   bunch(1)%E = 100.0d0   ! [eV] energy of the incomming particle / pulse
+   bunch(1)%E_spread = 0.0d0 ! [eV] spread of energies (or energy uncertainty)
+   bunch(1)%t = 0.0d0  ! [fs] arrival time of the incomming particle / center of the pulse
+   bunch(1)%FWHM = 0.0d0 ! [fs] FWHM-duration of the pulse (ignorred for single particles)
+
+   ! NUMERICAL PARAMETERS:
+   numpar%NMC = 1       ! number of MC iterations
+   numpar%NOMP = 1      ! number of threads for parallel calculations with OpenMP (1 if nonparrelelized)
+   numpar%dt_MD = 1.0d0 ! time step
+   numpar%i_dt = -1     ! to mark that the reset option is unused
+   numpar%dt_printout = numpar%dt_MD ! printout data every timestep by default
+   numpar%t_start = 0.0d0     ! [fs] when to start simulation
+   numpar%t_total = 100.0d0   ! [fs] when to stop simulation
+   numpar%DO_MC = .false.     ! do NOT perform MC calculations
+   numpar%DO_MD = .false.     ! do NOT perform MD calculations
+   numpar%DO_TTM = .false.    ! do NOT perform TTN calculations
+   numpar%recalculate_MFPs = .false. ! do NOT recalculate MFPs
+   ! [A] coordinates of the left and right ends of the simulation box along X, and whether reset it via MD:
+   numpar%box_start_x = -10.0d10
+   numpar%box_end_x = 10.0d10
+   numpar%reset_from_MD(1) = .false.
+   ! [A] coordinates of the left and right ends of the simulation box along Y, and whether reset it via MD:
+   numpar%box_start_y = -10.0d10
+   numpar%box_end_y  = 10.0d10
+   numpar%reset_from_MD(2) = .false.
+   ! [A] coordinates of the left and right ends of the simulation box along Z, and whether reset it via MD:
+   numpar%box_start_z = 0.0d0
+   numpar%box_end_z = 10.0d0
+   numpar%reset_from_MD(3) = .false.
+   ! Kind of boundary along X, Y, Z (0=absorbing; 1=periodic; 2=reflective; 3=white):
+   numpar%periodic_x = 1
+   numpar%periodic_y = 1
+   numpar%periodic_z = 1
+
+   !::: MODELS FOR ELECTRONS :::
+   numpar%MC_vs_MD = 0  ! MC or MD target model: 0=MC, 1=MD
+   numpar%El_forces = 0 ! Include forces and fields among electrons: 0=exclude, 1=include
+   numpar%El_inelast = 3 ! inelastic scattering: 0=excluded, 1=numerical relativ.CDF, 2=RBEB, 3=delta, 4=nonrelativ.CDF (DO NOT USE!), 5=SPdelta
+   numpar%El_elastic = 1 ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF
+   numpar%El_Brems = 1        ! Bremsstrahlung: 0=excluded, 1=BHW.
+   numpar%El_Cheren = 0       ! Cherenkov radiation: 0=excluded, 1= NOT READY
+   numpar%El_Cutoff = 0.1d0 ! [eV] Cut-off energy (electrons with lower energies are excluded from calculation)
+
+   !::: MODELS FOR PHOTONS :::
+   numpar%Ph_absorb = 2  ! Photoabsorption CSs: 0=excluded, 1=CDF, 2=EPDL
+   numpar%Ph_Compton = 1 ! Compton effect: 0=excluded, 1=PENELOPE
+   numpar%Ph_Thomson = 1 ! Thomson / Rayleigh scattering: 0=excluded, 1=PENELOPE
+   numpar%Ph_Pairs = 1   ! Electron-positron pair creation: 0=excluded, 1=included, 2=included with Landau-Pomeranchuk-Migdal (not ready)
+   numpar%Ph_Nucl = 0  ! ! Photonuclear Physics: 0=excluded, 1=included (not ready)
+   numpar%Ph_Cutoff = -1.0d0    ! [eV] Cut-off energy (photons with lower energies are excluded from calculation)
+   numpar%Ph_att_eff = -1.0d0   ! [A] Effective photon attenuation length (<0 means do not use effective one, use real one from EPDL)
+
+   !::: MODELS FOR SHI :::
+   numpar%SHI_inelast = 1     ! SHI inelastic scattering: 0=excluded, 1:3=delta, 4=nonrelativ.CDF (DO NOT USE!), 5=SPdelta
+   numpar%SHI_ch_st = 0       ! Charge state: 0=Barkas; 1=Bohr; 2=Nikolaev-Dmitriev; 3=Schiwietz-Grande, 4=fixed Zeff, 5=charge exchange
+   numpar%SHI_ch_shape = 0    ! SHI charge shape: 0=point-like charge; 1=Brandt-Kitagawa ion:
+   numpar%SHI_Cutoff = -1.0d0 ! [eV] Cut-off energy (SHIs with lower energies are excluded from calculation)
+
+   !::: MODELS FOR POSITRONS :::
+   numpar%Pos_inelast = 1 ! Positron inelastic scattering: 0=excluded, 1=delta
+   numpar%Pos_elastic = 1 ! Positron elastic scattering: 0=excluded, 1=delta
+   numpar%Pos_Brems = 1 ! Positron Bremsstrahlung scattering: 0=excluded, 1=delta
+   numpar%Pos_annih = 1 ! Positron annihilation: 0=excluded, 1= Heitler
+   numpar%Pos_Cutoff = 0.1d0  ! [eV] Cut-off energy (positrons with lower energies are excluded from calculation)
+
+   !::: MODEL PARAMETERS FOR CDF :::
+   numpar%CDF_model = 0 ! CDF model: 0 = Drude / Lindhard CDF, 1=Mermin CDF, 2=Full conserving CDF (not ready)
+   ! target dispersion relation: 0=free electron, 1=plasmon-pole, 2=Ritchie; effective mass [in me] (0=effective mass from DOS of VB; -1=free-electron):
+   numpar%CDF_dispers = 0
+   numpar%CDF_m_eff = 0
+   numpar%CDF_plasmon = 0     ! Include plasmon integration limit (0=no, 1=yes)
+   numpar%CDF_Eeq_factor = 10.0d0 ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (INELASTIC)
+   numpar%CDF_Eeq_elast= 10.0d0   ! coeff.k where to switch from nonrelativistic to Delta CDF for ELASTIC scattering: E = k * Wmin
+   numpar%CDF_elast_Zeff = 0      ! use for target atoms Zeff (set 0), or Z=1 (set 1)
+   numpar%CDF_int_n_inelastE = 50  ! n grid points for INELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
+   numpar%CDF_int_n_inelastQ = 100 ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
+   numpar%CDF_int_n_elastE = 10  ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
+   numpar%CDF_int_n_elastQ = 100 ! n grid points for ELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
+
+   !::: MODELS FOR HOLES :::
+   numpar%H_Auger = 1   ! Auger decays:  0=excluded, 1=EADL
+   numpar%H_Radiat = 1  ! Radiative decays: 0=excluded, 1=EADL
+   numpar%H_m_eff = -1  ! [me] effective valence hole mass (-1=from DOS; 0=free electron; >0=fixed mass in m_e)
+   numpar%H_inelast = 1 ! Valence hole inelastic scattering: 0=excluded, 1=CDF, 2=BEB, 3=Delta
+   numpar%H_elast = 1   ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF (NOT READY YET!), 5=SP-CDF
+   numpar%H_Cutoff = 0.1d0       ! [eV] Cut-off energy (holes with lower energies are excluded from calculation)
+
+   ! ::: MD MODEL PARAMETERS :::
+   ! Use quenching in MD (T=true; F=false), when to start [fs], how often nullify velocities [fs]:
+   numpar%do_quenching = .false.
+   numpar%t_quench_start = 0.0d0
+   numpar%dt_quench = 1.0d0
+   numpar%t_quench_run = 0.0d0
+
+   ! ::: OUTPUT DATA :::
+   numpar%gnupl%gnu_extension = 'png'
+   numpar%printout_DOS = .true.     ! printout DOS
+   numpar%printout_MFPs = .true.    ! printout MFPs
+   numpar%printout_ranges = .true.  ! printout Ranges
+   ! Optional:
+   numpar%MD_force_ind = 0 ! do NOT calculate forces as numerical derivative of the potential
+   numpar%do_cohesive = .false.    ! calculate cohesive energy (instead of full TREKIS run)
+   numpar%print_MD_R_xyz = .false.    ! printout MD atomic coordinates in XYZ
+   numpar%print_MD_V_xyz = .false.    ! printout MD atomic velosities in XYZ
+   numpar%print_MD_LAMMPS = .false.   ! create input file for LAMMPS at the final time instant
+   numpar%print_MC_MD_energy = .false.    ! printout MC-MD energy transfer
+   numpar%vel_theta_grid_par%along_axis = .false.     ! printout particles theta-distribution
+   numpar%print_each_step = .false.    ! printout each MD step timing
+   numpar%NRG_grid_par%along_axis = .false.     ! spectra printout
+   numpar%Spectr_grid_par(:)%along_axis = .false.     ! printout spectra along various axes
+   numpar%grid_par(:)%along_axis = .false.
+end subroutine set_defaults
+
+
+
+subroutine read_new_format_input(FN, File_name, used_target, bunch, Err)      ! UNFINISHED
    integer, intent(in) :: FN	! file number to read from
    character(*), intent(in) :: File_name	! file name with input data
    type(Matter), intent(inout) :: used_target	! parameters of the target
@@ -1203,7 +2478,7 @@ subroutine read_new_format_input(FN, File_name, used_target, bunch, Err)
 end subroutine read_new_format_input
 
 
-subroutine read_global_target(FN, used_target)
+subroutine read_global_target(FN, used_target) ! UNFINISHED
    integer, intent(in) :: FN    ! file number to read from
    type(Matter), intent(inout) :: used_target	! parameters of the target
    !----------------------
@@ -1217,9 +2492,8 @@ subroutine read_global_target(FN, used_target)
 end subroutine read_global_target
 
 
-
-
-
+!----------------------------
+! If two input files are used (old format, all data given):
 subroutine read_input_parameters(FN, File_name, used_target, bunch, Err)
    integer, intent(in) :: FN	! file number to read from
    character(*), intent(in) :: File_name	! file name with input data
@@ -1260,9 +2534,18 @@ subroutine read_input_parameters(FN, File_name, used_target, bunch, Err)
       goto 9998
    endif
    ! Now we know how many different types of the targets we have, allocate arrays for them:
-   allocate(used_target%Material(used_target%NOC))
-   allocate(used_target%Mat_types(used_target%NOC))
-   allocate(used_target%Geom(used_target%NOC))
+   If (allocated(used_target%Material)) then
+      if (size(used_target%Material) /= used_target%NOC) deallocate(used_target%Material) ! if default doesn't coincide with defined
+   endif
+   If (allocated(used_target%Mat_types)) then
+      if (size(used_target%Mat_types) /= used_target%NOC) deallocate(used_target%Mat_types) ! if default doesn't coincide with defined
+   endif
+   If (allocated(used_target%Geom)) then
+      if (size(used_target%Geom) /= used_target%NOC) deallocate(used_target%Geom) ! if default doesn't coincide with defined
+   endif
+   if (.not. allocated(used_target%Material)) allocate(used_target%Material(used_target%NOC))
+   if (.not. allocated(used_target%Mat_types)) allocate(used_target%Mat_types(used_target%NOC))
+   if (.not. allocated(used_target%Geom)) allocate(used_target%Geom(used_target%NOC))
 
    ! Read parameters for all the types of the target, all components one by one:
    TRGT:do i = 1, used_target%NOC
@@ -1356,7 +2639,10 @@ subroutine read_input_parameters(FN, File_name, used_target, bunch, Err)
    endif
    
    ! Now we know how many incomming particles we have, allocate arrays:
-   allocate(bunch(N_rp))
+   if (allocated(bunch)) then
+      if (size(bunch) /= N_rp) deallocate(bunch)      ! if default doesn't coincide with defined
+   endif
+   if (.not. allocated(bunch)) allocate(bunch(N_rp))
    
    ! Read the parameters of each of the incoming particles / pulses:
    PULS:do i_rp = 1, N_rp	! for each of them

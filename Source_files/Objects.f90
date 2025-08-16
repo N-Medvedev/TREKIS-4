@@ -457,6 +457,9 @@ end type MD_potential
 ! Data type containing all numerical parameters used in the code:
 type Num_par
    character(1) :: path_sep	! path separator for the environment
+
+   logical :: new_input_format  ! flag if new input format was used
+
    ! OUTPUT FILE NAMES AND NUMBERS:
    character(200) :: input_path	! path to the folder with all input data
    character(200) :: output_path	! path to the folder with all output data
@@ -791,6 +794,9 @@ subroutine Save_error_details(Err_name, Err_num, Err_data)
    ! Err_num = 4 means error in format somewhere with the Periodic Table
    ! Err_num = 5 means error in a subroutine call
    ! Err_num = 6 means error in format of input
+
+   ! Also printout on the screen:
+   write(6, '(a,i2,1x,a)') 'Error #', Err_name%Err_Num, trim(adjustl(Err_name%Err_descript))
 end subroutine Save_error_details
 
 
