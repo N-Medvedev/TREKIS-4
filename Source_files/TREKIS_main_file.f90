@@ -1,8 +1,14 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! TREKIS-4: Time-REsolved Kinetics in Irradiated Solids
-! The code is written in 2018 - 2021 by
-! N. Medvedev, R. Rymzhanov, F. Akhmetov, R. Voronkov...
-! 
+! The code is written by
+! N. Medvedev, R. Rymzhanov, F. Akhmetov, R. Voronkov
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Scientific reference:
+! N. Medvedev, F. Akhmetov, R.A. Rymzhanov, R. Voronkov, A.E. Volkov
+! "Modeling Time‐Resolved Kinetics in Solids Induced by Extreme Electronic Excitation"
+! Advanced Theory and Simulations 5, 2200091 (2022)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! Should you have any questions, contact the authors: 
 ! (1) nikita.medvedev@fzu.cz

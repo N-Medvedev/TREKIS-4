@@ -23,7 +23,7 @@ interface read_grid_from_file
 end interface read_grid_from_file
 
 ! private :: ! hides items not listed on public statement 
-public :: read_grid_from_file
+public :: read_grid_from_file, read_output_grid_coord
 
 
 
@@ -107,7 +107,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       call set_time_grid(temp_ch, numpar)   ! below
    endif
    
-   ! [fs] when to stop simulation
+   ! [fs] when to start simulation
    read(FN,*,IOSTAT=Reason) numpar%t_start
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -258,7 +258,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
    
-   ! Bremsstrahlung: 0=excluded, 1= ...
+   ! Bremsstrahlung: 0=excluded, 1=BHW
    read(FN,*,IOSTAT=Reason) numpar%El_Brems
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -296,7 +296,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
    
-   ! Photoabsorption CSs: 0=excluded, 1=CDF, 2=EPDL97:
+   ! Photoabsorption CSs: 0=excluded, 1=CDF, 2=EPDL:
    read(FN,*,IOSTAT=Reason) numpar%Ph_absorb
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -305,7 +305,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
    
-   ! Compton effect: 0=excluded, 1= ...
+   ! Compton effect: 0=excluded, 1=PENELOPE
    read(FN,*,IOSTAT=Reason) numpar%Ph_Compton
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -314,7 +314,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
    
-   ! Thomson / Rayleigh scattering: 0=excluded, 1= ...
+   ! Thomson / Rayleigh scattering: 0=excluded, 1=PENELOPE
    read(FN,*,IOSTAT=Reason) numpar%Ph_Thomson
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -590,7 +590,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
    endif
    
    ! [me] effective valence hole mass in units of electron mass
-   read(FN,*,IOSTAT=Reason) numpar%H_m_eff
+   read(FN,*,IOSTAT=Reason) numpar%H_m_eff ! [me] effective valence hole mass (-1=from DOS; 0=free electron; >0=fixed mass in m_e)
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
       write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
@@ -607,7 +607,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
    
-   ! Valence hole elastic scattering: 0=excluded, 1=Mott
+   ! Valence hole elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF (NOT READY YET!), 5=SP-CDF
    read(FN,*,IOSTAT=Reason) numpar%H_elast
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -635,7 +635,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
    
-   ! Quenching in MD:
+   ! Use quenching in MD (T=true; F=false), when to start [fs], how often nullify velocities [fs]:
    read(FN,*,IOSTAT=Reason) numpar%do_quenching, numpar%t_quench_start, numpar%dt_quench
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -837,6 +837,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
    read_well = .true.
    numpar%print_each_step = .false.    ! to start with the default value (do not printout each MD step timing)
    numpar%MD_force_ind = 0 ! Default value of the MD force calculator
+   numpar%n_MSD = 0 ! to start with
    
    ! Define default parameters for the grids:
    call set_default_grid_params(numpar) ! below
@@ -852,7 +853,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
          select case (trim(adjustl(temp_ch)))
 
          !============================================
-         ! Printout atomic coordinates from MD in XYZ format:
+         ! Printout atomic displacements:
          case ('Displacement', 'DISPLACEMENT', 'displacement', 'MSD', 'msd')
             read(FN,*,IOSTAT=Reason) numpar%n_MSD   ! power of mean displacement to print out (set integer N: <u^N>-<u0^N>)
             call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
@@ -1114,7 +1115,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
 !             print*, 'GRID Z',  numpar%Spectr_grid(i_ax)%spatial_grid1(:)
 !             pause 
 
-         case ('Spectra_r', 'Spectra_R', 'SPECTRA_r', 'S_PECTRA_R', 'spectra_r')    ! Spctra only along Radius (Cylindric)
+         case ('Spectra_r', 'Spectra_R', 'SPECTRA_r', 'S_PECTRA_R', 'spectra_r')    ! Spectra only along Radius (Cylindric)
             i_ax = 8    ! index for this type of printout
             grid_par => numpar%Spectr_grid_par(i_ax)   ! just to access easier
             grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
