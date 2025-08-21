@@ -216,7 +216,7 @@ subroutine select_energy_DOS(Egrid, DOS, Integral_DOS_fe, Egap, dE, alpha_CB, E_
       if ( dE < abs(Egrid(1))+Egap ) then  ! find which states can be ionized
          call Find_in_array_monoton(Egrid, -dE+Egap, i_start)   ! module "Little_subroutines"
          i_start = i_start + 1
-!          print*, 'select_energy_DOS', dE, i_start, Egrid(i_start)
+         !print*, 'select_energy_DOS', dE, i_start, Egrid(i_start)
       else ! all the VB can be ionized
          i_start = 1
       endif

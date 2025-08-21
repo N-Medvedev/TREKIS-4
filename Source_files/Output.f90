@@ -81,7 +81,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 16.08.2025)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 21.08.2025)'
 
 
 ! All output file names:
@@ -4692,16 +4692,22 @@ subroutine Print_atomic_parameters(print_to, used_target)
          else
             write(print_to,'(a,a,a,a,a)') 'Element ', trim(adjustl(used_target%Material(i)%Elements(j)%Name)), ' has ', trim(adjustl(text)), ' shell:'
          endif
-         write(print_to, '(a)') ' #	Designator	Name	Ne	Ip[eV]	Ek[eV]	Auger[fs]	Radiative[fs]'
+         write(print_to, '(a)') ' #	Designator	Name	Valent  Ne	Ip[eV]	Ek[eV]	Auger[fs]	Radiative[fs]'
          do k = 1, used_target%Material(i)%Elements(j)%N_shl	! for all shell of this element from this target
-            write(print_to, '(i3, i3, a, f5.2, f12.4, f12.4, es12.4, es12.4)') k, used_target%Material(i)%Elements(j)%Shl_dsgnr(k), &
-             ' '//trim(adjustl(used_target%Material(i)%Elements(j)%Shell_name(k)))//' ', used_target%Material(i)%Elements(j)%Ne_shell(k), &
+            write(print_to, '(i3, i3, a6, L, f5.2, f12.4, f12.4, es12.4, es12.4)') k, used_target%Material(i)%Elements(j)%Shl_dsgnr(k), &
+             ' '//trim(adjustl(used_target%Material(i)%Elements(j)%Shell_name(k)))//' ', &
+             used_target%Material(i)%Elements(j)%valent(k), &
+             used_target%Material(i)%Elements(j)%Ne_shell(k), &
              used_target%Material(i)%Elements(j)%Ip(k), used_target%Material(i)%Elements(j)%Ek(k), &
              used_target%Material(i)%Elements(j)%Auger(k), used_target%Material(i)%Elements(j)%Radiat(k)
 ! used_target%Material(i)%Elements(j)%f_rad, used_target%Material(i)%Elements(j)%f_auger
          enddo ! k
          write(print_to,'(a)') trim(adjustl(m_starline))
       enddo ! j
+
+      write(text, '(f12.4)') used_target%Material(i)%DOS%Egap
+      write(print_to,'(a)') ' Band gap in this material: '//trim(adjustl(text))//' [eV]'
+      write(print_to,'(a)') trim(adjustl(m_starline))
   enddo ! i
 end subroutine Print_atomic_parameters
 
