@@ -244,14 +244,16 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
 
    ! In case the first one is a valence hole, sample from where within the valence band it is ionized according to DOS:
    if (Element%valent(sh_selected_1)) then
+      !call select_energy_DOS(matter%DOS%E, matter%DOS%DOS, matter%Integral_DOS_fe, &
+      !          matter%DOS%Egap, 1.0d6, matter%DOS%alpha_CB, E_DOS_1)   ! module "Dealing_with_DOS"
       call select_energy_DOS(matter%DOS%E, matter%DOS%DOS, matter%Integral_DOS_fe, &
-                matter%DOS%Egap, 1.0d6, matter%DOS%alpha_CB, E_DOS_1)   ! module "Dealing_with_DOS"
+                matter%DOS%Egap, (Element%Ip(NSH)-matter%DOS%Egap), matter%DOS%alpha_CB, E_DOS_1)   ! module "Dealing_with_DOS"
       E_fin_1 = -(E_DOS_1 - matter%DOS%Egap)    ! [eV] energy level where the hole ends up
    else
       E_DOS_1 = 0.0d0 ! no width of a core level
       E_fin_1 = Element%Ip(sh_selected_1)  ! [eV] energy level where the hole ends up
    endif
-   ! In case the second one is a valence hole, ample from where within the valence band it is ionized according to DOS:
+   ! In case the second one is a valence hole, sample from where within the valence band it is ionized according to DOS:
    if (Element%valent(sh_selected_2)) then
       call select_energy_DOS(matter%DOS%E, matter%DOS%DOS, matter%Integral_DOS_fe, &
                 matter%DOS%Egap, (Element%Ip(NSH)-E_fin_1), matter%DOS%alpha_CB, E_DOS_2)   ! module "Dealing_with_DOS"
@@ -293,10 +295,13 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
       print*, MC%MC_Electrons(MC%N_e)%V(:)
       print*, MC%MC_Electrons(MC%N_e)%V0(:)
       print*, MC%MC_Electrons(MC%N_e)%ti - MC%MC_Electrons(MC%N_e)%t0, MC%MC_Electrons(MC%N_e)%ti, MC%MC_Electrons(MC%N_e)%t0
+      print*, 'Ip:', Prtcl%KOA, Prtcl%Sh
       print*, 'sh:', sh_selected_1, sh_selected_2
       print*, Element%valent(sh_selected_1), Element%valent(sh_selected_2)
       print*, Element%Ip(NSH), E_fin_1, E_fin_2
+      print*, E_DOS_1, E_DOS_2, matter%DOS%Egap
       print*, '-------------'
+      !pause 'ERROR #2 PAUSE'
    endif
 
 
