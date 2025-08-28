@@ -539,6 +539,18 @@ end subroutine Cartesian_to_spherical
 
 
 pure subroutine Spherical_to_cartesian(R, theta, phi, X, Y, Z)
+   real(8), intent(in) :: R, theta, phi	! spherical coordinates: theta=[0,Pi] counted from Z; phi=[0,2*Pi] within (X,Y) plane
+   real(8), intent(out) :: X, Y, Z		! cartesian coordinates
+   real(8) :: sinphi, Rsin
+   sinphi = sin(theta)
+   Rsin = R*sinphi
+   X = Rsin*sin(phi)
+   Y = Rsin*cos(phi)
+   Z = R*cos(theta)
+end subroutine Spherical_to_cartesian
+
+
+pure subroutine Spherical_to_cartesian_OLD(R, theta, phi, X, Y, Z)      ! Different definition of angles
    real(8), intent(in) :: R, theta, phi	! spherical coordinates: phi=[0,Pi] counted from Z; theta=[0,2*Pi] within (X,Y) plane
    real(8), intent(out) :: X, Y, Z		! cartesian coordinates
    real(8) :: sinphi, Rsin
@@ -547,7 +559,9 @@ pure subroutine Spherical_to_cartesian(R, theta, phi, X, Y, Z)
    X = Rsin*sin(theta)
    Y = Rsin*cos(theta)
    Z = R*cos(phi)
-end subroutine Spherical_to_cartesian
+end subroutine Spherical_to_cartesian_OLD
+
+
 
 
 
