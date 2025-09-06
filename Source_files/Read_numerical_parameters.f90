@@ -891,7 +891,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
             numpar%print_MC_MD_energy = .true.    ! printout MC-MD energy transfer
 
          !============================================
-         ! Printout each timestep:
+         ! Printout theta distribution:
          case ('PrintTheta', 'print_theta', 'print_Theta', 'Print_theta', 'Print_Theta', 'Printtheta', 'printtheta', &
                 'printTheta')    ! printout particles theta-distribution
             grid_par => numpar%vel_theta_grid_par   ! just to access easier
@@ -931,6 +931,146 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                endif    ! (.not.grid_created) 
             endif   ! (.not. read_well)
             
+         !============================================
+         ! Printout spatially resolved theta distribution:
+         case ('Theta_X', 'theta_X', 'Theta_x', 'theta_x', 'THETA_X')   ! printout X-resolved particles theta-distribution
+            i_ax = 1        ! index for this type of printout: X
+            grid_ind = 1    ! (1d)
+
+            grid_par => numpar%Theta_grid_par(i_ax)   ! just to access easier
+            grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
+
+            read(FN,*,IOSTAT=Reason) temp_ch2   ! Read the grid parameter: either file name with the grid, or its type
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+            if (.not. read_well) then   ! user did not provide correct parameters
+               write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+               write(6,'(a)') trim(adjustl(Error_descript))
+               write(6,'(a)') ' Using default Theta X-grid instead'
+
+               backspace ( FN ) ! to read the line again from the file into a proper variable
+               ! Read the parameters of the grid:
+               call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
+
+               ! Create grid:
+               if (grid_par%log_scale(1)) then   ! log-scale grid along X (1d)
+                  call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
+               else    ! linear scale along X
+                  call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
+               endif
+            else ! (.not. read_well)   ! if user provided grid parameters
+               call read_grid_from_file(temp_ch2, numpar, numpar%Theta_grid(i_ax)%spatial_grid1, grid_created)    ! below
+               ! Check the grid was not read from the file:
+               if (.not.grid_created) then   ! create a default grid
+                  backspace ( FN ) ! to read the line again from the file into a proper variable
+                  ! Read the parameters of the grid:
+                  call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
+                  !Last three parameters are:   grid_type, grid_dim, grid_ind
+                  !  grid_type     ! grid type: 0=cartesian, 1=cylindrical,  2=spherical
+                  !  grid_dim      ! dimension: 1=1d, 2=2d, 3=3d
+                  !  grid_ind      ! which axis: 1=x or R or R;   2=y or L or Theta;  3=z or Theta or Phi  (for Cartesian or Cyllindrical or Spherical)
+
+                  ! Create grid:
+                  if (grid_par%log_scale(1)) then   ! log-scale grid along X (1d)
+                     call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
+                  else    ! linear scale along X
+                     call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
+                  endif
+               endif    ! (.not.grid_created)
+            endif   ! (.not. read_well)
+
+         case ('Theta_Y', 'theta_Y', 'Theta_y', 'theta_y', 'THETA_Y')   ! printout Y-resolved particles theta-distribution
+            i_ax = 2        ! index for this type of printout: Y
+            grid_ind = 1    ! (1d)
+
+            grid_par => numpar%Theta_grid_par(i_ax)   ! just to access easier
+            grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
+
+            read(FN,*,IOSTAT=Reason) temp_ch2   ! Read the grid parameter: either file name with the grid, or its type
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+            if (.not. read_well) then   ! user did not provide correct parameters
+               write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+               write(6,'(a)') trim(adjustl(Error_descript))
+               write(6,'(a)') ' Using default Theta X-grid instead'
+
+               backspace ( FN ) ! to read the line again from the file into a proper variable
+               ! Read the parameters of the grid:
+               call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
+
+               ! Create grid:
+               if (grid_par%log_scale(1)) then   ! log-scale grid along Y (1d)
+                  call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
+               else    ! linear scale along Y
+                  call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
+               endif
+            else ! (.not. read_well)   ! if user provided grid parameters
+               call read_grid_from_file(temp_ch2, numpar, numpar%Theta_grid(i_ax)%spatial_grid1, grid_created)    ! below
+               ! Check the grid was not read from the file:
+               if (.not.grid_created) then   ! create a default grid
+                  backspace ( FN ) ! to read the line again from the file into a proper variable
+                  ! Read the parameters of the grid:
+                  call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
+                  !Last three parameters are:   grid_type, grid_dim, grid_ind
+                  !  grid_type     ! grid type: 0=cartesian, 1=cylindrical,  2=spherical
+                  !  grid_dim      ! dimension: 1=1d, 2=2d, 3=3d
+                  !  grid_ind      ! which axis: 1=x or R or R;   2=y or L or Theta;  3=z or Theta or Phi  (for Cartesian or Cyllindrical or Spherical)
+
+                  ! Create grid:
+                  if (grid_par%log_scale(1)) then   ! log-scale grid along Y (1d)
+                     call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
+                  else    ! linear scale along Y
+                     call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
+                  endif
+               endif    ! (.not.grid_created)
+            endif   ! (.not. read_well)
+
+         case ('Theta_Z', 'theta_Z', 'Theta_z', 'theta_z', 'THETA_Z')   ! printout Z-resolved particles theta-distribution
+            i_ax = 3        ! index for this type of printout: Z
+            grid_ind = 1    ! (1d)
+
+            grid_par => numpar%Theta_grid_par(i_ax)   ! just to access easier
+            grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
+
+            read(FN,*,IOSTAT=Reason) temp_ch2   ! Read the grid parameter: either file name with the grid, or its type
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+            if (.not. read_well) then   ! user did not provide correct parameters
+               write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+               write(6,'(a)') trim(adjustl(Error_descript))
+               write(6,'(a)') ' Using default Theta X-grid instead'
+
+               backspace ( FN ) ! to read the line again from the file into a proper variable
+               ! Read the parameters of the grid:
+               call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
+
+               ! Create grid:
+               if (grid_par%log_scale(1)) then   ! log-scale grid along Z (1d)
+                  call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
+               else    ! linear scale along Z
+                  call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
+               endif
+            else ! (.not. read_well)   ! if user provided grid parameters
+               call read_grid_from_file(temp_ch2, numpar, numpar%Theta_grid(i_ax)%spatial_grid1, grid_created)    ! below
+               ! Check the grid was not read from the file:
+               if (.not.grid_created) then   ! create a default grid
+                  backspace ( FN ) ! to read the line again from the file into a proper variable
+                  ! Read the parameters of the grid:
+                  call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
+                  !Last three parameters are:   grid_type, grid_dim, grid_ind
+                  !  grid_type     ! grid type: 0=cartesian, 1=cylindrical,  2=spherical
+                  !  grid_dim      ! dimension: 1=1d, 2=2d, 3=3d
+                  !  grid_ind      ! which axis: 1=x or R or R;   2=y or L or Theta;  3=z or Theta or Phi  (for Cartesian or Cyllindrical or Spherical)
+
+                  ! Create grid:
+                  if (grid_par%log_scale(1)) then   ! log-scale grid along Z (1d)
+                     call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
+                  else    ! linear scale along Z
+                     call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Theta_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
+                  endif
+               endif    ! (.not.grid_created)
+            endif   ! (.not. read_well)
+
+         case ('Theta_R', 'theta_R', 'Theta_r', 'theta_r', 'THETA_R')   ! printout R-resolved (cylindric) particles theta-distribution
+            ! [NOT READY!!!]
+
          !============================================
          ! Printout each timestep:
          case ('PrintMDSteps', 'printMDsteps', 'PrintMDsteps', 'Print_MD_Steps', 'Print_MD_steps', 'print_MD_steps', &
@@ -978,6 +1118,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                endif    ! (.not.grid_created) 
             endif   ! (.not. read_well)
             
+         !============================================
          ! Set spatial grids for distributions printout:
          case ('Spectra_x', 'SPECTRA_X', 'SPECTRA_x', 'spectra_x', 'spectra_X', 'Spectra_X')    ! Spectra along X-axis (Cartesian)
             i_ax = 1    ! index for this type of printout
@@ -998,9 +1139,9 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
 
                ! Create grid:
-               if (grid_par%log_scale(1)) then   ! log-scale grid along X
+               if (grid_par%log_scale(1)) then   ! log-scale grid along X (1d)
                   call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
-               else    ! linear scale along R
+               else    ! linear scale along X
                   call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
                endif
             else ! (.not. read_well)   ! if user provided grid parameters
@@ -1013,10 +1154,10 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                   !Last three parameters are:   grid_type, grid_dim, grid_ind
                   !  grid_type     ! grid type: 0=cartesian, 1=cylindrical,  2=spherical
                   !  grid_dim      ! dimension: 1=1d, 2=2d, 3=3d
-                  !  grid_ind       ! which axis: 1=x or R or R;   2=y or L or Theta;  3=z or Theta or Phi  (for Cartesian or Cyllindrical or Spherical)
+                  !  grid_ind      ! which axis: 1=x or R or R;   2=y or L or Theta;  3=z or Theta or Phi  (for Cartesian or Cyllindrical or Spherical)
                   
                   ! Create grid:
-                  if (grid_par%log_scale(1)) then   ! log-scale grid along R
+                  if (grid_par%log_scale(1)) then   ! log-scale grid along X (1d)
                      call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
                   else    ! linear scale along R
                      call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
@@ -1043,9 +1184,9 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
                
                ! Create grid:
-               if (grid_par%log_scale(1)) then   ! log-scale grid along Y
+               if (grid_par%log_scale(1)) then   ! log-scale grid along Y (1d)
                   call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
-               else    ! linear scale along R
+               else    ! linear scale along Y
                   call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
                endif
             else ! (.not. read_well)   ! if user provided grid parameters
@@ -1060,7 +1201,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                   ! Create grid:
                   if (grid_par%log_scale(1)) then   ! log-scale grid along R
                      call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
-                  else    ! linear scale along R
+                  else    ! linear scale along Y
                      call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
                   endif
                endif    ! (.not.grid_created) 
@@ -1086,9 +1227,9 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 0, 1, grid_ind)  ! below
                
                ! Create grid:
-               if (grid_par%log_scale(1)) then   ! log-scale grid along Y
+               if (grid_par%log_scale(1)) then   ! log-scale grid along Z (1d)
                   call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
-               else    ! linear scale along R
+               else    ! linear scale along Z
                   call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
                endif
             else ! (.not. read_well)   ! if user provided grid parameters
@@ -1103,7 +1244,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                   ! Create grid:
                   if (grid_par%log_scale(1)) then   ! log-scale grid
                      call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
-                  else    ! linear scale along R
+                  else    ! linear scale along Z
                      call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), numpar%Spectr_grid(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
                   endif
                endif    ! (.not.grid_created) 

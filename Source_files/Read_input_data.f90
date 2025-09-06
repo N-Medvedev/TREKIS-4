@@ -2074,7 +2074,7 @@ subroutine read_radiation_definition(FN, File_name, bunch, count_lines, read_wel
       endif
       if (bunch(i_rp)%NOP < 1) bunch(i_rp)%NOP = 1  ! by default use 1 particle, not less
 
-      ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole
+      ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
       read(FN,*,IOSTAT=Reason) bunch(i_rp)%KOP
       call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
       if (.not. read_well) then
@@ -2455,9 +2455,20 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%print_MC_MD_energy = .false.    ! printout MC-MD energy transfer
    numpar%vel_theta_grid_par%along_axis = .false.     ! printout particles theta-distribution
    numpar%print_each_step = .false.    ! printout each MD step timing
+   numpar%grid_par(:)%along_axis = .false.      ! spatially resolved printout
    numpar%NRG_grid_par%along_axis = .false.     ! spectra printout
+   ! Spectra spatially resolved:
    numpar%Spectr_grid_par(:)%along_axis = .false.     ! printout spectra along various axes
-   numpar%grid_par(:)%along_axis = .false.
+   numpar%Spectr_grid_par(:)%log_scale(1) = .false.     ! no logscale
+   numpar%Spectr_grid_par(:)%gridstart(1) = 0.0d0    ! just a default value
+   numpar%Spectr_grid_par(:)%gridend(1) = 10.0d0     ! just a default value
+   numpar%Spectr_grid_par(:)%gridstep(1) = 1.0d0     ! just a default value
+   ! Theta-distribution spatially resolved:
+   numpar%Theta_grid_par(:)%along_axis = .false.     ! printout theta along various axes
+   numpar%Theta_grid_par(:)%log_scale(1) = .false.   ! no logscale
+   numpar%Theta_grid_par(:)%gridstart(1) = 0.0d0    ! just a default value
+   numpar%Theta_grid_par(:)%gridend(1) = 10.0d0     ! just a default value
+   numpar%Theta_grid_par(:)%gridstep(1) = 1.0d0     ! just a default value
 end subroutine set_defaults
 
 
