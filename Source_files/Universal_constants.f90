@@ -3,7 +3,7 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2014-2020
+! in 2014-2025
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains universal constants to be used as global parameters
 
@@ -17,7 +17,7 @@ g_e_m, g_h_MeVs, g_e_ESU, g_me_MeV, g_u_MeV, g_re, g_lambda_e, g_SIGMA_0, &
 g_MU_B_MeV_T, g_E_M_e, g_E_M_P, g_G, g_g_Earth, g_N_A, g_V_MOLAR, g_LAMBDAT, &
 g_SIGMA_SB, g_G_F, g_M_W, g_M_Z0, g_G_S, g_AUENERGY, g_AUACTION, g_AUTIME, &
 g_AUFORCE, g_AUVELOCITY, g_AUMOMENTUM, g_AUEFIELD, g_AUEDIPOLE, &
-g_AUMFLUX, g_AUMDIPOLE, g_ASTRONOMICALUNIT, g_NA, g_M_muon, g_M_K0, g_M_Kpm
+g_AUMFLUX, g_AUMDIPOLE, g_ASTRONOMICALUNIT, g_NA, g_M_muon, g_M_muon_MeV, g_M_K0, g_M_Kpm
 
 complex :: g_CI
 
@@ -45,7 +45,8 @@ parameter (g_Mp	= 1836.1526724780d0*g_me)	! Proton mass [kg]
 parameter (g_Mn = 1.67492747121d-27)    ! Neutron mass [kg]
 parameter (g_Mn_MeV = 939.565413358)    ! Neutron mass [MeV]
 parameter (g_amu	= 1.66053904021d-27)	! a.m.u [kg]
-parameter (g_M_muon = 105.658374524d0)  ! Muon mass [MeV]
+parameter (g_M_muon = 1.88353d-28)      ! Muon mass [MeV]
+parameter (g_M_muon_MeV = 105.658374524d0)      ! Muon mass [MeV]
 parameter (g_M_Kpm = 493.677d0)         ! Kaon+- mass [MeV]
 parameter (g_M_K0 = 497.648d0)          ! Kaon0 mass [MeV]
 parameter (g_h		= 1.05457162853d-34)	! reduced Plank constant	[J*sec]

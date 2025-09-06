@@ -48,7 +48,12 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! energy spectra in space along X
    real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
    real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R ! energy spectra in space along R
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   ! Theta distribution vs space in 1d:
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! theta distribution in space along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! theta distribution in space along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! theta distribution in space along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! theta distribution in space along R
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic ! photon
    real(8), dimension(:), allocatable :: Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic ! electron
@@ -110,7 +115,8 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:,:), allocatable :: E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic ! Atom
    ! And regular variables:
-   integer :: iter, Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10)
+   integer :: iter, Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10), &
+                  Ntheta_siz0(10), Ntheta_siz1(10), Ntheta_siz2(10), Ntheta_siz3(10)
    integer, dimension(:), allocatable :: Nsiz_VB
    real(8) :: rNMC
    
@@ -131,7 +137,8 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    ! Distributions:
    
    ! Set sizes of the arrays:
-   call set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3) ! below
+   call set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
+                              Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3) ! below
    ! Special grid for valence band holes according to DOS:
    call get_size_VB_output(used_target, Nsiz_VB)    ! below
 
@@ -150,7 +157,12 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
 !    print*, 'analyze_MC_output_data 4'
 
    if (.not.allocated(Vel_theta_ph)) then   ! all velosity distributions
-      call allocate_vel_theta_arrays(Nsiz_vel, Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI)    ! below
+      call allocate_vel_theta_arrays(Nsiz_vel, Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3, &
+            Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
+            Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+            Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+            Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+            Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R      ) ! below
    endif
    
 !    print*, 'analyze_MC_output_data 5'
@@ -218,12 +230,16 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
 !    print*, 'analyze_MC_output_data 7'
 
    ! Now, having all arrays needed, go on and fill them with data:
-   call sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
+   call sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
     Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
     Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
     Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
+    Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
     Distr_p_X, Distr_p_Y, Distr_p_Z, Distr_p_R, Distr_p_L, Distr_p_Theta, Distr_p_Rc, Distr_p_Thetac, Distr_p_Phic, &
@@ -316,6 +332,27 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     out_data%Spectra_p_R = Spectra_p_R * rNMC
     out_data%Spectra_h_R = Spectra_h_R * rNMC
     out_data%Spectra_SHI_R = Spectra_SHI_R * rNMC
+    ! Theta distribution vs space in 1d:
+    out_data%Theta_ph_X = Theta_ph_X * rNMC
+    out_data%Theta_e_X = Theta_e_X * rNMC
+    out_data%Theta_p_X = Theta_p_X * rNMC
+    out_data%Theta_h_X = Theta_h_X * rNMC
+    out_data%Theta_SHI_X = Theta_SHI_X * rNMC
+    out_data%Theta_ph_Y = Theta_ph_Y * rNMC
+    out_data%Theta_e_Y = Theta_e_Y * rNMC
+    out_data%Theta_p_Y = Theta_p_Y * rNMC
+    out_data%Theta_h_Y = Theta_h_Y * rNMC
+    out_data%Theta_SHI_Y = Theta_SHI_Y * rNMC
+    out_data%Theta_ph_Z = Theta_ph_Z * rNMC
+    out_data%Theta_e_Z = Theta_e_Z * rNMC
+    out_data%Theta_p_Z = Theta_p_Z * rNMC
+    out_data%Theta_h_Z = Theta_h_Z * rNMC
+    out_data%Theta_SHI_Z = Theta_SHI_Z * rNMC
+    out_data%Theta_ph_R = Theta_ph_R * rNMC
+    out_data%Theta_e_R = Theta_e_R * rNMC
+    out_data%Theta_p_R = Theta_p_R * rNMC
+    out_data%Theta_h_R = Theta_h_R * rNMC
+    out_data%Theta_SHI_R = Theta_SHI_R * rNMC
     ! Spatial distributions:
     out_data%Distr_ph_X = Distr_ph_X * rNMC
     out_data%Distr_ph_Y = Distr_ph_Y * rNMC
@@ -362,7 +399,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     out_data%Distr_SHI_Rc = Distr_SHI_Rc * rNMC
     out_data%Distr_SHI_Thetac = Distr_SHI_Thetac * rNMC
     out_data%Distr_SHI_Phic = Distr_SHI_Phic * rNMC
-    ! For atoms, we have to add, because the data a nullified at each time step:
+    ! For atoms, we have to add, because the data are nullified at each time step:
     out_data%Distr_a_X = out_data%Distr_a_X + Distr_a_X * rNMC
     out_data%Distr_a_Y = out_data%Distr_a_Y + Distr_a_Y * rNMC
     out_data%Distr_a_Z = out_data%Distr_a_Z + Distr_a_Z * rNMC
@@ -707,12 +744,16 @@ subroutine get_total_values(used_target, numpar, MC, out_data)
 end subroutine get_total_values
 
 
-subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
+subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
     Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
     Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
     Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
+    Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
     Distr_p_X, Distr_p_Y, Distr_p_Z, Distr_p_R, Distr_p_L, Distr_p_Theta, Distr_p_Rc, Distr_p_Thetac, Distr_p_Phic, &
@@ -776,6 +817,12 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
    real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
    real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
    real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   ! Theta distribution in 1d space:
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X ! theta distr in space along X
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y ! theta distr in space along Y
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z ! theta distr in space along Z
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R ! theta distr in space along R
+
    ! Spatial distributions in 1d:
    real(8), dimension(:), intent(inout) :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, &
                                                         Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic ! photon
@@ -846,7 +893,7 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
    integer :: iter
 
 
-!  print*, 'sort_spectra 0'
+!  print*, 'sort_data 0'
 
    
    !$omp parallel  &
@@ -873,12 +920,13 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
       call get_SHI_spectrum(MC(iter), numpar, Spectrum_SHI)   ! below
    enddo
    !$omp enddo
+   !$OMP BARRIER
 
 ! goto 9999   ! Test WORKED
 
    !--------------------------------
    ! Get velosity theta distribution:
-!    !$omp do schedule(dynamic) reduction( + : Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI)
+   !$omp do schedule(dynamic) reduction( + : Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI)
    do iter = 1, numpar%NMC  ! analyze data in all iterations
       ! Get photon velosity theta distributions:
       call get_photon_velotheta(MC(iter), numpar, Vel_theta_ph)   ! below
@@ -895,9 +943,10 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
       ! Get SHI velosity theta distributions:
       call get_SHI_velotheta(MC(iter), numpar, Vel_theta_SHI)   ! below
    enddo
-!    !$omp enddo
+   !$omp enddo
+   !$OMP BARRIER
    
-!    print*, 'sort_spectra 2', iter
+!    print*, 'sort_data 2', iter
 ! goto 9999   ! Test FAILED, WORKED 2d time ???
 
    !--------------------------------
@@ -912,11 +961,30 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                                                     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
                                                     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
                                                     Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R) ! below
-!        print*, 'sort_spectra 1.5', iter
+!        print*, 'sort_data 1.5', iter
    enddo
    !$omp enddo
+   !$OMP BARRIER
+
+
+   !--------------------------------
+   ! Get theta distribution vs space along all axes that user requested:
+   ! Theta distribution  vs space in 1d:
+   !$omp do schedule(dynamic) reduction( + : Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+   !$omp    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+   !$omp    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+   !$omp    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R)
+   do iter = 1, numpar%NMC  ! analyze data in all iterations
+      call get_theta_in_space_1d(MC(iter), numpar, tim, Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+                                                    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+                                                    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+                                                    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R) ! below
+!        print*, 'sort_theta 1.5', iter
+   enddo
+   !$omp enddo
+   !$OMP BARRIER
    
-!    print*, 'sort_spectra 3', iter
+!    print*, 'sort_data 3', iter
 
    !--------------------------------
    ! Get spatial distributions along all axes that user requested:
@@ -937,8 +1005,9 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                   E_Distr_SHI_X, E_Distr_SHI_Y, E_Distr_SHI_Z, E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z)    ! below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
-!    print*, 'sort_spectra 4', iter
+!    print*, 'sort_data 4', iter
 
    ! Cylindrical:
    !$omp do schedule(dynamic) reduction( + : Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_e_R, Distr_e_L, Distr_e_Theta, &
@@ -956,8 +1025,9 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                  E_Distr_SHI_R, E_Distr_SHI_L, E_Distr_SHI_Theta, E_Distr_a_R, E_Distr_a_L, E_Distr_a_Theta) ! below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
-!    print*, 'sort_spectra 5', iter
+!    print*, 'sort_data 5', iter
 
    ! Spherical:
    !$omp do schedule(dynamic) reduction( + : Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
@@ -975,8 +1045,9 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
             E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic)   ! below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
-!    print*, 'sort_spectra 6', iter
+!    print*, 'sort_data 6', iter
 
    ! Spatial distributions in 2d:
    
@@ -996,6 +1067,7 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                  E_Distr_SHI_XY, E_Distr_SHI_YZ, E_Distr_SHI_XZ, E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ) ! below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
    ! Cylindrical:
    !$omp do schedule(dynamic) reduction( + : Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta,  Distr_e_RL, Distr_e_RTheta, Distr_e_LTheta, &
@@ -1013,6 +1085,7 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                  E_Distr_SHI_RL, E_Distr_SHI_RTheta, E_Distr_SHI_LTheta, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta)    ! below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
    ! Spherical:
    !$omp do schedule(dynamic) reduction( + : Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic, &
@@ -1034,6 +1107,7 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                  E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic) ! below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
    ! Spatial distributions in 3d:
    
@@ -1056,6 +1130,7 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                  E_Distr_ph_RLTheta, E_Distr_e_RLTheta, E_Distr_p_RLTheta, E_Distr_h_RLTheta, E_Distr_SHI_RLTheta, E_Distr_a_RLTheta)    ! Below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
 !goto 9999   ! Test FAILED
 
@@ -1070,13 +1145,14 @@ subroutine sort_spectra(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, S
                     E_Distr_SHI_RcThcPhic, E_Distr_a_RcThcPhic)  ! Below
    enddo
    !$omp end do
+   !$OMP BARRIER
    
 ! 9999 continue
 
    !$omp end parallel
 
-!  print*, 'sort_spectra END'
-end subroutine sort_spectra
+!  print*, 'sort_data END'
+end subroutine sort_data
 
 
 
@@ -2368,7 +2444,7 @@ subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
                endif
                over_sin_theta = over_sin_theta * m_one_over_halfPi  ! normalization accounting for sin(x)
                
-               ! Find where to put in on the given energy grid:
+               ! Find where to put in on the given theta grid:
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
@@ -2426,7 +2502,7 @@ subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
                ! Find velosity theta [deg]:
                theta = get_v_theta(MC%MC_Electrons(i)%V)   ! module "Geometris"
                
-               ! The distribution by theta needs to be converted into pherical coordiante
+               ! The distribution by theta needs to be converted into spherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
@@ -2438,11 +2514,11 @@ subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
                
 !                write(*,'(i4,f,f,f,f)') i, MC%MC_Electrons(i)%V(:), theta
                
-               ! Find where to put in on the given energy grid:
+               ! Find where to put in on the given theta grid:
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max theta grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2450,7 +2526,7 @@ subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
                   i_arr = i_arr + 1 ! assign particle to the end of the interval
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                endif
-               ! add a photon into this array, per energy interval to make distribution
+               ! add a particle into this array, per theta interval to make distribution
                Vel_theta_e(i_arr) = Vel_theta_e(i_arr) + one_over_N/d_theta * over_sin_theta
 !                write(*,'(a,i4,i4,f,f,f,f)') '(get_electron_velotheta)', i, i_arr, numpar%vel_theta_grid(i_arr), theta, Vel_theta_e(i_arr), d_theta
 !                pause 'get_electron_velotheta'
@@ -2969,7 +3045,7 @@ end subroutine get_spectra_in_space_1d
 
 
 
-      
+
 subroutine get_electron_spectra_1d(MC, numpar, tim, Spectrum_e)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
@@ -3064,7 +3140,7 @@ function add_cartesian_particle_for_spectra_1d(MC_Prtcl, numpar, tim, coord_ind,
    select case (coord_ind)
    case (1)  ! along X
       if (isnan(Rcur(1))) then
-         print*, 'Error in add_cartesian_particle_for_spectra_1d #1', Rcur(3), MC_Prtcl%R(:)
+         print*, 'Error in add_cartesian_particle_for_spectra_1d #1', Rcur(1), MC_Prtcl%R(:)
          print*, 'V',  (MC_Prtcl%V(:)), (tim - MC_Prtcl%t0)
          print*, 'R0', MC_Prtcl%R0(:)
          print*, 'E', MC_Prtcl%Ekin
@@ -3080,7 +3156,7 @@ function add_cartesian_particle_for_spectra_1d(MC_Prtcl, numpar, tim, coord_ind,
       endif
    case (2)  ! along Y
       if (isnan(Rcur(2))) then
-         print*, 'Error in add_cartesian_particle_for_spectra_1d #2', Rcur(3), MC_Prtcl%R(:)
+         print*, 'Error in add_cartesian_particle_for_spectra_1d #2', Rcur(2), MC_Prtcl%R(:)
          print*, 'V',  (MC_Prtcl%V(:)), (tim - MC_Prtcl%t0)
          print*, 'R0', MC_Prtcl%R0(:)
          print*, 'E', MC_Prtcl%Ekin
@@ -3118,6 +3194,212 @@ function add_cartesian_particle_for_spectra_1d(MC_Prtcl, numpar, tim, coord_ind,
 !    print*, 'add_cartesian_particle_for_spectra_1d END'
 end function add_cartesian_particle_for_spectra_1d
 
+
+
+
+!ttttttttttttttttttttttttttttttttttttttttttttttttt
+! Theta distirbution spatially resolved along 1d axis:
+subroutine get_theta_in_space_1d(MC, numpar, tim, Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+                                                    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+                                                    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+                                                    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R)
+   type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   real(8), intent(in) :: tim   ! [fs] current time step
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! Theta distribution in space along X
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! Theta distribution in space along Y
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! Theta distribution in space along Z
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! Theta distribution in space along R
+
+   ! Along X:
+   if (numpar%Theta_grid_par(1)%along_axis) then  ! collect data
+      call get_electron_theta_1d(MC, numpar, tim, Theta_e_X) ! below
+   endif
+
+   ! Along Y:
+   if (numpar%Theta_grid_par(2)%along_axis) then  ! collect data
+      call get_electron_theta_1d(MC, numpar, tim, Theta_e_Y) ! below
+   endif
+
+!    print*, 'get_theta_in_space_1d :', size(Spectra_e_Z,1), size(Spectra_e_Z,2)
+
+   ! Along Z:
+   if (numpar%Theta_grid_par(3)%along_axis) then  ! collect data
+      call get_electron_theta_1d(MC, numpar, tim, Theta_e_Z) ! below
+   endif
+
+   ! [ONLY 1d DISTRIBUTION FOR ELECTRONS IS READY SO FAR]
+
+!    print*, size(Spectra_e_Z,1), size(Spectra_e_Z,1)
+!    print*, 'get_theta_in_space_1d END'
+
+end subroutine get_theta_in_space_1d
+
+
+subroutine get_electron_theta_1d(MC, numpar, tim, Theta_e)
+   type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   real(8), intent(in) :: tim   ! [fs] current time step
+   real(8), dimension(:,:), intent(inout) :: Theta_e     ! electron theta distribution
+   !------------------------------
+   real(8) :: dTheta, theta, over_sin_theta, one_over_N
+   integer :: i, Nsiz, i_arr, i_space
+   logical :: anything_to_do
+
+   ! Construct theta only if user requested it:
+   SPEC:if (numpar%vel_theta_grid_par%along_axis) then ! velosity theta data
+
+      ! Check if there is any active particle:
+      anything_to_do = any(MC%MC_Electrons(:)%active)
+
+      ACTPAR:if (anything_to_do) then ! there are particles to distribute
+
+         if (MC%N_e > 0) one_over_N = 1.0d0 / dble(MC%N_e)  ! to normalize to the number of particles
+
+         ! Go through all electrons and distribute them into arrays:
+         do i = 1, MC%N_e
+            ! Include only active particles:
+            if (MC%MC_Electrons(i)%active) then
+               ! Find where to put in on the given energy grid:
+                              ! Find velosity theta [deg]:
+               theta = get_v_theta(MC%MC_Electrons(i)%V)   ! module "Geometris"
+
+               ! The distribution by theta needs to be converted into spherical coordiante
+               ! to convert from distribution by theta in Cartesian to
+               ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
+               if (abs(theta) > m_tollerance_eps) then
+                  over_sin_theta = 1.0d0/sin(theta * g_deg2rad)
+               else
+                  over_sin_theta = 1.0d0
+               endif
+               over_sin_theta = over_sin_theta * m_one_over_halfPi  ! normalization accounting for sin(x)
+
+               ! Find where to put in on the given theta grid:
+               if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
+                  i_arr = 1
+                  dTheta = numpar%vel_theta_grid(1)
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+                  i_arr = size(numpar%vel_theta_grid)
+                  dTheta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
+               else ! inside the grid
+                  call Find_in_array_monoton(numpar%vel_theta_grid, theta, i_arr)  ! module "Little_subroutines"
+                  i_arr = i_arr + 1 ! assign particle to the end of the interval
+                  dTheta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
+               endif
+
+               ! Find where the particle is at the time instant "tim":
+               ! Along X:
+               if (numpar%Spectr_grid_par(1)%along_axis) then  ! collect data
+                  i_space = add_cartesian_particle_for_theta_1d(MC%MC_Electrons(i), numpar, tim, 1)    ! below
+                  Theta_e(i_arr, i_space) = Theta_e(i_arr, i_space) + one_over_N/dTheta * over_sin_theta ! add an electron into this array, per energy interval to make distribution
+               endif
+               ! Along Y:
+               if (numpar%Spectr_grid_par(2)%along_axis) then  ! collect data
+                  i_space = add_cartesian_particle_for_theta_1d(MC%MC_Electrons(i), numpar, tim, 2)    ! below
+                  Theta_e(i_arr, i_space) = Theta_e(i_arr, i_space) + one_over_N/dTheta * over_sin_theta    ! add an electron into this array, per energy interval to make distribution
+               endif
+               ! Along Z:
+               if (numpar%Spectr_grid_par(3)%along_axis) then  ! collect data
+                  i_space = add_cartesian_particle_for_theta_1d(MC%MC_Electrons(i), numpar, tim, 3)    ! below
+!                   print*, 'get_electron_theta_1d', size(Theta_e,1), size(Theta_e,2), dTheta, i_arr, i_space
+                  Theta_e(i_arr, i_space) = Theta_e(i_arr, i_space) + one_over_N/dTheta * over_sin_theta    ! add an electron into this array, per energy interval to make distribution
+               endif
+
+!                if (i_arr > 1) then  ! Testing
+!                   print*, 'spectra_1d', MC%MC_Electrons(i)%Ekin, numpar%NRG_grid(i_arr), numpar%NRG_grid(i_arr-1)
+!                   if (i_space > 1) then
+!                      print*, MC%MC_Electrons(i)%R(3) + (MC%MC_Electrons(i)%V(3)) * (tim - MC%MC_Electrons(i)%t0) , numpar%Spectr_grid(3)%spatial_grid1(i_space), numpar%Spectr_grid(3)%spatial_grid1(i_space-1)
+!                   else
+!                      print*, MC%MC_Electrons(i)%R(3) + (MC%MC_Electrons(i)%V(3)) * (tim - MC%MC_Electrons(i)%t0), numpar%Spectr_grid(3)%spatial_grid1(i_space), i_space
+!                   endif
+!                endif
+
+!                write(*,'(a,i4,i4,f,f,f)') '(get_electron_theta_1d)', i, i_arr, numpar%NRG_grid(i_arr), MC%MC_Electrons(i)%Ekin, Theta_e(i_arr)
+            endif
+         enddo
+      endif ACTPAR
+   endif SPEC
+!    pause 'get_electron_theta_1d'
+end subroutine get_electron_theta_1d
+
+
+
+function add_cartesian_particle_for_theta_1d(MC_Prtcl, numpar, tim, coord_ind, neutral) result(i_out)
+   integer i_out    ! index for the space array
+   class(Particle), intent(in) :: MC_Prtcl      ! MC array for all particles in one iteration
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   real(8), intent(in) :: tim   ! [fs] current time step
+   integer, intent(in) :: coord_ind ! 1=X, 2=Y, 3=Z, along which coordinate
+   logical, intent(in), optional :: neutral ! is it a neutral particle (photon)?
+   !-----------------------------
+   integer :: i_arr, Nsiz
+   real(8) :: dR, dV, Rcur(3)
+
+!    print*, 'add_cartesian_particle_for_theta_1d'
+
+   ! Find where the particle is at the time instant "tim":
+   Rcur(:) = MC_Prtcl%R(:) + (MC_Prtcl%V(:)) * (tim - MC_Prtcl%t0)   ! [A]
+   if (present(neutral)) then ! for photons, make sure periodic boundaries are observed:
+      if (neutral) call put_back_into_box(numpar, R = Rcur) ! module "MC_general_tools"
+   endif
+
+   ! Find where it is on the grid:
+   select case (coord_ind)
+   case (1)  ! along X
+      if (isnan(Rcur(1))) then
+         print*, 'Error in add_cartesian_particle_for_theta_1d #1', Rcur(1), MC_Prtcl%R(:)
+         print*, 'V',  (MC_Prtcl%V(:)), (tim - MC_Prtcl%t0)
+         print*, 'R0', MC_Prtcl%R0(:)
+         print*, 'E', MC_Prtcl%Ekin
+      endif
+      Nsiz = size(numpar%Theta_grid(1)%spatial_grid1)
+      if (Rcur(1) < numpar%Theta_grid(1)%spatial_grid1(1)) then
+         i_arr = 1
+      elseif (Rcur(1) >= numpar%Theta_grid(1)%spatial_grid1(Nsiz)) then
+         i_arr = Nsiz
+      else
+         call Find_in_array_monoton(numpar%Theta_grid(1)%spatial_grid1(:), Rcur(1), i_arr)  ! module "Little_subroutines"
+!          i_arr = i_arr + 1
+      endif
+   case (2)  ! along Y
+      if (isnan(Rcur(2))) then
+         print*, 'Error in add_cartesian_particle_for_theta_1d #2', Rcur(2), MC_Prtcl%R(:)
+         print*, 'V',  (MC_Prtcl%V(:)), (tim - MC_Prtcl%t0)
+         print*, 'R0', MC_Prtcl%R0(:)
+         print*, 'E', MC_Prtcl%Ekin
+      endif
+!       call Find_in_array_monoton(numpar%Theta_grid(2)%spatial_grid1(:), Rcur(2), i_arr)  ! module "Little_subroutines"
+      Nsiz = size(numpar%Theta_grid(2)%spatial_grid1)
+      if (Rcur(2) < numpar%Theta_grid(2)%spatial_grid1(1)) then
+         i_arr = 1
+      elseif (Rcur(2) >= numpar%Theta_grid(2)%spatial_grid1(Nsiz)) then
+         i_arr = Nsiz
+      else
+         call Find_in_array_monoton(numpar%Theta_grid(2)%spatial_grid1(:), Rcur(2), i_arr)  ! module "Little_subroutines"
+!          i_arr = i_arr + 1
+      endif
+   case (3)  ! along Z
+      if (isnan(Rcur(3))) then
+         print*, 'Error in add_cartesian_particle_for_theta_1d #3', Rcur(3), MC_Prtcl%R(:)
+         print*, 'V',  (MC_Prtcl%V(:)), (tim - MC_Prtcl%t0)
+         print*, 'R0', MC_Prtcl%R0(:)
+         print*, 'E', MC_Prtcl%Ekin
+      endif
+      !call Find_in_array_monoton(numpar%Theta_grid(3)%spatial_grid1(:), Rcur(3), i_arr)  ! module "Little_subroutines"
+      Nsiz = size(numpar%Theta_grid(3)%spatial_grid1)
+      if (Rcur(3) < numpar%Theta_grid(3)%spatial_grid1(1)) then
+         i_arr = 1
+      elseif (Rcur(3) >= numpar%Theta_grid(3)%spatial_grid1(Nsiz)) then
+         i_arr = Nsiz
+      else
+         call Find_in_array_monoton(numpar%Theta_grid(3)%spatial_grid1(:), Rcur(3), i_arr)  ! module "Little_subroutines"
+!          i_arr = i_arr + 1
+      endif
+   end select
+!    print*, numpar%Theta_grid(3)%spatial_grid1(i_arr), numpar%Theta_grid(3)%spatial_grid1(i_arr+1), R
+   i_out = i_arr
+!    print*, 'add_cartesian_particle_for_spectra_1d END'
+end function add_cartesian_particle_for_theta_1d
 
 
 
@@ -3172,15 +3454,49 @@ end subroutine allocate_spectra_arrays
 
 
 
-subroutine allocate_vel_theta_arrays(Nsiz_vel, Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI) 
+
+subroutine allocate_vel_theta_arrays(Nsiz_vel, Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3, &
+            Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
+            Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
+            Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
+            Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
+            Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  )
    integer, intent(in) :: Nsiz_vel    ! size
+   integer, dimension(:), intent(in) :: Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3
    real(8), dimension(:), allocatable, intent(inout) :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI
+   ! Theta distribution vs space in 1d:
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! theta distribution in space along X
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! theta distribution in space along Y
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! theta distribution in space along Z
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! theta distribution in space along R
+   !------------------------------
    ! Velosity theta distributions:
    allocate(Vel_theta_ph(Nsiz_vel), source = 0.0d0)
    allocate(Vel_theta_e(Nsiz_vel), source = 0.0d0)
    allocate(Vel_theta_p(Nsiz_vel), source = 0.0d0)
    allocate(Vel_theta_h(Nsiz_vel), source = 0.0d0)
    allocate(Vel_theta_SHI(Nsiz_vel), source = 0.0d0)
+   ! Velosity theta distributions vs space 1d:
+   allocate(Theta_ph_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)   ! X
+   allocate(Theta_e_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
+   allocate(Theta_p_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
+   allocate(Theta_h_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
+   allocate(Theta_SHI_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
+   allocate(Theta_ph_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)   ! Y
+   allocate(Theta_e_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
+   allocate(Theta_p_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
+   allocate(Theta_h_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
+   allocate(Theta_SHI_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
+   allocate(Theta_ph_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)  ! Z
+   allocate(Theta_e_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
+   allocate(Theta_p_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
+   allocate(Theta_h_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
+   allocate(Theta_SHI_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
+   allocate(Theta_ph_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)   ! R
+   allocate(Theta_e_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
+   allocate(Theta_p_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
+   allocate(Theta_h_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
+   allocate(Theta_SHI_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
 end subroutine allocate_vel_theta_arrays
 
 
@@ -3435,11 +3751,13 @@ end subroutine get_size_VB_output
 
 
 
-subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3)
+subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
+                                    Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    integer, intent(out) :: Nsiz_vel
    integer, dimension(:), intent(out) :: Nsiz, Nsiz1, Nsiz2, Nsiz3
    integer, dimension(:), intent(out) :: Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3
+   integer, dimension(:), intent(out) :: Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3
    !------------------------------
    ! Default values:
    Nsiz = 0
@@ -3451,6 +3769,11 @@ subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Ns
    Nspec_siz1 = 0
    Nspec_siz2 = 0
    Nspec_siz3 = 0
+   Nsiz_vel_siz0 = 0
+   Nsiz_vel_siz1 = 0
+   Nsiz_vel_siz2 = 0
+   Nsiz_vel_siz3 = 0
+
    ! Redefine those that are requested by the user:
    ! Velosity theta distribution:
    if (numpar%vel_theta_grid_par%along_axis) then ! velosity theta data
@@ -3461,7 +3784,7 @@ subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Ns
       Nsiz(1) = size(numpar%NRG_grid)
    endif
    ! Spectra vs space:
-    if (numpar%Spectr_grid_par(1)%along_axis) then ! X
+   if (numpar%Spectr_grid_par(1)%along_axis) then ! X
       Nspec_siz0(2) = size(numpar%Spectr_grid(1)%spatial_grid1)
    endif
    if (numpar%Spectr_grid_par(2)%along_axis) then ! Y
@@ -3490,46 +3813,118 @@ subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Ns
    endif
    if (numpar%Spectr_grid_par(4)%along_axis) then ! XY
       Nspec_siz1(1) = size(numpar%Spectr_grid(4)%spatial_grid1)
-      Nsiz2(1) = size(numpar%Spectr_grid(4)%spatial_grid2)
+      Nspec_siz2(1) = size(numpar%Spectr_grid(4)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(5)%along_axis) then ! XZ
       Nspec_siz1(2) = size(numpar%Spectr_grid(5)%spatial_grid1)
-      Nsiz2(2) = size(numpar%Spectr_grid(5)%spatial_grid2)
+      Nspec_siz2(2) = size(numpar%Spectr_grid(5)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(6)%along_axis) then ! YZ
       Nspec_siz1(3) = size(numpar%Spectr_grid(6)%spatial_grid1)
-      Nsiz2(3) = size(numpar%Spectr_grid(6)%spatial_grid2)
+      Nspec_siz2(3) = size(numpar%Spectr_grid(6)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(11)%along_axis) then ! RL
       Nspec_siz1(4) = size(numpar%Spectr_grid(11)%spatial_grid1)
-      Nsiz2(4) = size(numpar%Spectr_grid(11)%spatial_grid2)
+      Nspec_siz2(4) = size(numpar%Spectr_grid(11)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(12)%along_axis) then ! RTheta
       Nspec_siz1(5) = size(numpar%Spectr_grid(12)%spatial_grid1)
-      Nsiz2(5) = size(numpar%Spectr_grid(12)%spatial_grid2)
+      Nspec_siz2(5) = size(numpar%Spectr_grid(12)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(17)%along_axis) then ! R Theta    (Spherical)
        Nspec_siz1(6) = size(numpar%Spectr_grid(17)%spatial_grid1)
-       Nsiz2(6) = size(numpar%Spectr_grid(17)%spatial_grid2)
+       Nspec_siz2(6) = size(numpar%Spectr_grid(17)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(18)%along_axis) then ! R Phi    (Spherical)
       Nspec_siz1(7) = size(numpar%Spectr_grid(18)%spatial_grid1)
-      Nsiz2(7) = size(numpar%Spectr_grid(18)%spatial_grid2)
+      Nspec_siz2(7) = size(numpar%Spectr_grid(18)%spatial_grid2)
    endif
    if (numpar%Spectr_grid_par(7)%along_axis) then ! X Y Z
       Nspec_siz1(8) = size(numpar%Spectr_grid(7)%spatial_grid1)
-      Nsiz2(8) = size(numpar%Spectr_grid(7)%spatial_grid2)
-      Nsiz3(8) = size(numpar%Spectr_grid(7)%spatial_grid3)
+      Nspec_siz2(8) = size(numpar%Spectr_grid(7)%spatial_grid2)
+      Nspec_siz3(8) = size(numpar%Spectr_grid(7)%spatial_grid3)
    endif
    if (numpar%Spectr_grid_par(13)%along_axis) then ! R L Theta
       Nspec_siz1(9) = size(numpar%Spectr_grid(13)%spatial_grid1)
-      Nsiz2(9) = size(numpar%Spectr_grid(13)%spatial_grid2)
-      Nsiz3(9) = size(numpar%Spectr_grid(13)%spatial_grid3)
+      Nspec_siz2(9) = size(numpar%Spectr_grid(13)%spatial_grid2)
+      Nspec_siz3(9) = size(numpar%Spectr_grid(13)%spatial_grid3)
    endif
    if (numpar%Spectr_grid_par(19)%along_axis) then ! R Theta Phi
       Nspec_siz1(10) = size(numpar%Spectr_grid(19)%spatial_grid1)
-      Nsiz2(10) = size(numpar%Spectr_grid(19)%spatial_grid2)
-      Nsiz3(10) = size(numpar%Spectr_grid(19)%spatial_grid3)
+      Nspec_siz2(10) = size(numpar%Spectr_grid(19)%spatial_grid2)
+      Nspec_siz3(10) = size(numpar%Spectr_grid(19)%spatial_grid3)
+   endif
+
+   ! Theta distribution vs space:
+   if (numpar%Theta_grid_par(1)%along_axis) then ! X
+      Nsiz_vel_siz0(2) = size(numpar%Theta_grid(1)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(2)%along_axis) then ! Y
+      Nsiz_vel_siz0(3) = size(numpar%Theta_grid(2)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(3)%along_axis) then ! Z
+      Nsiz_vel_siz0(4) = size(numpar%Theta_grid(3)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(8)%along_axis) then ! R  (cyllinrical)
+      Nsiz_vel_siz0(5) = size(numpar%Theta_grid(8)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(9)%along_axis) then ! L
+      Nsiz_vel_siz0(6) = size(numpar%Theta_grid(9)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(10)%along_axis) then ! Theta (cyllinrical)
+      Nsiz_vel_siz0(7) = size(numpar%Theta_grid(10)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(14)%along_axis) then ! R (Spherical)
+      Nsiz_vel_siz0(8) = size(numpar%Theta_grid(14)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(15)%along_axis) then ! Theta (Spherical)
+      Nsiz_vel_siz0(9) = size(numpar%Theta_grid(15)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(16)%along_axis) then ! Phi (Spherical)
+      Nsiz_vel_siz0(10) = size(numpar%Theta_grid(16)%spatial_grid1)
+   endif
+   if (numpar%Theta_grid_par(4)%along_axis) then ! XY
+      Nsiz_vel_siz1(1) = size(numpar%Theta_grid(4)%spatial_grid1)
+      Nsiz_vel_siz2(1) = size(numpar%Theta_grid(4)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(5)%along_axis) then ! XZ
+      Nsiz_vel_siz1(2) = size(numpar%Theta_grid(5)%spatial_grid1)
+      Nsiz_vel_siz2(2) = size(numpar%Theta_grid(5)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(6)%along_axis) then ! YZ
+      Nsiz_vel_siz1(3) = size(numpar%Theta_grid(6)%spatial_grid1)
+      Nsiz_vel_siz2(3) = size(numpar%Theta_grid(6)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(11)%along_axis) then ! RL
+      Nsiz_vel_siz1(4) = size(numpar%Theta_grid(11)%spatial_grid1)
+      Nsiz_vel_siz2(4) = size(numpar%Theta_grid(11)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(12)%along_axis) then ! RTheta
+      Nsiz_vel_siz1(5) = size(numpar%Theta_grid(12)%spatial_grid1)
+      Nsiz_vel_siz2(5) = size(numpar%Theta_grid(12)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(17)%along_axis) then ! R Theta    (Spherical)
+       Nsiz_vel_siz1(6) = size(numpar%Theta_grid(17)%spatial_grid1)
+       Nsiz_vel_siz2(6) = size(numpar%Theta_grid(17)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(18)%along_axis) then ! R Phi    (Spherical)
+      Nsiz_vel_siz1(7) = size(numpar%Theta_grid(18)%spatial_grid1)
+      Nsiz_vel_siz2(7) = size(numpar%Theta_grid(18)%spatial_grid2)
+   endif
+   if (numpar%Theta_grid_par(7)%along_axis) then ! X Y Z
+      Nsiz_vel_siz1(8) = size(numpar%Theta_grid(7)%spatial_grid1)
+      Nsiz_vel_siz2(8) = size(numpar%Theta_grid(7)%spatial_grid2)
+      Nsiz_vel_siz3(8) = size(numpar%Theta_grid(7)%spatial_grid3)
+   endif
+   if (numpar%Theta_grid_par(13)%along_axis) then ! R L Theta
+      Nsiz_vel_siz1(9) = size(numpar%Theta_grid(13)%spatial_grid1)
+      Nsiz_vel_siz2(9) = size(numpar%Theta_grid(13)%spatial_grid2)
+      Nsiz_vel_siz3(9) = size(numpar%Theta_grid(13)%spatial_grid3)
+   endif
+   if (numpar%Theta_grid_par(19)%along_axis) then ! R Theta Phi
+      Nsiz_vel_siz1(10) = size(numpar%Theta_grid(19)%spatial_grid1)
+      Nsiz_vel_siz2(10) = size(numpar%Theta_grid(19)%spatial_grid2)
+      Nsiz_vel_siz3(10) = size(numpar%Theta_grid(19)%spatial_grid3)
    endif
    
    ! Spatial grids:
@@ -3611,7 +4006,8 @@ subroutine allocate_output(used_target, numpar, out_data)
    type(Matter), intent(in) :: used_target  ! parameters of the target
    type(Num_par), intent(inout), target :: numpar   ! all numerical parameters
    type(output_data), intent(inout) :: out_data  ! all output data (distributions etc.)
-   integer :: Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10)
+   integer :: Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10), &
+                  Nsiz_vel_siz0(10), Nsiz_vel_siz1(10), Nsiz_vel_siz2(10), Nsiz_vel_siz3(10)
    integer, dimension(:), allocatable :: Nsiz_VB    ! VB holes for each target material
    integer :: i_DOS
    real(8) :: dE
@@ -3630,7 +4026,9 @@ subroutine allocate_output(used_target, numpar, out_data)
    out_data%Ep_high = 0.0d0
    
    ! Set sizes of the arrays:
-   call set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3) ! below
+   call set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, &
+                              Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
+                              Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3) ! below
    ! Special grid for valence band holes according to DOS:
    call get_size_VB_output(used_target, Nsiz_VB, numpar%NRG_grid_VB)    ! below
 
@@ -3643,11 +4041,17 @@ subroutine allocate_output(used_target, numpar, out_data)
             out_data%Spectra_ph_Z, out_data%Spectra_e_Z, out_data%Spectra_p_Z, out_data%Spectra_h_Z, out_data%Spectra_SHI_Z, &
             out_data%Spectra_ph_R, out_data%Spectra_e_R, out_data%Spectra_p_R, out_data%Spectra_h_R, out_data%Spectra_SHI_R      ) ! below
    endif
+
    ! Allocate velosity theta distributions:
    if (.not.allocated(out_data%Vel_theta_ph)) then   ! all velosity distributions
-      call allocate_vel_theta_arrays(Nsiz_vel, out_data%Vel_theta_ph, out_data%Vel_theta_e, out_data%Vel_theta_p, &
-            out_data%Vel_theta_h, out_data%Vel_theta_SHI)    ! below
+      call allocate_vel_theta_arrays(Nsiz_vel, Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3, &
+            out_data%Vel_theta_ph, out_data%Vel_theta_e, out_data%Vel_theta_p, out_data%Vel_theta_h, out_data%Vel_theta_SHI, &
+            out_data%Theta_ph_X, out_data%Theta_e_X, out_data%Theta_p_X, out_data%Theta_h_X, out_data%Theta_SHI_X, &
+            out_data%Theta_ph_Y, out_data%Theta_e_Y, out_data%Theta_p_Y, out_data%Theta_h_Y, out_data%Theta_SHI_Y, &
+            out_data%Theta_ph_Z, out_data%Theta_e_Z, out_data%Theta_p_Z, out_data%Theta_h_Z, out_data%Theta_SHI_Z, &
+            out_data%Theta_ph_R, out_data%Theta_e_R, out_data%Theta_p_R, out_data%Theta_h_R, out_data%Theta_SHI_R  )    ! below
    endif
+
    ! Spatial distributions:
    if (.not.allocated(out_data%Distr_ph_X)) then
       call allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, numpar%N_sh_tot, &

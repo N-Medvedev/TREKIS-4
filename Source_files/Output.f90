@@ -41,6 +41,7 @@ character(200) :: m_output_total, m_output_N_gnu, m_output_E_gnu, m_output_total
 character(200) :: m_output_MD, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_MD_E_gnu
 character(200) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI
 character(200) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d
+character(200) :: m_output_theta_ph_1d, m_output_theta_e_1d, m_output_theta_h_1d, m_output_theta_p_1d, m_output_theta_SHI_1d
 
 character(200) :: m_output_cartesian_1d_X_ph, m_output_cartesian_1d_Y_ph, m_output_cartesian_1d_Z_ph
 character(200) :: m_output_cartesian_1d_X_e, m_output_cartesian_1d_Y_e, m_output_cartesian_1d_Z_e
@@ -81,7 +82,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 21.08.2025)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 06.09.2025)'
 
 
 ! All output file names:
@@ -117,6 +118,12 @@ parameter (m_output_spectrum_e_1d = 'OUTPUT_electron_spectrum_1d_')
 parameter (m_output_spectrum_h_1d = 'OUTPUT_valence_hole_spectrum_1d_')
 parameter (m_output_spectrum_p_1d = 'OUTPUT_positron_spectrum_1d_')
 parameter (m_output_spectrum_SHI_1d = 'OUTPUT_SHI_spectrum_1d_')
+!ssssssssssssssssssssssssssssssssssssssssssss
+parameter (m_output_theta_ph_1d = 'OUTPUT_photon_velocity_theta_distr_1d_')
+parameter (m_output_theta_e_1d = 'OUTPUT_electron_velocity_theta_distr_1d_')
+parameter (m_output_theta_h_1d = 'OUTPUT_valence_hole_velocity_theta_distr_1d_')
+parameter (m_output_theta_p_1d = 'OUTPUT_positron_velocity_theta_distr_1d_')
+parameter (m_output_theta_SHI_1d = 'OUTPUT_SHI_velocity_theta_distr_1d_')
 !dddddddddddddddddddddddddddddddddddddddddddd
 ! Cartesian:
 parameter (m_output_cartesian_1d_X_ph = 'OUTPUT_photon_density_1d_X_')
@@ -530,6 +537,10 @@ subroutine velocity_theta_distributions(used_target, numpar, out_data, tim)
       call hole_velotheta(used_target, numpar, out_data, tim) ! below
       ! SHIs:
       call SHI_velotheta(used_target, numpar, out_data, tim) ! below
+   endif
+
+   if (ANY(numpar%Theta_grid_par(:)%along_axis)) then  ! Along axis
+      call electron_theta_distr_1d(used_target, numpar, out_data, tim)  ! below
    endif
 end subroutine velocity_theta_distributions
 
@@ -2220,6 +2231,105 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
    
    nullify (Spectrum_cur)
 end subroutine electron_spectra_1d
+
+
+
+subroutine electron_theta_distr_1d(used_target, numpar, out_data, tim)
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   type(output_data), intent(in), target :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   !----------------------------------------
+   character(200) :: File_name
+   character(3) :: axis_name
+   integer :: FN, i_tar, i, Nsiz, j, Nsiz2
+   logical :: file_opened, file_exist
+   real(8), dimension(:), pointer :: Theta_distr_cur
+
+   ! Create a directory:
+   if (numpar%Theta_grid_par(1)%along_axis) then  ! Along X
+      axis_name = 'X'
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_theta_e_1d))//trim(adjustl(axis_name))//'.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_theta_e_X, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_theta_e_X,'(a)') '#Time    Theta Distribution_vs_space_X'
+         write(numpar%FN_theta_e_X,'(a)') '#fs    deg 1/deg    etc.'
+         write(numpar%FN_theta_e_X,'(a)', advance='no') '#   '
+         write(numpar%FN_theta_e_X,'(es15.3,$)') numpar%Theta_grid(1)%spatial_grid1(:)
+         write(numpar%FN_theta_e_X,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_theta_e_X ! just set a number
+      ! Size of the array for output theta:
+      Nsiz = size(out_data%Vel_theta_ph)
+
+      do i = 1, Nsiz
+          Theta_distr_cur => out_data%Theta_e_X(i,:)
+          Nsiz2 = size(Theta_distr_cur)
+          write(FN,'(es24.16, $)') tim, numpar%vel_theta_grid(i), ( Theta_distr_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%vel_theta_grid(i), out_data%Theta_e_X(i,:)
+          write(FN,'(a)')   ! start a new line
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
+   endif    ! X
+
+   if (numpar%Theta_grid_par(2)%along_axis) then  ! Along Y
+      axis_name = 'Y'
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_theta_e_1d))//trim(adjustl(axis_name))//'.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_theta_e_Y, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_theta_e_Y,'(a)') '#Time    Theta Distribution_vs_space_Y'
+         write(numpar%FN_theta_e_Y,'(a)') '#fs    deg 1/deg    etc.'
+         write(numpar%FN_theta_e_Y,'(a)', advance='no') '#   '
+         write(numpar%FN_theta_e_Y,'(es15.3,$)') numpar%Theta_grid(2)%spatial_grid1(:)
+         write(numpar%FN_theta_e_Y,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_theta_e_Y ! just set a number
+      ! Size of the array for output theta:
+      Nsiz = size(out_data%Vel_theta_ph)
+
+      do i = 1, Nsiz
+          Theta_distr_cur => out_data%Theta_e_Y(i,:)
+          Nsiz2 = size(Theta_distr_cur)
+          write(FN,'(es24.16, $)') tim, numpar%vel_theta_grid(i), ( Theta_distr_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%vel_theta_grid(i), out_data%Theta_e_Y(i,:)
+          write(FN,'(a)')   ! start a new line
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
+   endif    ! Y
+
+   if (numpar%Theta_grid_par(3)%along_axis) then  ! Along Z
+      axis_name = 'Z'
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_theta_e_1d))//trim(adjustl(axis_name))//'.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_theta_e_Z, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_theta_e_Z,'(a)') '#Time    Theta Distribution_vs_space_Z'
+         write(numpar%FN_theta_e_Z,'(a)') '#fs    deg 1/deg    etc.'
+         write(numpar%FN_theta_e_Z,'(a)', advance='no') '#   '
+         write(numpar%FN_theta_e_Z,'(e15.3,$)') numpar%Theta_grid(3)%spatial_grid1(:)
+         write(numpar%FN_theta_e_Z,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_theta_e_Z ! just set a number
+      ! Size of the array for output theta:
+      Nsiz = size(out_data%Vel_theta_ph)
+!        print*, 'SIZES:', size(numpar%vel_theta_grid), size(out_data%Theta_e_Z, 1)
+      do i = 1, Nsiz
+          Theta_distr_cur => out_data%Theta_e_Z(i,:)
+          Nsiz2 = size(Theta_distr_cur)
+          write(FN,'(es24.16, $)') tim, numpar%vel_theta_grid(i), ( Theta_distr_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%vel_theta_grid(i), out_data%Theta_e_Z(i,:)
+          write(FN,'(a)')   ! start a new line
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
+   endif    ! Z
+
+   nullify (Theta_distr_cur)
+end subroutine electron_theta_distr_1d
 
 
 
@@ -4141,6 +4251,7 @@ subroutine print_TREKIS4_label(print_to)
    write(print_to, '(a)') '       TREKIS: Time-REsolved Kinetics in Irradiated Solids'
    write(print_to, '(a)') '       '//trim(adjustl(m_TREKIS_version))
    write(print_to, '(a)') '       Available at https://github.com/N-Medvedev/TREKIS-4'
+
    write(print_to, '(a)') trim(adjustl(m_starline))
 end subroutine print_TREKIS4_label
 
@@ -4634,6 +4745,20 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       MC_output = .true.   ! mark that there was any optional output
    endif
 
+   if (numpar%Theta_grid_par(1)%along_axis) then
+      write(print_to,'(a)') '  Theta-distribution resolved along X'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Theta_grid_par(2)%along_axis) then
+      write(print_to,'(a)') '  Theta-distribution resolved along Y'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Theta_grid_par(3)%along_axis) then
+      write(print_to,'(a)') '  Theta-distribution resolved along Z'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
 
    if (.not.MC_output) then
       write(print_to,'(a)') '  none'
@@ -4981,6 +5106,209 @@ subroutine set_OMP_number(NOMP, prnt, FN, lin)
    endif
 #endif
 end subroutine set_OMP_number
+
+
+
+
+
+subroutine close_all_output(numpar)
+   type(Num_par), intent(in), target :: numpar	! all numerical parameters
+   !----------------------
+   integer :: Nsiz, i
+   ! For all output files:
+
+   ! Files with spectra:
+   call close_file('close', FN=numpar%FN_spectrum_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e)	! module "Dealing_with_files"
+   if (allocated(numpar%FN_spectrum_h)) then
+      Nsiz = size(numpar%FN_spectrum_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_spectrum_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   call close_file('close', FN=numpar%FN_spectrum_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_SHI)	! module "Dealing_with_files"
+
+   ! Files with theta distributions:
+   call close_file('close', FN=numpar%FN_vel_theta_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_vel_theta_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_vel_theta_h)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_vel_theta_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_vel_theta_SHI)	! module "Dealing_with_files"
+
+   ! Files with spectra vs space:
+   call close_file('close', FN=numpar%FN_spectrum_ph_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_p_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_SHI_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_h_X)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_spectrum_ph_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_p_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_SHI_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_h_Y)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_spectrum_ph_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_p_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_SHI_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_h_Z)	! module "Dealing_with_files"
+
+   ! Files with theta distribution vs space:
+   call close_file('close', FN=numpar%FN_theta_ph_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_e_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_p_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_SHI_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_h_X)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_theta_ph_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_e_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_p_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_SHI_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_h_Y)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_theta_ph_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_e_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_p_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_SHI_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_theta_h_Z)	! module "Dealing_with_files"
+
+   ! File numbers with spatial distributions:
+   ! Cartesian:
+   call close_file('close', FN=numpar%FN_car_1d_X_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_car_1d_Y_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_car_1d_Z_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_car_1d_X_E_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_E_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_E_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_E_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_E_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_a)	! module "Dealing_with_files"
+
+   if (allocated(numpar%FN_car_1d_X_h)) then
+      Nsiz = size(numpar%FN_car_1d_X_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_car_1d_X_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_car_1d_X_E_h)) then
+      Nsiz = size(numpar%FN_car_1d_X_E_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_car_1d_X_E_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_car_1d_Y_h)) then
+      Nsiz = size(numpar%FN_car_1d_Y_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_car_1d_Y_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_car_1d_Y_E_h)) then
+      Nsiz = size(numpar%FN_car_1d_Y_E_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_car_1d_Y_E_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_car_1d_Z_h)) then
+      Nsiz = size(numpar%FN_car_1d_Z_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_car_1d_Z_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_car_1d_Z_E_h)) then
+      Nsiz = size(numpar%FN_car_1d_Z_E_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_car_1d_Z_E_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+
+   call close_file('close', FN=numpar%FN_cyl_1d_R_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_a)	! module "Dealing_with_files"
+
+   if (allocated(numpar%FN_cyl_1d_R_h)) then
+      Nsiz = size(numpar%FN_cyl_1d_R_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_cyl_1d_R_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_cyl_1d_R_E_h)) then
+      Nsiz = size(numpar%FN_cyl_1d_R_E_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_cyl_1d_R_E_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_a)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_ph)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_e)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_p)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_a)	! module "Dealing_with_files"
+
+   if (allocated(numpar%FN_cyl_2d_RL_h)) then
+      Nsiz = size(numpar%FN_cyl_2d_RL_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_cyl_2d_RL_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+   if (allocated(numpar%FN_cyl_2d_RL_E_h)) then
+      Nsiz = size(numpar%FN_cyl_2d_RL_E_h)
+      do i = 1, Nsiz
+         call close_file('close', FN=numpar%FN_cyl_2d_RL_E_h(i))	! module "Dealing_with_files"
+      enddo
+   endif
+
+   ! MD related files:
+   call close_file('close', FN=numpar%FN_MD_totals)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_MD_average)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_MD_displacement)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_MD_XYZ)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_MD_V_XYZ)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_MCMD_info)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_MD_LAMMPS)	! module "Dealing_with_files"
+
+end subroutine close_all_output
 
 
 

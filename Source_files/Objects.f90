@@ -266,6 +266,12 @@ type output_data
    real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
    real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
    real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   ! Theta distribution in 1d space:
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! Theta distribution in space along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! Theta distribution in space along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! Theta distribution in space along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! Theta distribution in space along R
+
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, &
                                         Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic ! photon
@@ -507,6 +513,10 @@ type Num_par
    integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X
    integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y
    integer :: FN_spectrum_ph_Z, FN_spectrum_e_Z, FN_spectrum_p_Z, FN_spectrum_SHI_Z, FN_spectrum_h_Z
+
+   integer :: FN_theta_ph_X, FN_theta_e_X, FN_theta_p_X, FN_theta_SHI_X, FN_theta_h_X
+   integer :: FN_theta_ph_Y, FN_theta_e_Y, FN_theta_p_Y, FN_theta_SHI_Y, FN_theta_h_Y
+   integer :: FN_theta_ph_Z, FN_theta_e_Z, FN_theta_p_Z, FN_theta_SHI_Z, FN_theta_h_Z
    ! File numbers with spatial distributions:
    ! Cartesian:
    integer :: FN_car_1d_X_ph, FN_car_1d_X_e, FN_car_1d_X_p, FN_car_1d_X_SHI, FN_car_1d_X_a   ! densities along X
@@ -546,6 +556,9 @@ type Num_par
    real(8), dimension(:), allocatable :: NRG_grid_VB  ! energy grid for the VB output data (VB spectra)
    type(grid_params) :: vel_theta_grid_par   ! all the parameters of printout velosity theta distribution
    real(8), dimension(:), allocatable :: vel_theta_grid  ! particles velosity distribution by theta: Vz/V
+   type(grid_params), dimension(19) :: Theta_grid_par   ! all the parameters of printout Theta vs spatial grids
+   type(grids_sets), dimension(19) :: Theta_grid  ! Space grid in 1d for theta calculations
+
    ! NUMERICS OF THE TARGET PARAMETERS:
    integer :: N_sh_tot  ! total number of core shells in the target material
    ! NUMERICAL PARAMETERS:

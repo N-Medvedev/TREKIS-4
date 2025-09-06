@@ -304,6 +304,7 @@ call print_duration(6, trim(adjustl(g_text)), g_ctim) ! module "Output"
 call print_duration(g_numpar%FN_parameters, trim(adjustl(g_text)), g_ctim) ! module "Output"
 
 ! Close remaining files:
+call close_all_output(g_numpar)     ! module "Output"
 call close_file('close', FN=g_numpar%FN_parameters)	! module "Dealing_with_files"
 if (g_Err%Err) then
    call close_file('close', FN=g_Err%File_Num) ! module "Dealing_with_files"
