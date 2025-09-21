@@ -15,8 +15,9 @@ use MC_electron, only: MC_electron_event
 use MC_positron, only: MC_positron_event
 use MC_SHI, only: MC_SHI_event
 use MC_hole, only: MC_hole_event
+use MC_muon, only: MC_muon_event
 use MC_general_tools, only: find_the_target, get_photon_flight_time, get_hole_flight_time, get_SHI_flight_time, &
-                            get_positron_flight_time, get_electron_flight_time, renew_atomic_arrays, &
+                            get_positron_flight_time, get_electron_flight_time, get_muon_flight_time, renew_atomic_arrays, &
                             remove_particle_from_MC_array
 ! use Little_subroutines, only: Find_in_array_monoton
 
@@ -67,6 +68,7 @@ subroutine Iterate_MC(MC, t_lim, used_target, numpar, bunch, anything_to_do, MD_
    real(8), dimension(size(MD_supce%E_e_at_from_MC,1),size(MD_supce%E_e_at_from_MC,2),size(MD_supce%E_e_at_from_MC,3)) :: E_e_at
    real(8), dimension(size(MD_supce%E_h_at_from_MC,1),size(MD_supce%E_h_at_from_MC,2),size(MD_supce%E_h_at_from_MC,3)) :: E_h_at
    real(8), dimension(size(MD_supce%E_p_at_from_MC,1),size(MD_supce%E_p_at_from_MC,2),size(MD_supce%E_p_at_from_MC,3)) :: E_p_at
+   real(8), dimension(size(MD_supce%E_mu_at_from_MC,1),size(MD_supce%E_mu_at_from_MC,2),size(MD_supce%E_mu_at_from_MC,3)) :: E_mu_at
    real(8), dimension(size(MD_supce%E_e_from_MC,1),size(MD_supce%E_e_from_MC,2),size(MD_supce%E_e_from_MC,3)) :: E_e
    real(8), dimension(size(MD_supce%E_h_from_MC,1),size(MD_supce%E_h_from_MC,2),size(MD_supce%E_h_from_MC,3)) :: E_h
    
@@ -74,20 +76,21 @@ subroutine Iterate_MC(MC, t_lim, used_target, numpar, bunch, anything_to_do, MD_
    E_e_at = 0.0d0
    E_h_at = 0.0d0
    E_p_at = 0.0d0
+   E_mu_at = 0.0d0
    E_e = 0.0d0
    E_h = 0.0d0
 
    !$omp parallel &
    !$omp private (iter)
-   !$omp do schedule(dynamic) reduction(+: E_e_at, E_h_at, E_p_at, E_e, E_h )
+   !$omp do schedule(dynamic) reduction(+: E_e_at, E_h_at, E_p_at, E_e, E_h, E_mu_at )
    MC_ITER:do iter = 1, numpar%NMC
       ! Find out if there is any particle that is to be simulated:
       anything_to_do(iter) = ( any(MC(iter)%MC_Photons(:)%active) .or. any(MC(iter)%MC_Electrons(:)%active) &
                                   .or. any(MC(iter)%MC_Positrons(:)%active) .or. any(MC(iter)%MC_Holes(:)%active) &
-                                  .or. any(MC(iter)%MC_SHIs(:)%active) )
+                                  .or. any(MC(iter)%MC_SHIs(:)%active) .or. any(MC(iter)%MC_Muons(:)%active) )
       ! If there is, then run MC simulation:
       if (anything_to_do(iter)) then    ! do
-         call MC_single_iteration(MC(iter), t_lim, used_target, numpar, bunch, MD_supce, E_e_at, E_h_at, E_p_at, E_e, E_h)    ! below
+         call MC_single_iteration(MC(iter), t_lim, used_target, numpar, bunch, MD_supce, E_e_at, E_h_at, E_p_at, E_e, E_h, E_mu_at)    ! below
       endif
    enddo MC_ITER
    !$omp end do
@@ -98,20 +101,21 @@ subroutine Iterate_MC(MC, t_lim, used_target, numpar, bunch, anything_to_do, MD_
       MD_supce%E_e_at_from_MC = E_e_at/dble(numpar%NMC)
       MD_supce%E_h_at_from_MC = E_h_at/dble(numpar%NMC)
       MD_supce%E_p_at_from_MC = E_p_at/dble(numpar%NMC)
+      MD_supce%E_mu_at_from_MC = E_mu_at/dble(numpar%NMC)
       MD_supce%E_e_from_MC = E_e/dble(numpar%NMC)
       MD_supce%E_h_from_MC = E_h/dble(numpar%NMC)
    endif
 end subroutine Iterate_MC
 
 
-subroutine MC_single_iteration(MC, t_lim, used_target, numpar, bunch, MD_supce, E_e_at, E_h_at, E_p_at, E_e, E_h)
+subroutine MC_single_iteration(MC, t_lim, used_target, numpar, bunch, MD_supce, E_e_at, E_h_at, E_p_at, E_e, E_h, E_mu_at)
    type(MC_arrays), intent(inout) :: MC      ! elements of MC array for all particles in one iteration
    real(8), intent(in) :: t_lim                        ! [fs] end of the time step
    type(Matter), intent(in) :: used_target     ! parameters of the target
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    type(Radiation_param), dimension(:), intent(in) :: bunch	! incomming radiation
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters for connection between MC and MD modules
-   real(8), dimension(:,:,:), intent(inout) :: E_e_at, E_h_at, E_p_at, E_e, E_h  ! data to pass to MD later
+   real(8), dimension(:,:,:), intent(inout) :: E_e_at, E_h_at, E_p_at, E_mu_at, E_e, E_h  ! data to pass to MD later
    !----------------------------------------------------
    real(8) :: t_shortest    ! [fs] shortest time of the next event
    real(8) :: t_previous
@@ -144,6 +148,9 @@ subroutine MC_single_iteration(MC, t_lim, used_target, numpar, bunch, MD_supce, 
       case (4)  ! hole
          call MC_hole_event(used_target, numpar, MC%N_h, MC%MC_Holes, NOP, MC, &
                                 MD_supce, E_h_at, E_e, E_h)  ! module "MC_hole"
+      case (5)  ! muon
+         call MC_muon_event(used_target, numpar, MC%N_mu, MC%MC_Muons, NOP, MC, &
+                                MD_supce, E_mu_at, E_e, E_h)  ! module "MC_muon"
       endselect
       ! Check if there are still particles to perform an event within this timestep:
       call find_the_shortest_time(MC, t_shortest, KOP, NOP) ! below
@@ -173,6 +180,8 @@ subroutine MC_single_iteration(MC, t_lim, used_target, numpar, bunch, MD_supce, 
                   call remove_particle_from_MC_array(MC%N_SHI, NOP, MC%MC_SHIs)  ! module "MC_general_tools"
                case (4)  ! hole
                   call remove_particle_from_MC_array(MC%N_h, NOP, MC%MC_Holes)  ! module "MC_general_tools"
+               case (5)  ! muon
+                  call remove_particle_from_MC_array(MC%N_mu, NOP, MC%MC_Muons)  ! module "MC_general_tools"
                endselect
             endif
          endif
@@ -191,9 +200,9 @@ subroutine find_the_shortest_time(MC, t_shortest, KOP, NOP)
    real(8), intent(out) :: t_shortest  ! [fs] the shortest next collision time
    integer, intent(out) :: KOP  ! index of the kind of the particle that is next to perform an event
    integer, intent(out) :: NOP  ! index of the particle
-   ! Reminder: particle kinds: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole
-   real(8) :: t_e, t_i, t_ph, t_pos, t_h    ! for each kind of particles defined in the code
-   integer :: NOP_ph, NOP_e, NOP_p, NOP_SHI, NOP_h
+   ! Reminder: particle kinds: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
+   real(8) :: t_e, t_i, t_ph, t_pos, t_h, t_muon    ! for each kind of particles defined in the code
+   integer :: NOP_ph, NOP_e, NOP_p, NOP_SHI, NOP_h, NOP_mu
    
    ! The shortest time till next collision among only active photons:
    NOP_ph = transfer( (/ minloc(MC%MC_Photons(:)%ti, MASK=MC%MC_Photons(:)%active) /), NOP)
@@ -236,6 +245,14 @@ subroutine find_the_shortest_time(MC, t_shortest, KOP, NOP)
    else
       t_i = 1.0d25  ! no collisions if no active SHI
    endif
+
+   ! The shortest time till next collision among only active mouns:
+   NOP_mu = transfer( (/ minloc(MC%MC_Muons(:)%ti, MASK=MC%MC_Muons(:)%active) /), NOP)
+   if (NOP_mu > 0) then
+      t_muon = MC%MC_Muons(NOP_mu)%ti
+   else
+      t_muon = 1.0d25  ! no collisions if no active muons
+   endif
    
    ! Chose the shortest time among the types of particles:
    ! To start with:
@@ -265,6 +282,12 @@ subroutine find_the_shortest_time(MC, t_shortest, KOP, NOP)
       t_shortest = t_h
       NOP = NOP_h
    endif
+
+   if (t_muon < t_shortest) then   ! muon time is shorter
+      KOP = 5   ! muon
+      t_shortest = t_muon
+      NOP = NOP_mu
+   endif
 end subroutine find_the_shortest_time
 
 
@@ -291,7 +314,7 @@ subroutine prepare_MC_run(used_target, MC, numpar, MD_supce, E_e, E_h)
       ! Find out if there is any particle that is to be simulated:
       anything_to_do(iter) = ( any(MC(iter)%MC_Photons(:)%active) .or. any(MC(iter)%MC_Electrons(:)%active) &
                                   .or. any(MC(iter)%MC_Positrons(:)%active) .or. any(MC(iter)%MC_Holes(:)%active) &
-                                  .or. any(MC(iter)%MC_SHIs(:)%active) )
+                                  .or. any(MC(iter)%MC_SHIs(:)%active) .or. any(MC(iter)%MC_Muons(:)%active) )
       ! If there is, then set the free flight distances in this iteration:
       if (anything_to_do(iter)) then
          call set_free_flights(used_target, numpar, MC(iter), MD_supce, E_e, E_h)    ! below
@@ -358,6 +381,15 @@ subroutine set_free_flights(used_target, numpar, MC, MD_supce, E_e, E_h)
          call find_the_target(used_target, MC%MC_SHIs(i))  ! module "MC_general_tools"
          ! Get its flight time within this target:
          call get_SHI_flight_time(used_target, numpar, MC%MC_SHIs(i))  ! module "MC_SHI"
+      enddo
+   endif
+   ! Do for all muons:
+   if (any(MC%MC_Muons(:)%active) ) then    ! if there is at least one
+      do i = 1, MC%N_mu
+         ! Find inside of which target this particle enters:
+         call find_the_target(used_target, MC%MC_Muons(i))  ! module "MC_general_tools"
+         ! Get its flight time within this target:
+         call get_muon_flight_time(used_target, numpar, MC%MC_Muons(i))  ! module "MC_muons"
       enddo
    endif
 end subroutine set_free_flights

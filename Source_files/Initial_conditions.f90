@@ -241,6 +241,29 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       ! For hole, kind of atom and shell it sits in:
       MC(iter)%MC_Holes(MC(iter)%N_h)%KOA = bunch(ibunch)%KOA
       MC(iter)%MC_Holes(MC(iter)%N_h)%Sh = bunch(ibunch)%Sh
+
+   case (5) ! muon
+      MC(iter)%N_mu = MC(iter)%N_mu + 1 ! one more muon among incoming particles
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%active = .true.
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%generation = 0 ! incomming particle
+      ! Sample energy around the given one according to gaussian shape:
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
+      ! Sample arrival time around the given one according to gaussian shape:
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%t0 = sample_Gaussian(bunch(ibunch)%t, bunch(ibunch)%FWHM+1.0d-6)    ! module "Little_subroutines"
+      ! Sample coordinates of impact around the given one according to gaussian shape:
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%R(1) = sample_Gaussian(bunch(ibunch)%R(1), bunch(ibunch)%R_spread(1))    ! module "Little_subroutines"
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%R(2) = sample_Gaussian(bunch(ibunch)%R(2), bunch(ibunch)%R_spread(2))    ! module "Little_subroutines"
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%R(3) = sample_Gaussian(bunch(ibunch)%R(3), bunch(ibunch)%R_spread(3))    ! module "Little_subroutines"
+      ! Absolute value of velosity:
+      V = velosity_from_kinetic_energy(MC(iter)%MC_Muons(MC(iter)%N_mu)%Ekin, g_M_muon)  ! [A/fs] module "Relativity"
+!       V = V * g_ms2Afs    ! [m/s] -> [A/fs]
+      ! Velosity projections in cartesian coordinates:
+      call Spherical_to_cartesian(V, bunch(ibunch)%theta, bunch(ibunch)%phi, &
+           MC(iter)%MC_Muons(MC(iter)%N_mu)%V(1), MC(iter)%MC_Muons(MC(iter)%N_mu)%V(2), MC(iter)%MC_Muons(MC(iter)%N_mu)%V(3))   ! module "Geometries"
+      ! Data on the previous time step:
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%V0(:) = MC(iter)%MC_Muons(MC(iter)%N_mu)%V(:)
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%R0(:) = MC(iter)%MC_Muons(MC(iter)%N_mu)%R(:) - numpar%dt_MD * MC(iter)%MC_Muons(MC(iter)%N_mu)%V(:)   ! making one step back in time
+
    end select
    
    nullify(KOP)
@@ -365,6 +388,14 @@ subroutine Set_defaults(numpar, bunch, MC)
             call set_default_particle(MC(i)%MC_Atoms_events(j))  ! module "Objects"
          enddo
       endif
+
+      if (.not.allocated(MC(i)%MC_Muons)) then
+         allocate(MC(i)%MC_Muons(N_size))	! all positrons as objects
+         do j = 1, N_size
+            call set_default_particle(MC(i)%MC_Muons(j))  ! module "Objects"
+         enddo
+      endif
+
    enddo
 end subroutine Set_defaults
 

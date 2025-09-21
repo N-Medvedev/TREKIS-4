@@ -132,6 +132,9 @@ type Atom_kind
    type(Cross_section) :: Pos_annihil	! cross sections of positron annihilation
    type(Cross_section) :: H_inelastic	! cross sections of electron inelastic scattering
    type(Cross_section) :: H_elastic	! cross sections of electron elastic scattering
+   type(Cross_section) :: Muon_inelastic	! cross sections of muon inelastic scattering
+   type(Cross_section) :: Muon_elastic	! cross sections of muon elastic scattering
+   type(Cross_section) :: Muon_brems	! cross sections of muon Bremsstrahlung
 end type Atom_kind
 
    
@@ -206,6 +209,10 @@ type Target_atoms
    type(Cross_section) :: Pos_annihil_total       ! total cross sections of positron annihilation in this target
    type(Cross_section) :: H_inelastic_total       ! total cross sections of valence hole inelast. scatter. in target (= valence band scattering)
    type(Cross_section) :: H_elastic_total         ! total cross sections of valence hole elastic scattering in this target
+   type(Cross_section) :: Muon_inelastic_valent    ! cross sections of muon inelastic scattering on the valence band
+   type(Cross_section) :: Muon_inelastic_total     ! total cross sections of muon inelastic scattering in this target
+   type(Cross_section) :: Muon_elastic_total       ! total cross sections of muon elastic scattering in this target
+   type(Cross_section) :: Muon_Brems_total         ! total cross sections of muon Bremsstrahlung in this target
 end type Target_atoms
 
 
@@ -229,7 +236,7 @@ end type Matter
 ! All parameters of incomming radiation:
 type Radiation_param
    integer :: NOP			! Number of particles in the incomming pulse / bunch
-   integer :: KOP			! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI
+   integer :: KOP			! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=VB hole, 5=muon
    real(8) :: R(3)			! [A] coordinates of impact
    real(8) :: R_spread(3)	! [A] spread (or uncertainty) of coordinates of impact
 !    integer :: Space_shape	! Spatial shape: 0 = rectangular, 1 = Gaussian, 2 = SASE
@@ -251,26 +258,26 @@ end type Radiation_param
 !==============================================
 type output_data
    ! Total values:
-   real(8) :: Nph, Ne, Nh, Np, Eph, Ee, Eh_kin, Eh_pot, Ep, Eat  ! total numbers and energies of photons, electrons, holes (kinetic and potential), positrons, atoms
-   real(8) :: Nph_high, Ne_high, Nh_high, Np_high, Eph_high, Ee_high, Eh_kin_high, Eh_pot_high, Ep_high  ! numbers and energies of photons, electrons, holes (kinetic and potential), positrons with energies above cut-off
+   real(8) :: Nph, Ne, Nh, Np, Nmu, Eph, Ee, Eh_kin, Eh_pot, Ep, Eat, Emu  ! total numbers and energies of photons, electrons, holes (kinetic and potential), positrons, atoms, muons
+   real(8) :: Nph_high, Ne_high, Nh_high, Np_high, Nmu_high, Eph_high, Ee_high, Eh_kin_high, Eh_pot_high, Ep_high, Emu_high  ! numbers and energies of photons, electrons, holes (kinetic and potential), positrons, muons, with energies above cut-off
    real(8) :: MD_Ekin, MD_Epot  ! total energies in MD supercell: kinetic and potential
    real(8) :: MD_MSD    ! mean atomic displacements
    real(8), dimension(:), allocatable :: MD_MSDP   ! partial atomic displacements for each element
    ! Energy disributions (spectra):
-   real(8), dimension(:), allocatable :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI  ! energy spectra
+   real(8), dimension(:), allocatable :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI, Spectrum_mu  ! energy spectra
    real(8), dimension(:,:), allocatable :: Spectrum_h ! VB spectra for each target material
    ! Velosity theta disributions:
-   real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI
+   real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu
    ! Spectra in 1d space:
-   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! energy spectra in space along X
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
    ! Theta distribution in 1d space:
-   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! Theta distribution in space along X
-   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! Theta distribution in space along Y
-   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! Theta distribution in space along Z
-   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! Theta distribution in space along R
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! Theta distribution in space along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! Theta distribution in space along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! Theta distribution in space along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! Theta distribution in space along R
 
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, &
@@ -285,6 +292,8 @@ type output_data
                                         Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic ! SHI
    real(8), dimension(:), allocatable :: Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, &
                                         Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic ! Atom
+   real(8), dimension(:), allocatable :: Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, &
+                                        Distr_mu_Theta, Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic ! muon
    ! Spatial distributions in 2d:
    real(8), dimension(:,:), allocatable :: Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta
    real(8), dimension(:,:), allocatable :: Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic  ! photon
@@ -298,6 +307,8 @@ type output_data
    real(8), dimension(:,:), allocatable :: Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), allocatable :: Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta
    real(8), dimension(:,:), allocatable :: Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic  ! Atom
+   real(8), dimension(:,:), allocatable :: Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+                                           Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic  ! muons
    ! Spatial distributions in 3d:
    real(8), dimension(:,:,:), allocatable :: Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), allocatable :: Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic ! electron
@@ -305,6 +316,7 @@ type output_data
    real(8), dimension(:,:,:,:), allocatable :: Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), allocatable :: Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic ! Atom
+   real(8), dimension(:,:,:), allocatable :: Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic ! muon
    ! Spatial energy distributions in 1d:
    real(8), dimension(:), allocatable :: E_Distr_ph_X, E_Distr_ph_Y, E_Distr_ph_Z, E_Distr_ph_R, E_Distr_ph_L, E_Distr_ph_Theta
    real(8), dimension(:), allocatable :: E_Distr_ph_Rc, E_Distr_ph_Thetac, E_Distr_ph_Phic ! photon
@@ -318,6 +330,8 @@ type output_data
    real(8), dimension(:), allocatable :: E_Distr_SHI_Theta, E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic ! SHI
    real(8), dimension(:), allocatable :: E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z, E_Distr_a_R, E_Distr_a_L
    real(8), dimension(:), allocatable :: E_Distr_a_Theta, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic ! Atom
+   real(8), dimension(:), allocatable :: E_Distr_mu_X, E_Distr_mu_Y, E_Distr_mu_Z, E_Distr_mu_R, E_Distr_mu_L, E_Distr_mu_Theta, &
+                                         E_Distr_mu_Rc, E_Distr_mu_Thetac, E_Distr_mu_Phic ! muon
    ! Spatial energy distributions in 2d:
    real(8), dimension(:,:), allocatable :: E_Distr_ph_XY, E_Distr_ph_YZ, E_Distr_ph_XZ, E_Distr_ph_RL, E_Distr_ph_RTheta, E_Distr_ph_LTheta
    real(8), dimension(:,:), allocatable :: E_Distr_ph_RcThc, E_Distr_ph_RcPhic, E_Distr_ph_ThcPhic  ! photon
@@ -331,6 +345,8 @@ type output_data
    real(8), dimension(:,:), allocatable :: E_Distr_SHI_RcThc, E_Distr_SHI_RcPhic, E_Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), allocatable :: E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta
    real(8), dimension(:,:), allocatable :: E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic  ! Atom
+   real(8), dimension(:,:), allocatable :: E_Distr_mu_XY, E_Distr_mu_YZ, E_Distr_mu_XZ, E_Distr_mu_RL, E_Distr_mu_RTheta, E_Distr_mu_LTheta, &
+                                           E_Distr_mu_RcThc, E_Distr_mu_RcPhic, E_Distr_mu_ThcPhic  ! muon
    ! Spatial energy distributions in 3d:
    real(8), dimension(:,:,:), allocatable :: E_Distr_ph_XYZ, E_Distr_ph_RLTheta, E_Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), allocatable :: E_Distr_e_XYZ, E_Distr_e_RLTheta, E_Distr_e_RcThcPhic ! electron
@@ -338,6 +354,7 @@ type output_data
    real(8), dimension(:,:,:,:), allocatable :: E_Distr_h_XYZ, E_Distr_h_RLTheta, E_Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), allocatable :: E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic ! Atom
+   real(8), dimension(:,:,:), allocatable :: E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic ! muon
 end type output_data
 
 
@@ -506,9 +523,11 @@ type Num_par
    integer :: FN_spectrum_p     ! file number with positronic spectrum
    character(200) :: FILE_spectrum_SHI    ! name of the file with SHI spectrum
    integer :: FN_spectrum_SHI     ! file number with SHI spectrum
+   character(200) :: FILE_spectrum_mu    ! name of the file with muon spectrum
+   integer :: FN_spectrum_mu     ! file number with muon spectrum
    ! name of the file with velosity distribution by theta
-   character(200) :: FILE_vel_theta_ph, FILE_vel_theta_e, FILE_vel_theta_h, FILE_vel_theta_p, FILE_vel_theta_SHI
-   integer :: FN_vel_theta_ph, FN_vel_theta_e, FN_vel_theta_h, FN_vel_theta_p, FN_vel_theta_SHI
+   character(200) :: FILE_vel_theta_ph, FILE_vel_theta_e, FILE_vel_theta_h, FILE_vel_theta_p, FILE_vel_theta_SHI, FILE_vel_theta_mu
+   integer :: FN_vel_theta_ph, FN_vel_theta_e, FN_vel_theta_h, FN_vel_theta_p, FN_vel_theta_SHI, FN_vel_theta_mu
    ! Files with spectra vs space:
    integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X
    integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y
@@ -519,23 +538,23 @@ type Num_par
    integer :: FN_theta_ph_Z, FN_theta_e_Z, FN_theta_p_Z, FN_theta_SHI_Z, FN_theta_h_Z
    ! File numbers with spatial distributions:
    ! Cartesian:
-   integer :: FN_car_1d_X_ph, FN_car_1d_X_e, FN_car_1d_X_p, FN_car_1d_X_SHI, FN_car_1d_X_a   ! densities along X
-   integer :: FN_car_1d_Y_ph, FN_car_1d_Y_e, FN_car_1d_Y_p, FN_car_1d_Y_SHI, FN_car_1d_Y_a   ! densities along Y
-   integer :: FN_car_1d_Z_ph, FN_car_1d_Z_e, FN_car_1d_Z_p, FN_car_1d_Z_SHI, FN_car_1d_Z_a   ! densities along Z
-   integer :: FN_car_1d_X_E_ph, FN_car_1d_X_E_e, FN_car_1d_X_E_p, FN_car_1d_X_E_SHI, FN_car_1d_X_E_a   ! energy densities along X
-   integer :: FN_car_1d_Y_E_ph, FN_car_1d_Y_E_e, FN_car_1d_Y_E_p, FN_car_1d_Y_E_SHI, FN_car_1d_Y_E_a   ! energy densities along Y
-   integer :: FN_car_1d_Z_E_ph, FN_car_1d_Z_E_e, FN_car_1d_Z_E_p, FN_car_1d_Z_E_SHI, FN_car_1d_Z_E_a   ! energy densities along Z
+   integer :: FN_car_1d_X_ph, FN_car_1d_X_e, FN_car_1d_X_p, FN_car_1d_X_SHI, FN_car_1d_X_a, FN_car_1d_X_mu   ! densities along X
+   integer :: FN_car_1d_Y_ph, FN_car_1d_Y_e, FN_car_1d_Y_p, FN_car_1d_Y_SHI, FN_car_1d_Y_a, FN_car_1d_Y_mu   ! densities along Y
+   integer :: FN_car_1d_Z_ph, FN_car_1d_Z_e, FN_car_1d_Z_p, FN_car_1d_Z_SHI, FN_car_1d_Z_a, FN_car_1d_Z_mu   ! densities along Z
+   integer :: FN_car_1d_X_E_ph, FN_car_1d_X_E_e, FN_car_1d_X_E_p, FN_car_1d_X_E_SHI, FN_car_1d_X_E_a, FN_car_1d_X_E_mu   ! energy densities along X
+   integer :: FN_car_1d_Y_E_ph, FN_car_1d_Y_E_e, FN_car_1d_Y_E_p, FN_car_1d_Y_E_SHI, FN_car_1d_Y_E_a, FN_car_1d_Y_E_mu   ! energy densities along Y
+   integer :: FN_car_1d_Z_E_ph, FN_car_1d_Z_E_e, FN_car_1d_Z_E_p, FN_car_1d_Z_E_SHI, FN_car_1d_Z_E_a, FN_car_1d_Z_E_mu   ! energy densities along Z
    integer, dimension(:), allocatable :: FN_car_1d_X_h, FN_car_1d_X_E_h   ! densities and doses of holes in all shells of all elements along X
    integer, dimension(:), allocatable :: FN_car_1d_Y_h, FN_car_1d_Y_E_h   ! densities and doses of holes in all shells of all elements along Y
    integer, dimension(:), allocatable :: FN_car_1d_Z_h, FN_car_1d_Z_E_h   ! densities and doses of holes in all shells of all elements along Z
    ! Cyllindrical:
     !1d   
-   integer :: FN_cyl_1d_R_ph, FN_cyl_1d_R_e, FN_cyl_1d_R_p, FN_cyl_1d_R_SHI, FN_cyl_1d_R_a   ! densities
-   integer :: FN_cyl_1d_R_E_ph, FN_cyl_1d_R_E_e, FN_cyl_1d_R_E_p, FN_cyl_1d_R_E_SHI, FN_cyl_1d_R_E_a   ! energy densities
+   integer :: FN_cyl_1d_R_ph, FN_cyl_1d_R_e, FN_cyl_1d_R_p, FN_cyl_1d_R_SHI, FN_cyl_1d_R_a, FN_cyl_1d_R_mu   ! densities
+   integer :: FN_cyl_1d_R_E_ph, FN_cyl_1d_R_E_e, FN_cyl_1d_R_E_p, FN_cyl_1d_R_E_SHI, FN_cyl_1d_R_E_a, FN_cyl_1d_R_E_mu   ! energy densities
    integer, dimension(:), allocatable :: FN_cyl_1d_R_h, FN_cyl_1d_R_E_h   ! densities and energy densities of holes in all shells of all elements
     !2d
-   integer :: FN_cyl_2d_RL_ph, FN_cyl_2d_RL_e, FN_cyl_2d_RL_p, FN_cyl_2d_RL_SHI, FN_cyl_2d_RL_a   ! densities
-   integer :: FN_cyl_2d_RL_E_ph, FN_cyl_2d_RL_E_e, FN_cyl_2d_RL_E_p, FN_cyl_2d_RL_E_SHI, FN_cyl_2d_RL_E_a   ! energy densities
+   integer :: FN_cyl_2d_RL_ph, FN_cyl_2d_RL_e, FN_cyl_2d_RL_p, FN_cyl_2d_RL_SHI, FN_cyl_2d_RL_a, FN_cyl_2d_RL_mu   ! densities
+   integer :: FN_cyl_2d_RL_E_ph, FN_cyl_2d_RL_E_e, FN_cyl_2d_RL_E_p, FN_cyl_2d_RL_E_SHI, FN_cyl_2d_RL_E_a, FN_cyl_2d_RL_E_mu   ! energy densities
    integer, dimension(:), allocatable :: FN_cyl_2d_RL_h, FN_cyl_2d_RL_E_h   ! densities and energy densities of holes in all shells of all elements
    ! OUTPUT PRINTOUT:
    type(gnu_par) :: gnupl       ! parameters for gnuplotting
@@ -588,6 +607,12 @@ type Num_par
    logical :: DO_TTM	! Activate TTM module or not
    integer :: MC_vs_MD 	! MC or MD target model: 0=MC, 1=MD
    logical :: recalculate_MFPs  ! Force program to recalculate cross sections and MFPs even if there are files containing precalculated ones
+   ! MODELS FOR MUONS:
+   integer :: Mu_inelast	! inelastic scattering: 0=excluded, 1=CDF, 2=RBEB
+   integer :: Mu_elastic	! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF
+   integer :: Mu_Brems		! Bremsstrahlung: 0=excluded, 1= BHW
+   integer :: Mu_Pairs		! Electron-positron pair creation: 0=excluded, 1= ... (not ready)
+   real(8) :: Mu_Cutoff		! [eV] Cut-off energy (electrons with lower energies are excluded from calculation)
    ! MODELS FOR ELECTRONS:
    integer :: El_forces		! Include forces and fields among electrons: 0=exclude, 1=include as MD, 2=include as mean field
    integer :: El_inelast		! inelastic scattering: 0=excluded, 1=CDF, 2=RBEB
@@ -710,6 +735,9 @@ type, EXTENDS (Atom) :: MacroAtom    ! Macroparticle for MD/Coarse-grained/PIC e
    real(8) :: Radius    ! [A] radius of the macroparticle
 end type MacroAtom
 
+type, EXTENDS (Electron) :: Muon    ! muon as an object
+end type Muon
+
 !==============================================
 ! Parameters for exchange energy between MC and MD:
 type :: MCMD_grid
@@ -752,6 +780,7 @@ type :: MD_supcell
    real(8), dimension(:,:,:), allocatable :: E_p_at_from_MC  ! energy elastically transferred from positrons to atoms from within MC module
    real(8), dimension(:,:,:), allocatable :: E_e_from_MC   ! energy of electrons below cut-off from within MC module
    real(8), dimension(:,:,:), allocatable :: E_h_from_MC   ! energy of holes below cut-off from within MC module
+   real(8), dimension(:,:,:), allocatable :: E_mu_at_from_MC  ! energy elastically transferred from muons to atoms from within MC module
 end type MD_supcell
 
 
@@ -765,6 +794,7 @@ type :: MC_arrays
    integer :: N_h     ! number of active holes
    integer :: N_SHI   ! number of active SHIs
    integer :: N_at_nrg  ! number of elastic scattering events transfering energy to atoms
+   integer :: N_mu     ! number of active muons
    ! Arrays for all MC particles:
    type(Photon), dimension(:), allocatable :: MC_Photons        ! all photons as objects
    type(Electron), dimension(:), allocatable :: MC_Electrons    ! all electrons as objects
@@ -772,6 +802,7 @@ type :: MC_arrays
    type(Hole), dimension(:), allocatable :: MC_Holes    ! all holes as objects
    type(SHI), dimension(:), allocatable :: MC_SHIs      ! all SHIs as objects
    type(Atom), dimension(:), allocatable :: MC_Atoms_events     ! all elastic energy transfer events as objects
+   type(Muon), dimension(:), allocatable :: MC_Muons    ! all muons as objects
 end type MC_arrays
 
 
@@ -835,6 +866,8 @@ pure subroutine set_default_particle_array(Prtcl, typ, siz)
          allocate(Electron::Prtcl(siz)) ! make it an array of Electrons, size SYZ
       case ('POSITRON', 'Positron', 'positron', 'p')
          allocate(Positron::Prtcl(siz)) ! make it an array of Positrons, size SYZ
+      case ('MUON', 'Muon', 'muon', 'mu')
+         allocate(Muon::Prtcl(siz)) ! make it an array of Muons, size SYZ
       case ('HOLE', 'Hole', 'hole', 'h')
          allocate(Hole::Prtcl(siz)) ! make it an array of Holes, size SYZ
       case ('ATOM', 'Atom', 'atom', 'a')
@@ -907,6 +940,8 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
          if (present(Force)) Prtcl%Force = Force
       type is (Positron)
          if (present(Force)) Prtcl%Force = Force
+      type is (Muon)
+         if (present(Force)) Prtcl%Force = Force
       type is (Hole)
          if (present(Force)) Prtcl%Force = Force
          if (present(KOA)) Prtcl%KOA = KOA
@@ -949,38 +984,42 @@ pure subroutine set_default_particle(Prtcl)
    
    select type (Prtcl)	! which particle array that should become
       type is (Photon)
-         Prtcl%Mass = 0.0d0     ! [kg] photon mass(less)
+         Prtcl%Mass = 0.0d0         ! [kg] photon mass(less)
       type is (Electron)
-         Prtcl%Mass = g_me     ! [kg] free electron rest mass
-         Prtcl%A(:) = 0.0d0        ! [A^2/fs] accelerations
-         Prtcl%Force(:) = 0.0d0  ! [eV/fs] forces
+         Prtcl%Mass = g_me          ! [kg] free electron rest mass
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
       type is (Positron)
-         Prtcl%Mass = g_me     ! [kg] free electron rest mass
-         Prtcl%A(:) = 0.0d0        ! [A^2/fs] accelerations
-         Prtcl%Force(:) = 0.0d0  ! [eV/fs] forces
+         Prtcl%Mass = g_me          ! [kg] free electron rest mass
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
+      type is (Muon)
+         Prtcl%Mass = g_M_muon      ! [kg] muon rest mass
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
       type is (Hole)
-         Prtcl%Mass = g_me     ! [kg] free electron rest mass
-         Prtcl%A(:) = 0.0d0        ! [A^2/fs] accelerations
-         Prtcl%Force(:) = 0.0d0  ! [eV/fs] forces
-         Prtcl%KOA = 0            ! kind of atom
+         Prtcl%Mass = g_me          ! [kg] free electron rest mass
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
+         Prtcl%KOA = 0              ! kind of atom
          Prtcl%Sh = 0               ! shell in which this hole sits
-         Prtcl%valent = .false. ! valent of core hole
+         Prtcl%valent = .false.     ! valent of core hole
       type is (Atom)
-         Prtcl%Mass = g_Mp     ! [kg] proton rest mass (by default, before set by the user)
-         Prtcl%Z = 1                 ! proton by default
-         Prtcl%KOA = 0            ! kind of atom
-         Prtcl%Name = 'H'         ! abbreviation of the atom according to periodic table
-         Prtcl%A(:) = 0.0d0        ! [A^2/fs] accelerations
-         Prtcl%Force(:) = 0.0d0  ! [eV/fs] forces
+         Prtcl%Mass = g_Mp          ! [kg] proton rest mass (by default, before set by the user)
+         Prtcl%Z = 1                ! proton by default
+         Prtcl%KOA = 0              ! kind of atom
+         Prtcl%Name = 'H'           ! abbreviation of the atom according to periodic table
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
       type is (SHI)
-         Prtcl%Mass = g_Mp     ! [kg] proton rest mass (by default, before set by the user)
-         Prtcl%Z = 1                  ! proton by default
-         Prtcl%KOA = 0            ! kind of atom
-         Prtcl%Name = 'H'          ! abbreviation of the atom according to periodic table
-         Prtcl%Zeff = 1              ! effective charge [electron charge]
+         Prtcl%Mass = g_Mp          ! [kg] proton rest mass (by default, before set by the user)
+         Prtcl%Z = 1                ! proton by default
+         Prtcl%KOA = 0              ! kind of atom
+         Prtcl%Name = 'H'           ! abbreviation of the atom according to periodic table
+         Prtcl%Zeff = 1             ! effective charge [electron charge]
          Prtcl%Meff = 1             ! user-defined mass [a.m.u.]
-         Prtcl%A(:) = 0.0d0        ! [A^2/fs] accelerations
-         Prtcl%Force(:) = 0.0d0  ! [eV/fs] forces
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
    end select
 end subroutine set_default_particle
 

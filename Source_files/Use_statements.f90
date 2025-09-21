@@ -43,6 +43,9 @@ use  CS_positrons_Bremsstrahlung
 use  CS_positrons_annihilation 
 use  CS_holes_elastic 
 use  CS_holes_inelastic 
+use  CS_muon_inelastic
+use  CS_muon_elastic
+use  CS_muon_Bremsstrahlung
 use  Output 
 use  MC_general_tools 
 use  MC_data_analysis 

@@ -51,7 +51,8 @@ subroutine get_hole_IMFP(Material, numpar, Err)
    type(Atom_kind), pointer :: Element
    character(10) :: temp_c
 
-   write(*, '(a)') ' Obtaining valence hole inelastic scattering cross sections...'
+   !write(*, '(a)') ' Obtaining valence hole inelastic scattering cross sections...'
+   write(*, '(a)', advance='no') ' Obtaining velence hole inelastic scattering cross sections...'
 
    path_sep => numpar%path_sep
    N_targets = size(Material)	! that's how many different targets user specified
@@ -141,7 +142,7 @@ subroutine get_hole_IMFP(Material, numpar, Err)
       endif VAL
    enddo TRGT
    
-!    write(*,'(a)') ' Done.'
+   write(*,'(a)') ' Done.'
    
    nullify(path_sep, E, Element)
 end subroutine get_hole_IMFP

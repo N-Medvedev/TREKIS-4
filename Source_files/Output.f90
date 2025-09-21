@@ -4,7 +4,7 @@
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
 ! and R. Rymzhanov
-! in 2018-2021
+! in 2018-2025
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to create output files:
 
@@ -39,9 +39,10 @@ character(200) :: m_output_Se, m_output_Range, m_output_Se_vs_range
 
 character(200) :: m_output_total, m_output_N_gnu, m_output_E_gnu, m_output_total_cutoff
 character(200) :: m_output_MD, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_MD_E_gnu
-character(200) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI
-character(200) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d
-character(200) :: m_output_theta_ph_1d, m_output_theta_e_1d, m_output_theta_h_1d, m_output_theta_p_1d, m_output_theta_SHI_1d
+character(200) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI, m_output_spectrum_mu
+character(200) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d, &
+                  m_output_spectrum_mu_1d
+character(200) :: m_output_theta_ph_1d, m_output_theta_e_1d, m_output_theta_h_1d, m_output_theta_p_1d, m_output_theta_SHI_1d, m_output_theta_mu_1d
 
 character(200) :: m_output_cartesian_1d_X_ph, m_output_cartesian_1d_Y_ph, m_output_cartesian_1d_Z_ph
 character(200) :: m_output_cartesian_1d_X_e, m_output_cartesian_1d_Y_e, m_output_cartesian_1d_Z_e
@@ -49,26 +50,29 @@ character(200) :: m_output_cartesian_1d_X_p, m_output_cartesian_1d_Y_p, m_output
 character(200) :: m_output_cartesian_1d_X_h, m_output_cartesian_1d_Y_h, m_output_cartesian_1d_Z_h
 character(200) :: m_output_cartesian_1d_X_SHI, m_output_cartesian_1d_Y_SHI, m_output_cartesian_1d_Z_SHI
 character(200) :: m_output_cartesian_1d_X_a, m_output_cartesian_1d_Y_a, m_output_cartesian_1d_Z_a
+character(200) :: m_output_cartesian_1d_X_mu, m_output_cartesian_1d_Y_mu, m_output_cartesian_1d_Z_mu
 character(200) :: m_output_cartesian_1d_X_E_ph, m_output_cartesian_1d_Y_E_ph, m_output_cartesian_1d_Z_E_ph
 character(200) :: m_output_cartesian_1d_X_E_e, m_output_cartesian_1d_Y_E_e, m_output_cartesian_1d_Z_E_e
 character(200) :: m_output_cartesian_1d_X_E_p, m_output_cartesian_1d_Y_E_p, m_output_cartesian_1d_Z_E_p
 character(200) :: m_output_cartesian_1d_X_E_h, m_output_cartesian_1d_Y_E_h, m_output_cartesian_1d_Z_E_h
 character(200) :: m_output_cartesian_1d_X_E_SHI, m_output_cartesian_1d_Y_E_SHI, m_output_cartesian_1d_Z_E_SHI
 character(200) :: m_output_cartesian_1d_X_E_a, m_output_cartesian_1d_Y_E_a, m_output_cartesian_1d_Z_E_a
+character(200) :: m_output_cartesian_1d_X_E_mu, m_output_cartesian_1d_Y_E_mu, m_output_cartesian_1d_Z_E_mu
 ! Velosity theta distribution:
 character(200) :: m_output_velocity_theta_distr_ph, m_output_velocity_theta_distr_e, &
-            m_output_velocity_theta_distr_h, m_output_velocity_theta_distr_p, m_output_velocity_theta_distr_SHI
+            m_output_velocity_theta_distr_h, m_output_velocity_theta_distr_p, m_output_velocity_theta_distr_SHI, &
+            m_output_velocity_theta_distr_mu
 
 !Cylindrical
 !1d
 character(200) :: m_output_cylindric_1d_R_ph, m_output_cylindric_1d_R_e, m_output_cylindric_1d_R_p
-character(200) :: m_output_cylindric_1d_R_h, m_output_cylindric_1d_R_SHI, m_output_cylindric_1d_R_a
+character(200) :: m_output_cylindric_1d_R_h, m_output_cylindric_1d_R_SHI, m_output_cylindric_1d_R_a, m_output_cylindric_1d_R_mu
 character(200) :: m_output_cylindric_1d_R_E_ph, m_output_cylindric_1d_R_E_e, m_output_cylindric_1d_R_E_p
-character(200) :: m_output_cylindric_1d_R_E_h, m_output_cylindric_1d_R_E_SHI, m_output_cylindric_1d_R_E_a
+character(200) :: m_output_cylindric_1d_R_E_h, m_output_cylindric_1d_R_E_SHI, m_output_cylindric_1d_R_E_a, m_output_cylindric_1d_R_E_mu
 !2d
-character(200) :: m_output_cylindric_2d_RL_ph, m_output_cylindric_2d_RL_e, m_output_cylindric_2d_RL_p
+character(200) :: m_output_cylindric_2d_RL_ph, m_output_cylindric_2d_RL_e, m_output_cylindric_2d_RL_p, m_output_cylindric_2d_RL_mu
 character(200) :: m_output_cylindric_2d_RL_h, m_output_cylindric_2d_RL_SHI, m_output_cylindric_2d_RL_a
-character(200) :: m_output_cylindric_2d_RL_E_ph, m_output_cylindric_2d_RL_E_e, m_output_cylindric_2d_RL_E_p
+character(200) :: m_output_cylindric_2d_RL_E_ph, m_output_cylindric_2d_RL_E_e, m_output_cylindric_2d_RL_E_p, m_output_cylindric_2d_RL_E_mu
 character(200) :: m_output_cylindric_2d_RL_E_h, m_output_cylindric_2d_RL_E_SHI, m_output_cylindric_2d_RL_E_a
 
 ! MD output
@@ -82,7 +86,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 06.09.2025)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 21.09.2025)'
 
 
 ! All output file names:
@@ -106,17 +110,20 @@ parameter (m_output_spectrum_e = 'OUTPUT_electron_spectrum_')
 parameter (m_output_spectrum_h = 'OUTPUT_valence_hole_spectrum_')
 parameter (m_output_spectrum_p = 'OUTPUT_positron_spectrum_')
 parameter (m_output_spectrum_SHI = 'OUTPUT_SHI_spectrum_')
+parameter (m_output_spectrum_mu = 'OUTPUT_muon_spectrum_')
 !vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 parameter (m_output_velocity_theta_distr_ph = 'OUTPUT_photon_velocity_theta_')
 parameter (m_output_velocity_theta_distr_e = 'OUTPUT_electron_velocity_theta_')
 parameter (m_output_velocity_theta_distr_h = 'OUTPUT_hole_velocity_theta_')
 parameter (m_output_velocity_theta_distr_p = 'OUTPUT_positron_velocity_theta_')
 parameter (m_output_velocity_theta_distr_SHI = 'OUTPUT_SHI_velocity_theta_')
+parameter (m_output_velocity_theta_distr_mu = 'OUTPUT_muon_velocity_theta_')
 !ssssssssssssssssssssssssssssssssssssssssssss
 parameter (m_output_spectrum_ph_1d = 'OUTPUT_photon_spectrum_1d_')
 parameter (m_output_spectrum_e_1d = 'OUTPUT_electron_spectrum_1d_')
 parameter (m_output_spectrum_h_1d = 'OUTPUT_valence_hole_spectrum_1d_')
 parameter (m_output_spectrum_p_1d = 'OUTPUT_positron_spectrum_1d_')
+parameter (m_output_spectrum_mu_1d = 'OUTPUT_muon_spectrum_1d_')
 parameter (m_output_spectrum_SHI_1d = 'OUTPUT_SHI_spectrum_1d_')
 !ssssssssssssssssssssssssssssssssssssssssssss
 parameter (m_output_theta_ph_1d = 'OUTPUT_photon_velocity_theta_distr_1d_')
@@ -124,6 +131,7 @@ parameter (m_output_theta_e_1d = 'OUTPUT_electron_velocity_theta_distr_1d_')
 parameter (m_output_theta_h_1d = 'OUTPUT_valence_hole_velocity_theta_distr_1d_')
 parameter (m_output_theta_p_1d = 'OUTPUT_positron_velocity_theta_distr_1d_')
 parameter (m_output_theta_SHI_1d = 'OUTPUT_SHI_velocity_theta_distr_1d_')
+parameter (m_output_theta_mu_1d = 'OUTPUT_muon_velocity_theta_distr_1d_')
 !dddddddddddddddddddddddddddddddddddddddddddd
 ! Cartesian:
 parameter (m_output_cartesian_1d_X_ph = 'OUTPUT_photon_density_1d_X_')
@@ -144,6 +152,9 @@ parameter (m_output_cartesian_1d_Z_SHI = 'OUTPUT_SHI_density_1d_Z_')
 parameter (m_output_cartesian_1d_X_a = 'OUTPUT_atomic_density_1d_X_')
 parameter (m_output_cartesian_1d_Y_a = 'OUTPUT_atomic_density_1d_Y_')
 parameter (m_output_cartesian_1d_Z_a = 'OUTPUT_atomic_density_1d_Z_')
+parameter (m_output_cartesian_1d_X_mu = 'OUTPUT_muon_density_1d_X_')
+parameter (m_output_cartesian_1d_Y_mu = 'OUTPUT_muon_density_1d_Y_')
+parameter (m_output_cartesian_1d_Z_mu = 'OUTPUT_muon_density_1d_Z_')
 parameter (m_output_cartesian_1d_X_E_ph = 'OUTPUT_photon_energy_1d_X_')
 parameter (m_output_cartesian_1d_Y_E_ph = 'OUTPUT_photon_energy_1d_Y_')
 parameter (m_output_cartesian_1d_Z_E_ph = 'OUTPUT_photon_energy_1d_Z_')
@@ -162,6 +173,9 @@ parameter (m_output_cartesian_1d_Z_E_SHI = 'OUTPUT_SHI_energy_1d_Z_')
 parameter (m_output_cartesian_1d_X_E_a = 'OUTPUT_atomic_energy_1d_X_')
 parameter (m_output_cartesian_1d_Y_E_a = 'OUTPUT_atomic_energy_1d_Y_')
 parameter (m_output_cartesian_1d_Z_E_a = 'OUTPUT_atomic_energy_1d_Z_')
+parameter (m_output_cartesian_1d_X_E_mu = 'OUTPUT_muon_energy_1d_X_')
+parameter (m_output_cartesian_1d_Y_E_mu = 'OUTPUT_muon_energy_1d_Y_')
+parameter (m_output_cartesian_1d_Z_E_mu = 'OUTPUT_muon_energy_1d_Z_')
 !dddddddddddddddddddddddddddddddddddddddddddd
 ! Cyllindrical:
 ! 1-dimensional
@@ -171,12 +185,14 @@ parameter (m_output_cylindric_1d_R_p = 'OUTPUT_positron_density_1d_R_')
 parameter (m_output_cylindric_1d_R_h = 'OUTPUT_holes_density_1d_R_')
 parameter (m_output_cylindric_1d_R_SHI = 'OUTPUT_SHI_density_1d_R_')
 parameter (m_output_cylindric_1d_R_a = 'OUTPUT_atomic_density_1d_R_')
+parameter (m_output_cylindric_1d_R_mu = 'OUTPUT_muon_density_1d_R_')
 parameter (m_output_cylindric_1d_R_E_ph = 'OUTPUT_photon_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_e = 'OUTPUT_electron_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_p = 'OUTPUT_positron_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_h = 'OUTPUT_holes_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_SHI = 'OUTPUT_SHI_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_a = 'OUTPUT_atomic_energy_1d_R_')
+parameter (m_output_cylindric_1d_R_E_mu = 'OUTPUT_muon_energy_1d_R_')
 !2-dimensional
 parameter (m_output_cylindric_2d_RL_ph = 'OUTPUT_photon_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_e = 'OUTPUT_electron_density_2d_RL_')
@@ -184,12 +200,14 @@ parameter (m_output_cylindric_2d_RL_p = 'OUTPUT_positron_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_h = 'OUTPUT_holes_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_SHI = 'OUTPUT_SHI_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_a = 'OUTPUT_atomic_density_2d_RL_')
+parameter (m_output_cylindric_2d_RL_mu = 'OUTPUT_muon_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_ph = 'OUTPUT_photon_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_e = 'OUTPUT_electron_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_p = 'OUTPUT_positron_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_h = 'OUTPUT_holes_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_SHI = 'OUTPUT_SHI_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_a = 'OUTPUT_atomic_energy_2d_RL_')
+parameter (m_output_cylindric_2d_RL_E_mu = 'OUTPUT_muon_energy_2d_RL_')
 !ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
 parameter (m_output_total = 'OUTPUT_total_')
 parameter (m_output_total_cutoff = 'OUTPUT_total_above_cutoff_')
@@ -537,6 +555,8 @@ subroutine velocity_theta_distributions(used_target, numpar, out_data, tim)
       call hole_velotheta(used_target, numpar, out_data, tim) ! below
       ! SHIs:
       call SHI_velotheta(used_target, numpar, out_data, tim) ! below
+      ! Muons:
+      call muon_velotheta(used_target, numpar, out_data, tim) ! below
    endif
 
    if (ANY(numpar%Theta_grid_par(:)%along_axis)) then  ! Along axis
@@ -604,10 +624,13 @@ subroutine printout_cartesian_1d(used_target, numpar, out_data, tim)
       call printout_cartesian_1d_particle(numpar%FN_car_1d_X_p, numpar%FN_car_1d_X_E_p, m_output_cartesian_1d_X_p, m_output_cartesian_1d_X_E_p, &
                     used_target, numpar, out_data%Distr_p_X(:),  out_data%E_Distr_p_X(:), tim, 1, 1)  ! positrons; below
       call printout_cartesian_1d_hole(used_target, numpar, out_data, tim, 1)  ! all holes; below
-      call printout_cartesian_1d_particle(numpar%FN_car_1d_X_SHI, numpar%FN_car_1d_X_E_SHI, m_output_cartesian_1d_X_SHI, m_output_cartesian_1d_X_E_SHI, &
+      call printout_cartesian_1d_particle(numpar%FN_car_1d_X_SHI, numpar%FN_car_1d_X_E_SHI, &
+                    m_output_cartesian_1d_X_SHI, m_output_cartesian_1d_X_E_SHI, &
                     used_target, numpar, out_data%Distr_SHI_X(:),  out_data%E_Distr_SHI_X(:), tim, 1, 1)  ! shi; below
       call printout_cartesian_1d_particle(numpar%FN_car_1d_X_a, numpar%FN_car_1d_X_E_a, m_output_cartesian_1d_X_a, m_output_cartesian_1d_X_E_a, &
                     used_target, numpar, out_data%Distr_a_X(:),  out_data%E_Distr_a_X(:), tim, 1, 1)  ! atomic; below
+      call printout_cartesian_1d_particle(numpar%FN_car_1d_X_mu, numpar%FN_car_1d_X_E_mu, m_output_cartesian_1d_X_mu, &
+                    m_output_cartesian_1d_X_E_mu, used_target, numpar, out_data%Distr_mu_X(:),  out_data%E_Distr_mu_X(:), tim, 1, 1)  ! muons; below
    endif
 
    ! Along depth Y:
@@ -623,6 +646,9 @@ subroutine printout_cartesian_1d(used_target, numpar, out_data, tim)
                     used_target, numpar, out_data%Distr_SHI_Y(:),  out_data%E_Distr_SHI_Y(:), tim, 2, 2)  ! shi; below
       call printout_cartesian_1d_particle(numpar%FN_car_1d_Y_a, numpar%FN_car_1d_Y_E_a, m_output_cartesian_1d_Y_a, m_output_cartesian_1d_Y_E_a, &
                     used_target, numpar, out_data%Distr_a_Y(:),  out_data%E_Distr_a_Y(:), tim, 2, 2)  ! atomic; below
+      call printout_cartesian_1d_particle(numpar%FN_car_1d_Y_mu, numpar%FN_car_1d_Y_E_mu, m_output_cartesian_1d_Y_mu, &
+                    m_output_cartesian_1d_Y_E_mu, &
+                    used_target, numpar, out_data%Distr_mu_Y(:),  out_data%E_Distr_mu_Y(:), tim, 2, 2)  ! muon; below
    endif
 
    ! Along Z:
@@ -638,6 +664,9 @@ subroutine printout_cartesian_1d(used_target, numpar, out_data, tim)
                     used_target, numpar, out_data%Distr_SHI_Z(:),  out_data%E_Distr_SHI_Z(:), tim, 3, 3)  ! shi; below
       call printout_cartesian_1d_particle(numpar%FN_car_1d_Z_a, numpar%FN_car_1d_Z_E_a, m_output_cartesian_1d_Z_a, m_output_cartesian_1d_Z_E_a, &
                     used_target, numpar, out_data%Distr_a_Z(:),  out_data%E_Distr_a_Z(:), tim, 3, 3)  ! atomic; below
+      call printout_cartesian_1d_particle(numpar%FN_car_1d_Z_mu, numpar%FN_car_1d_Z_E_mu, m_output_cartesian_1d_Z_mu, &
+                    m_output_cartesian_1d_Z_E_mu, &
+                    used_target, numpar, out_data%Distr_mu_Z(:),  out_data%E_Distr_mu_Z(:), tim, 3, 3)  ! muons; below
    endif
 end subroutine printout_cartesian_1d
 
@@ -799,12 +828,13 @@ subroutine printout_cylindric_1d(used_target, numpar, out_data, tim)
    !----------------------------------------
     ! Along radius R:
    if (numpar%grid_par(8)%along_axis) then
-      call printout_cylindric_1d_ph(used_target, numpar, out_data, tim)  ! photons; below
-      call printout_cylindric_1d_e(used_target, numpar, out_data, tim)  ! electrons; below
-      call printout_cylindric_1d_p(used_target, numpar, out_data, tim)  ! positrons; below
-      call printout_cylindric_1d_h(used_target, numpar, out_data, tim)  ! valence holes; below
+      call printout_cylindric_1d_ph(used_target, numpar, out_data, tim)   ! photons; below
+      call printout_cylindric_1d_e(used_target, numpar, out_data, tim)    ! electrons; below
+      call printout_cylindric_1d_p(used_target, numpar, out_data, tim)    ! positrons; below
+      call printout_cylindric_1d_h(used_target, numpar, out_data, tim)    ! valence holes; below
       call printout_cylindric_1d_SHI(used_target, numpar, out_data, tim)  ! shi; below
-      call printout_cylindric_1d_a(used_target, numpar, out_data, tim)  ! atomic; below
+      call printout_cylindric_1d_a(used_target, numpar, out_data, tim)    ! atomic; below
+      call printout_cylindric_1d_mu(used_target, numpar, out_data, tim)   ! muon; below
    endif
 
    ! Along depth L:
@@ -946,6 +976,49 @@ subroutine printout_cylindric_1d_p(used_target, numpar, out_data, tim)  ! positr
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_p_R(:), tim)    ! below
    enddo TRGT
 end subroutine printout_cylindric_1d_p
+
+
+
+subroutine printout_cylindric_1d_mu(used_target, numpar, out_data, tim)  ! muons
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   !----------------------------------------
+   integer :: i_tar, FN
+   character(300) :: File_name
+   logical :: file_exist
+   ! Printout electron distribution in each target:
+   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+      ! Create file with density:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_cylindric_1d_R_mu))//trim(adjustl(used_target%Name))//'.dat'
+
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_cyl_1d_R_mu, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_cyl_1d_R_mu,'(a)') '#Time    R  Density'
+         write(numpar%FN_cyl_1d_R_mu,'(a)') '#fs    A   1/A^3'
+      endif
+      FN = numpar%FN_cyl_1d_R_mu ! just set a number
+      ! Write data with densities into this file:
+      call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%Distr_mu_R(:), tim)    ! below
+
+      ! Create file with energy density:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_cylindric_1d_R_E_mu))//trim(adjustl(used_target%Name))//'.dat'
+
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_cyl_1d_R_E_mu, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_cyl_1d_R_E_mu,'(a)') '#Time    R    Energy'
+         write(numpar%FN_cyl_1d_R_E_mu,'(a)') '#fs    A   eV/A^3'
+      endif
+      FN = numpar%FN_cyl_1d_R_E_mu ! just set a number
+      ! Write data with energy densities into this file:
+      call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_mu_R(:), tim)    ! below
+   enddo TRGT
+end subroutine printout_cylindric_1d_mu
 
 
 
@@ -1121,6 +1194,7 @@ subroutine printout_cylindric_2d(used_target, numpar, out_data, tim)
       call printout_cylindric_2d_RL_h(used_target, numpar, out_data, tim)  ! valence holes; below
       call printout_cylindric_2d_RL_SHI(used_target, numpar, out_data, tim)  ! shi; below
       call printout_cylindric_2d_RL_a(used_target, numpar, out_data, tim)  ! atomic; below
+      call printout_cylindric_2d_RL_mu(used_target, numpar, out_data, tim)  ! muons; below
    endif
 
    ! Along depth RTheta:
@@ -1260,6 +1334,51 @@ subroutine printout_cylindric_2d_RL_p(used_target, numpar, out_data, tim)  ! pos
                                     out_data%E_Distr_p_RL(:,:), tim)    ! below
    enddo TRGT
 end subroutine printout_cylindric_2d_RL_p
+
+
+
+subroutine printout_cylindric_2d_RL_mu(used_target, numpar, out_data, tim)  ! muons
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   !----------------------------------------
+   integer :: i_tar, FN
+   character(300) :: File_name
+   logical :: file_exist
+   ! Printout electron distribution in each target:
+   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+      ! Create file with density:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_cylindric_2d_RL_mu))//trim(adjustl(used_target%Name))//'.dat'
+                     !trim(adjustl(m_output_cylindric_2d_RL_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_cyl_2d_RL_mu, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_cyl_2d_RL_mu,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         !write(numpar%FN_cyl_2d_RL_mu,'(a)') '#fs    A   1/A^3'
+      endif
+      FN = numpar%FN_cyl_2d_RL_mu ! just set a number
+      ! Write data with densities into this file:
+      call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
+                                    out_data%Distr_mu_RL(:,:), tim)    ! below
+
+      ! Create file with energy density:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_cylindric_2d_RL_E_mu))//trim(adjustl(used_target%Name))//'.dat'
+                     !trim(adjustl(m_output_cylindric_2d_RL_E_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_cyl_2d_RL_E_mu, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
+         !write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#fs    A   eV/A^3'
+      endif
+      FN = numpar%FN_cyl_2d_RL_E_mu ! just set a number
+      ! Write data with energy densities into this file:
+      call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
+                                    out_data%E_Distr_mu_RL(:,:), tim)    ! below
+   enddo TRGT
+end subroutine printout_cylindric_2d_RL_mu
 
 
 subroutine printout_cylindric_2d_RL_h(used_target, numpar, out_data, tim)  ! valence holes
@@ -1492,6 +1611,8 @@ subroutine energy_spectra(used_target, numpar, out_data, tim)
        call positron_spectrum(used_target, numpar, out_data, tim)   ! below
        ! SHI spectum:
         ! NOT READY YET (because we typically don't need it...)
+       ! Printout muon spectrum:
+       call muon_spectrum(used_target, numpar, out_data, tim)   ! below
     endif ! (numpar%NRG_grid_par%along_axis)
     !---------------------------------
     ! Printout electron spectra vs space in 1d:    
@@ -2472,6 +2593,39 @@ end subroutine positron_spectrum
 
 
 
+subroutine muon_spectrum(used_target, numpar, out_data, tim)
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   !----------------------------------------
+   character(200) :: File_name
+   integer :: FN, i_tar, i, Nsiz
+   logical :: file_opened, file_exist
+
+   ! Printout electron spectrum in each target:
+   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+      ! Create a directory for MFPs:
+      numpar%FILE_spectrum_mu = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+      inquire(file=trim(adjustl(numpar%FILE_spectrum_mu)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_mu, FILE = trim(adjustl(numpar%FILE_spectrum_mu)))
+         write(numpar%FN_spectrum_mu,'(a)') '#Time    E Distribution'
+         write(numpar%FN_spectrum_mu,'(a)') '#fs    eV 1/eV'
+      endif
+      FN = numpar%FN_spectrum_mu ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(out_data%Spectrum_mu)
+       do i = 1, Nsiz
+          write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%NRG_grid(i), out_data%Spectrum_mu(i)
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
+   enddo TRGT
+end subroutine muon_spectrum
+
+
+
 !===================================================
 ! Printing out velocity theta distribution:
 subroutine photon_velotheta(used_target, numpar, out_data, tim)
@@ -2568,6 +2722,40 @@ subroutine positron_velotheta(used_target, numpar, out_data, tim)
        write(FN,'(a)') ! skip line between timesteps
    enddo TRGT
 end subroutine positron_velotheta
+
+
+
+subroutine muon_velotheta(used_target, numpar, out_data, tim)
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   !----------------------------------------
+   character(200) :: File_name
+   integer :: FN, i_tar, i, Nsiz
+   logical :: file_opened, file_exist
+
+   ! Printout electron velocity theta in each target:
+   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+      ! Create a directory for MFPs:
+      numpar%FILE_vel_theta_mu = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_velocity_theta_distr_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+      inquire(file=trim(adjustl(numpar%FILE_vel_theta_mu)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_vel_theta_mu, FILE = trim(adjustl(numpar%FILE_vel_theta_mu)))
+         write(numpar%FN_vel_theta_mu,'(a)') '#Time    Theta Distribution'
+         write(numpar%FN_vel_theta_mu,'(a)') '#fs    deg 1/deg'
+      endif
+      FN = numpar%FN_vel_theta_mu ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(out_data%Vel_theta_mu)
+       do i = 1, Nsiz
+          write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_mu(i)
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
+   enddo TRGT
+end subroutine muon_velotheta
+
 
 
 subroutine hole_velotheta(used_target, numpar, out_data, tim)
@@ -2847,6 +3035,120 @@ subroutine printout_Se_and_ranges(used_target, numpar, bunch)
                endif ! (bunch(ibunch)%KOP == 3)
             enddo BNCH
          endif ! (N_types_SHI > 0)
+
+
+         ! 3) Positrons:
+         ! Pointer to the cross section:
+         CS => used_target%Material(i)%Pos_inelastic_total
+
+         ! Inelastic:
+         select case (numpar%Pos_inelast)
+         case (1)	! CDF with Ritchi's oscillators
+            Model_name = '_CDF_Ritchie'
+         case (2)	! RBEB
+            Model_name = '_RBEB'
+         case (3)	! CDF with delta functions
+            Model_name = '_CDF_delta'
+         case (4)	! CDF
+            Model_name = '_CDF_nonrel'
+         case (5)	! CDF with delta functions
+            Model_name = '_CDF_SPdelta'
+         case default	! exclude
+            Model_name = '_NO'
+         end select
+
+         ! Positron inelastic Se and range:
+         Filename_gnu= trim(adjustl(m_output_Se))//trim(adjustl(used_target%Material(i)%Name))//'_posiron'//trim(adjustl(Model_name))//'.dat'
+         Filename = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(Filename_gnu))
+         open(newunit = FN, FILE = trim(adjustl(Filename)))
+         write(FN,'(a)') '#Energy(eV)    Se(eV/A)   Range(A)'
+         Nsiz = size(CS%E)
+         ! Assume the lower integration limit for electronic range calculation as:
+         E_start = used_target%Material(i)%DOS%Egap + 10.0d0    ! [eV]
+         !E_start = 10.0d0    ! [eV] testing standard definition
+         ! Calculate Ranges:
+         call get_ranges_from_Se(CS%E, CS%Total_Se, E_start, CS%Total_Range)    ! module "CS_general_tools"
+         do m = 1, Nsiz     ! for all energy grid points:
+            write(FN,'(es,es,es)')  CS%E(m), CS%Total_Se(m), CS%Total_Range(m)
+         enddo
+         call close_file('save', FN=FN)  ! module "Dealing_with_files"
+
+         ! Define axes for the plot of Se:
+         x_start = 1.0d0
+         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+         y_start = 0.0d0
+         y_end = 10.0d0
+         ! Prepare gnuplot script:
+         call create_Se_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron') ! below
+
+         ! Define axes for plotting Range:
+         x_start = 10.0d0
+         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+         y_start = 10.0d0
+         y_end = 1.0d12
+         ! Prepare gnuplot script:
+         call create_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron')    ! below
+         x_start = 10.0d0
+         x_end = 1.0d12
+         call create_Se_vs_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron')    ! below
+
+
+         ! 4) Muon:
+         ! Pointer to the cross section:
+         CS => used_target%Material(i)%Muon_inelastic_total
+
+         ! Inelastic:
+         select case (numpar%Mu_inelast)
+         case (1)	! CDF with Ritchi's oscillators
+            Model_name = '_CDF_Ritchie'
+         case (2)	! RBEB
+            Model_name = '_RBEB'
+         case (3)	! CDF with delta functions
+            Model_name = '_CDF_delta'
+         case (4)	! CDF
+            Model_name = '_CDF_nonrel'
+         case (5)	! CDF with delta functions
+            Model_name = '_CDF_SPdelta'
+         case default	! exclude
+            Model_name = '_NO'
+         end select
+
+         ! Positron inelastic Se and range:
+         Filename_gnu= trim(adjustl(m_output_Se))//trim(adjustl(used_target%Material(i)%Name))//'_muon'//trim(adjustl(Model_name))//'.dat'
+         Filename = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(Filename_gnu))
+         open(newunit = FN, FILE = trim(adjustl(Filename)))
+         write(FN,'(a)') '#Energy(eV)    Se(eV/A)   Range(A)'
+         Nsiz = size(CS%E)
+         ! Assume the lower integration limit for electronic range calculation as:
+         E_start = used_target%Material(i)%DOS%Egap + 10.0d0    ! [eV]
+         !E_start = 10.0d0    ! [eV] testing standard definition
+         ! Calculate Ranges:
+         call get_ranges_from_Se(CS%E, CS%Total_Se, E_start, CS%Total_Range)    ! module "CS_general_tools"
+         do m = 1, Nsiz     ! for all energy grid points:
+            write(FN,'(es,es,es)')  CS%E(m), CS%Total_Se(m), CS%Total_Range(m)
+         enddo
+         call close_file('save', FN=FN)  ! module "Dealing_with_files"
+
+         ! Define axes for the plot of Se:
+         x_start = 10.0d0
+         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+         y_start = 0.0d0
+         y_end = 10.0d0
+         ! Prepare gnuplot script:
+         call create_Se_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon') ! below
+
+         ! Define axes for plotting Range:
+         x_start = 10.0d0
+         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+         y_start = 10.0d0
+         y_end = 1.0d12
+         ! Prepare gnuplot script:
+         call create_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon')    ! below
+         x_start = 10.0d0
+         x_end = 1.0d12
+         call create_Se_vs_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon')    ! below
+
+
          
          !=========================
          ! Execute all gnuplot scripts for MFPs and Ranges:
@@ -3387,7 +3689,7 @@ subroutine printout_MFPs(used_target, numpar, bunch)
          do m = 1, Nsiz	! for all energy grid points:
             E => used_target%Material(i)%Pos_inelastic_total%E(m)	! positron energy [eV]
             write(FN2,'(es)', advance='no') E   ! energy
-            if ((numpar%El_inelast /= 2) .and. (allocated(used_target%Material(i)%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
+            if ((numpar%Pos_inelast /= 2) .and. (allocated(used_target%Material(i)%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
                write(FN2,'(es)', advance='no') used_target%Material(i)%Pos_inelastic_valent%Total_MFP(m)   ! MFP [A]
             endif
             write(FN2,'(es)') used_target%Material(i)%Pos_inelastic_total%Total_MFP(m)   ! total MFP [A]
@@ -3546,8 +3848,121 @@ subroutine printout_MFPs(used_target, numpar, bunch)
             enddo BNCH
          endif ! (N_types_SHI > 0) then  ! there are ions
 
+
          !------------------------------------------------
-         ! 5) Valence holes:
+         ! 5) Muons:
+         ! Define axes for the plot:
+         x_start = 10.0**dble( find_order_of_number(used_target%Material(i)%Muon_elastic_total%E(1)) )   ! module "Little_subroutines"
+         x_end = 10.0**dble(-1 + find_order_of_number(used_target%Material(i)%Muon_inelastic_total%E(size(used_target%Material(i)%Muon_inelastic_total%E))) ) ! module "Little_subroutines"
+         y_start = 1.0d0
+         y_end = 1.0d7
+         ! Inelastic
+         select case (numpar%Mu_inelast)
+         case (1:3)	! CDF with delta-functions
+            Model_name = '_CDF_delta'
+         case (5)	! CDF with delta-functions
+            Model_name = '_CDF_SPdelta'
+         case default	! exclude
+            Model_name = '_NO'
+         end select
+         ! Prepare the files for each element to be written into:
+         do j =1, N_elements	! for each element
+            Element => used_target%Material(i)%Elements(j)	! all information about this element
+            File_for_gnu(j) = trim(adjustl(m_output_IMFP))//trim(adjustl(used_target%Material(i)%Name))//'_'//trim(adjustl(Element%Name))//'_muon'//trim(adjustl(Model_name))//'.dat'
+            File_name(j) = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(File_for_gnu(j)))
+            open(newunit = FN(j), FILE = trim(adjustl(File_name(j))))
+            ! Create the header:
+            write(FN(j),'(a)', advance='no') '#Energy(eV) '
+            call write_shell_headers_output(FN(j), used_target%Material(i), Element, numpar=numpar)  ! below
+         enddo
+         ! Save core-shells data into the file:
+         do j =1, N_elements	! for each element
+            Element => used_target%Material(i)%Elements(j)	! all information about this element
+            Nsiz = size(Element%Phot_absorption%E)
+            do m = 1, Nsiz	! for all energy grid points:
+               E => Element%Muon_inelastic%E(m)    ! electron energy [eV]
+               write(FN(j),'(es)', advance='no') E   ! energy
+               N_shells = Element%N_shl
+               ! Calculate total cross sections for all shells of this element:
+               do k = 1, N_shells
+                  ! Check valence band
+                  if ((numpar%Mu_inelast /= 2) .and. (Element%valent(k)) .and. (allocated(used_target%Material(i)%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
+                        ! Valence band will be added at the end
+                  else    ! core shell
+                     write(FN(j),'(es)', advance='no') Element%Muon_inelastic%MFP(k,m) ! MFP [A]
+                  endif
+               enddo ! k = 1, N_shells
+               write(FN(j),'(a)') ''  ! to go to the next line
+            enddo ! m = 1, Nsiz
+            call close_file('save', FN=FN(j))  ! module "Dealing_with_files"
+         enddo
+         ! Write valence and total data for positions:
+         File_for_gnu2 = trim(adjustl(m_output_IMFP))//trim(adjustl(used_target%Material(i)%Name))//'_muon'//trim(adjustl(Model_name))//'_total.dat'
+         File_name2 = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(File_for_gnu2))
+         open(newunit = FN2, FILE = trim(adjustl(File_name2)))
+         write(FN2,'(a)', advance='no') '#Energy(eV) '
+         if ((numpar%Mu_inelast /= 2) .and. (allocated(used_target%Material(i)%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
+            write(FN2,'(a)', advance='no') 'Valence '
+         endif
+         write(FN2,'(a)') 'Total'
+         Nsiz = size(used_target%Material(i)%Muon_inelastic_total%E)   ! valence band has a different grid from core shells
+         do m = 1, Nsiz	! for all energy grid points:
+            E => used_target%Material(i)%Muon_inelastic_total%E(m)	! muon energy [eV]
+            write(FN2,'(es)', advance='no') E   ! energy
+            if ((numpar%Mu_inelast /= 2) .and. (allocated(used_target%Material(i)%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
+               write(FN2,'(es)', advance='no') used_target%Material(i)%Muon_inelastic_valent%Total_MFP(m)   ! MFP [A]
+            endif
+            write(FN2,'(es)') used_target%Material(i)%Muon_inelastic_total%Total_MFP(m)   ! total MFP [A]
+         enddo
+         call close_file('save', FN=FN2)  ! module "Dealing_with_files"
+
+         ! Elastic muon scattering MFP:
+         select case (numpar%Mu_elastic)	! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF
+         case (1)	! CDF
+            Model_name = '_CDF'
+         case (2)	! Mott
+            Model_name = '_Mott'
+         case (3)	! DSF
+            Model_name = '_DSF'
+         case default	! exclude
+            Model_name = '_NO'
+         end select
+         File_EMFL_gnu = trim(adjustl(m_output_EMFP))//trim(adjustl(used_target%Material(i)%Name))//'_muon'//trim(adjustl(Model_name))//'_total.dat'
+         File_EMFL = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(File_EMFL_gnu))
+         open(newunit = FN2, FILE = trim(adjustl(File_EMFL)))
+         write(FN2,'(a)') '#Energy(eV)    Elastic_MFP(A)'
+         Nsiz = size(used_target%Material(i)%Muon_elastic_total%E)
+         do m = 1, Nsiz     ! for all energy grid points:
+            write(FN2,'(es,es)')  used_target%Material(i)%Muon_elastic_total%E(m), used_target%Material(i)%Muon_elastic_total%Total_MFP(m)
+         enddo
+         call close_file('save', FN=FN2)  ! module "Dealing_with_files"
+
+         ! Muon Bremsstrahlung MFP:
+         select case (numpar%Mu_Brems)	! elastic scattering: 0=excluded, 1=BHW
+         case (1)	! BHW
+            Model_name = '_BHW'
+         case default	! excluded
+            Model_name = '_NO'
+         end select
+         File_Brems_gnu = trim(adjustl(m_output_Brems))//trim(adjustl(used_target%Material(i)%Name))//'_muon'//trim(adjustl(Model_name))//'.dat'
+         File_Brems = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(File_Brems_gnu))
+         open(newunit = FN2, FILE = trim(adjustl(File_Brems)))
+         write(FN2,'(a)') '#Energy(eV)    Brems_MFP(A)'
+         Nsiz = size(used_target%Material(i)%Muon_Brems_total%E)
+         do m = 1, Nsiz     ! for all energy grid points:
+            write(FN2,'(es,es)')  used_target%Material(i)%Muon_Brems_total%E(m), used_target%Material(i)%Muon_Brems_total%Total_MFP(m)
+         enddo
+         call close_file('save', FN=FN2)  ! module "Dealing_with_files"
+
+         ! Muon Pair production MFP:
+         ! NOT READY
+
+         ! Create the plot with MFPs of muons:
+         call create_MFPs_gnuplot(File_for_gnu, File_for_gnu2, used_target%Material(i), x_start, x_end, y_start, y_end, &
+                'muon', numpar=numpar, File_EMFL=File_EMFL_gnu, File_Brems=File_Brems_gnu)    ! below
+
+         !------------------------------------------------
+         ! 6) Valence holes (MUST BE THE LAST TYPE OF PARTICLES; PLACE ALL OTHERS ABOVE):
          ! Define axes for the plot:
          x_start = 0.0d0
          if (size(used_target%Material(i)%H_inelastic_total%E) > 0) then
@@ -3624,7 +4039,8 @@ subroutine printout_MFPs(used_target, numpar, bunch)
          if (allocated(File_for_gnu)) deallocate(File_for_gnu)    ! no core shells ionization by valence hole is possible
          call create_MFPs_gnuplot(File_for_gnu, File_for_gnu2, used_target%Material(i), x_start, x_end, y_start, y_end, &
                 'hole', numpar=numpar, File_EMFL=File_EMFL_gnu, logx_in=.false., logy_in=.true.)    ! below
-         
+         !------------------------------------------------
+
       enddo TRGT ! for all targets
    endif
    
@@ -4142,7 +4558,7 @@ subroutine make_output_folder(used_target, numpar, bunch)
    
    ! Output name will contain the details of radiation source:
    select case(bunch(1)%KOP)	! use the first radiation bunch to define the name
-   case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI
+   case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
       bunch_name = 'photon'
    case (1)
       bunch_name = 'electron'
@@ -4159,6 +4575,10 @@ subroutine make_output_folder(used_target, numpar, bunch)
       bunch_name = trim(adjustl(bunch(1)%Name))//'_ion'
       !pause 'OUTPUT'
       deallocate(Periodic_table)    ! done with the periodic table, clean up
+   case (4)
+      bunch_name = 'hole'
+   case (5)
+      bunch_name = 'muon'
    endselect
    File_name = trim(adjustl(File_name))//'_'//trim(adjustl(bunch_name))
    
@@ -4206,7 +4626,7 @@ subroutine make_output_folder(used_target, numpar, bunch)
       else ! it is linux
          call copy_file(trim(adjustl(chtest)),trim(adjustl(numpar%output_path))) ! module "Dealing_with_files"
       endif
-   else     ! old format used
+   else     ! old format used (2 files)
       chtest = trim(adjustl(numpar%input_path))//trim(adjustl(m_input_data))
       chtest1 = trim(adjustl(numpar%input_path))//trim(adjustl(m_numerical_parameters))
       if (numpar%path_sep .EQ. '\') then	! if it is Windows
@@ -4327,9 +4747,9 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       write(print_to,'(a)') 'No irradiation is modelled'
    end select
    
-   do i = 1, Nsiz	! for each bunch:
+   do i = 1, Nsiz ! for each bunch:
       select case(bunch(i)%KOP)	! use the first radiation bunch to define the name
-      case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI
+      case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
          text = 'photon'
       case (1)
          text = 'electron'
@@ -4337,6 +4757,10 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
          text = 'positron'
       case (3)
          text = 'ion '//trim(adjustl(bunch(i)%Name))
+      case (4)
+         text = 'VB hole'
+      case (5)
+         text = 'muon'
       endselect
       write(text1,'(i10)') i
       write(print_to,'(a,a,a,a)') ' Bunch #', trim(adjustl(text1)), ' consists of ', trim(adjustl(text))
@@ -4424,6 +4848,20 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       write(print_to,'(a)') ' Photon Rayleigh: No'
    end select
 
+   if (numpar%Ph_Cutoff > 0.0d0) then
+      write(text,'(f12.3)') numpar%Ph_Cutoff
+      write(print_to,'(a,a)') ' Photon energy cut-off: ', trim(adjustl(text))//' [eV]'
+   else
+      write(print_to,'(a)') ' No energy cut-off for photon transport'
+   endif
+
+   if (numpar%Ph_att_eff > 0.0d0) then
+      write(text,'(f12.3)') numpar%Ph_att_eff
+      write(print_to,'(a,a)') ' Photon attenuation length is set to: ', trim(adjustl(text))//' [A]'
+   else
+      write(print_to,'(a)') ' Photon attenuation length is taken from database'
+   endif
+
    !**********************************************
    ! Electrons
    select case (numpar%El_inelast)
@@ -4488,6 +4926,13 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       text = 'No'
    end select
    write(print_to,'(a,a)') ' Electron Bremsstrahlung: ', trim(adjustl(text))
+
+   if (numpar%El_Cutoff > 0.0d0) then
+      write(text,'(f12.3)') numpar%El_Cutoff
+      write(print_to,'(a,a)') ' Electron energy cut-off: ', trim(adjustl(text))//' [eV]'
+   else
+      write(print_to,'(a)') ' No energy cut-off for electron transport'
+   endif
    
    !**********************************************
    ! Ions:
@@ -4512,6 +4957,13 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       text = 'No'
    end select
    write(print_to,'(a,a)') ' Ion inelastic scattering: ', trim(adjustl(text))
+
+   if (numpar%SHI_Cutoff > 0.0d0) then
+      write(text,'(f12.3)') numpar%SHI_Cutoff
+      write(print_to,'(a,a)') ' SHI energy cut-off: ', trim(adjustl(text))//' [eV]'
+   else
+      write(print_to,'(a)') ' No energy cut-off for SHI transport'
+   endif
   
    !**********************************************
    ! Positrons:
@@ -4574,6 +5026,13 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       text = 'No'
    end select
    write(print_to,'(a,a)') ' Positron annihilation: ', trim(adjustl(text))
+
+   if (numpar%Pos_Cutoff > 0.0d0) then
+      write(text,'(f12.3)') numpar%Pos_Cutoff
+      write(print_to,'(a,a)') ' Positron energy cut-off: ', trim(adjustl(text))//' [eV]'
+   else
+      write(print_to,'(a)') ' No energy cut-off for positron transport'
+   endif
    
    !**********************************************
    ! Holes
@@ -4620,7 +5079,84 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       text = 'No'
    end select
    write(print_to,'(a,a)') ' Core hole radiative decay: ', trim(adjustl(text))
+
+   if (numpar%H_Cutoff > 0.0d0) then
+      write(text,'(f12.3)') numpar%H_Cutoff
+      write(print_to,'(a,a)') ' VB holes energy cut-off: ', trim(adjustl(text))//' [eV]'
+   else
+      write(print_to,'(a)') ' No energy cut-off for VB holes transport'
+   endif
    
+
+   !**********************************************
+   ! Muons
+   select case (numpar%Mu_inelast)
+   case (1:3)	! CDF
+      select case (numpar%CDF_model)
+      case default   ! Ritchie
+         text = 'Delta-CDF (with Ritchie)'
+      case (1)   ! Mermin
+         text = 'Delta-CDF (with Mermin)'
+      endselect
+   case (4)
+      select case (numpar%CDF_model)
+      case default   ! Ritchie
+         text = 'Ritchie CDF'
+      case (1)   ! Mermin
+         text = 'Mermin CDF'
+      endselect
+   case (5) ! SP
+      select case (numpar%CDF_model)
+      case default   ! Ritchie
+         text = 'SP-delta-CDF (with Ritchie)'
+      case (1)   ! Mermin
+         text = 'SP-delta-CDF (with Mermin)'
+      endselect
+   case default
+      text = 'No'
+   end select
+   write(print_to,'(a,a)') ' Muon inelastic scattering: ', trim(adjustl(text))
+
+   select case (numpar%Mu_elastic)	! elastic scattering: 0=excluded, 1=CDF
+   case (1)
+      select case (numpar%CDF_model)
+      case default   ! Ritchie
+         text = 'Ritchie CDF'
+      case (1)   ! Mermin
+         text = 'Mermin CDF'
+      endselect
+   case (2)
+      text = 'Mott'
+   case (3)
+      text = 'DSF'
+   case default
+      text = 'No'
+   end select
+   write(print_to,'(a,a)') ' Muon elastic scattering: ', trim(adjustl(text))
+
+   select case (numpar%Mu_Brems) ! Muons bremsstrahlung: 0=excluded, 1=BHW
+   case (1)
+      text = 'BHW'
+   case default	! exclude
+      text = 'No'
+   end select
+   write(print_to,'(a,a)') ' Muon bremsstrahlung: ', trim(adjustl(text))
+
+   select case (numpar%Mu_Pairs) !  Electron-positron pair creation: 0=excluded, 1=... (not ready)
+   case (1)
+      text = '(NOT READY)'
+   case default	! exclude
+      text = 'No'
+   end select
+   write(print_to,'(a,a)') ' Muon pair creation: ', trim(adjustl(text))
+
+   if (numpar%Mu_Cutoff > 0.0d0) then
+      write(text,'(f12.3)') numpar%Mu_Cutoff
+      write(print_to,'(a,a)') ' Muon energy cut-off: ', trim(adjustl(text))//' [eV]'
+   else
+      write(print_to,'(a)') ' No energy cut-off for muon transport'
+   endif
+
 
    !**********************************************
    ! MD model parameters:
@@ -5128,6 +5664,7 @@ subroutine close_all_output(numpar)
    endif
    call close_file('close', FN=numpar%FN_spectrum_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu)	! module "Dealing_with_files"
 
    ! Files with theta distributions:
    call close_file('close', FN=numpar%FN_vel_theta_ph)	! module "Dealing_with_files"
