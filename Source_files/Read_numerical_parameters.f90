@@ -627,6 +627,61 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
    
    !==================================================
    ! Skip line
+   read(FN,*,IOSTAT=Reason)  ! ::: MODELS FOR MUONS :::
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      goto 9998
+   endif
+
+   ! inelastic scattering: 0=excluded, 1=relativ.CDF, 2=RBEB, 3=delta, 4=nonrelativ.CDF (DO NOT USE!), 5=SPdelta
+   read(FN,*,IOSTAT=Reason) numpar%Mu_inelast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      goto 9998
+   endif
+
+   ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF (NOT READY YET!), 5=SPdelta
+   read(FN,*,IOSTAT=Reason) numpar%Mu_elastic
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      goto 9998
+   endif
+
+   ! Bremsstrahlung: 0=excluded, 1=BHW
+   read(FN,*,IOSTAT=Reason) numpar%Mu_Brems
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      goto 9998
+   endif
+
+   ! Electron-positron pair creation: 0=excluded, 1= ... (NOT READY YET!)
+   read(FN,*,IOSTAT=Reason) numpar%Mu_Pairs
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      goto 9998
+   endif
+
+   ! [eV] Cut-off energy (electrons with lower energies are excluded from calculation)
+   read(FN,*,IOSTAT=Reason) numpar%Mu_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      goto 9998
+   endif
+
+   !==================================================
+   ! Skip line
    read(FN,*,IOSTAT=Reason)  ! ::: MD MODEL PARAMETERS :::
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then

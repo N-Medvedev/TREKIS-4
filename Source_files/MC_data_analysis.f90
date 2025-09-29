@@ -40,20 +40,20 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    !-----------------------------------------------
    ! Define temporary arrays to average the MC data into distributions:
    ! Energy disributions (spectra):
-   real(8), dimension(:), allocatable :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI  ! energy spectra
+   real(8), dimension(:), allocatable :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI, Spectrum_mu  ! energy spectra
    real(8), dimension(:,:), allocatable :: Spectrum_h ! VB spectra separate for each target
    ! Velosity theta disributions:
-   real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI  ! velosity theta distributions
+   real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu  ! velosity theta distributions
    ! Energy spectra vs space in 1d:
-   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! energy spectra in space along X
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
    ! Theta distribution vs space in 1d:
-   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! theta distribution in space along X
-   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! theta distribution in space along Y
-   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! theta distribution in space along Z
-   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! theta distribution in space along R
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! theta distribution in space along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! theta distribution in space along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! theta distribution in space along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! theta distribution in space along R
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic ! photon
    real(8), dimension(:), allocatable :: Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic ! electron
@@ -61,6 +61,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:), allocatable :: Distr_h_X, Distr_h_Y, Distr_h_Z, Distr_h_R, Distr_h_L, Distr_h_Theta, Distr_h_Rc, Distr_h_Thetac, Distr_h_Phic ! hole
    real(8), dimension(:), allocatable :: Distr_SHI_X, Distr_SHI_Y, Distr_SHI_Z, Distr_SHI_R, Distr_SHI_L, Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic ! SHI
    real(8), dimension(:), allocatable :: Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic ! Atom
+   real(8), dimension(:), allocatable :: Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic ! muon
    ! Spatial distributions in 2d:
    real(8), dimension(:,:), allocatable :: Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta
    real(8), dimension(:,:), allocatable :: Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic  ! photon
@@ -74,6 +75,8 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:), allocatable :: Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), allocatable :: Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta
    real(8), dimension(:,:), allocatable :: Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic  ! Atom
+   real(8), dimension(:,:), allocatable :: Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+                                           Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic  ! muon
    ! Spatial distributions in 3d:
    real(8), dimension(:,:,:), allocatable :: Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), allocatable :: Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic ! electron
@@ -81,6 +84,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:,:,:), allocatable :: Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), allocatable :: Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic ! Atom
+   real(8), dimension(:,:,:), allocatable :: Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic ! muon
    ! Spatial energy distributions in 1d:
    real(8), dimension(:), allocatable :: E_Distr_ph_X, E_Distr_ph_Y, E_Distr_ph_Z, E_Distr_ph_R, E_Distr_ph_L, E_Distr_ph_Theta
    real(8), dimension(:), allocatable :: E_Distr_ph_Rc, E_Distr_ph_Thetac, E_Distr_ph_Phic ! photon
@@ -94,6 +98,8 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:), allocatable :: E_Distr_SHI_Theta, E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic ! SHI
    real(8), dimension(:), allocatable :: E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z, E_Distr_a_R, E_Distr_a_L
    real(8), dimension(:), allocatable :: E_Distr_a_Theta, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic ! Atom
+   real(8), dimension(:), allocatable :: E_Distr_mu_X, E_Distr_mu_Y, E_Distr_mu_Z, E_Distr_mu_R, E_Distr_mu_L, E_Distr_mu_Theta, &
+                                         E_Distr_mu_Rc, E_Distr_mu_Thetac, E_Distr_mu_Phic ! muon
    ! Spatial energy distributions in 2d:
    real(8), dimension(:,:), allocatable :: E_Distr_ph_XY, E_Distr_ph_YZ, E_Distr_ph_XZ, E_Distr_ph_RL, E_Distr_ph_RTheta, E_Distr_ph_LTheta
    real(8), dimension(:,:), allocatable :: E_Distr_ph_RcThc, E_Distr_ph_RcPhic, E_Distr_ph_ThcPhic  ! photon
@@ -107,6 +113,8 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:), allocatable :: E_Distr_SHI_RcThc, E_Distr_SHI_RcPhic, E_Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), allocatable :: E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta
    real(8), dimension(:,:), allocatable :: E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic  ! Atom
+   real(8), dimension(:,:), allocatable :: E_Distr_mu_XY, E_Distr_mu_YZ, E_Distr_mu_XZ, E_Distr_mu_RL, E_Distr_mu_RTheta, E_Distr_mu_LTheta, &
+                                           E_Distr_mu_RcThc, E_Distr_mu_RcPhic, E_Distr_mu_ThcPhic  ! muon
    ! Spatial energy distributions in 3d:
    real(8), dimension(:,:,:), allocatable :: E_Distr_ph_XYZ, E_Distr_ph_RLTheta, E_Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), allocatable :: E_Distr_e_XYZ, E_Distr_e_RLTheta, E_Distr_e_RcThcPhic ! electron
@@ -114,6 +122,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:,:,:), allocatable :: E_Distr_h_XYZ, E_Distr_h_RLTheta, E_Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), allocatable :: E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic ! Atom
+   real(8), dimension(:,:,:), allocatable :: E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic ! muon
    ! And regular variables:
    integer :: iter, Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10), &
                   Ntheta_siz0(10), Ntheta_siz1(10), Ntheta_siz2(10), Ntheta_siz3(10)
@@ -147,22 +156,22 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    ! Allocate the arrays when needed:
    if (.not.allocated(Spectrum_ph)) then    ! all spectra
       call allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
-            Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
-            Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
-            Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
-            Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-            Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R      ) ! below
+            Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, Spectrum_mu, &
+            Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X, &
+            Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
+            Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
+            Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ) ! below
    endif
    
 !    print*, 'analyze_MC_output_data 4'
 
    if (.not.allocated(Vel_theta_ph)) then   ! all velosity distributions
       call allocate_vel_theta_arrays(Nsiz_vel, Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3, &
-            Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
-            Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
-            Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
-            Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
-            Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R      ) ! below
+            Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu, &
+            Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X, &
+            Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
+            Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
+            Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ) ! below
    endif
    
 !    print*, 'analyze_MC_output_data 5'
@@ -176,6 +185,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
        Distr_h_X, Distr_h_Y, Distr_h_Z, Distr_h_R, Distr_h_L, Distr_h_Theta, Distr_h_Rc, Distr_h_Thetac, Distr_h_Phic, &
        Distr_SHI_X, Distr_SHI_Y, Distr_SHI_Z, Distr_SHI_R, Distr_SHI_L, Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic, &
        Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic, &
+       Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic, &
        Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta, &
        Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic, &
        Distr_e_XY, Distr_e_YZ, Distr_e_XZ, Distr_e_RL, Distr_e_RTheta, Distr_e_LTheta, &
@@ -188,12 +198,15 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
        Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic, &
        Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta, &
        Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic, &
+       Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+       Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic, &
        Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic, &
        Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic, &
        Distr_p_XYZ, Distr_p_RLTheta, Distr_p_RcThcPhic, &
        Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic, &
        Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic, &
-       Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic )    ! below
+       Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic, &
+       Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic)    ! below
    endif
    
 !    print*, 'analyze_MC_output_data 6'
@@ -207,6 +220,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
        E_Distr_h_X, E_Distr_h_Y, E_Distr_h_Z, E_Distr_h_R, E_Distr_h_L, E_Distr_h_Theta, E_Distr_h_Rc, E_Distr_h_Thetac, E_Distr_h_Phic, &
        E_Distr_SHI_X, E_Distr_SHI_Y, E_Distr_SHI_Z, E_Distr_SHI_R, E_Distr_SHI_L, E_Distr_SHI_Theta, E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic, &
        E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z, E_Distr_a_R, E_Distr_a_L, E_Distr_a_Theta, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic, &
+       E_Distr_mu_X, E_Distr_mu_Y, E_Distr_mu_Z, E_Distr_mu_R, E_Distr_mu_L, E_Distr_mu_Theta, E_Distr_mu_Rc, E_Distr_mu_Thetac, E_Distr_mu_Phic, &
        E_Distr_ph_XY, E_Distr_ph_YZ, E_Distr_ph_XZ, E_Distr_ph_RL, E_Distr_ph_RTheta, E_Distr_ph_LTheta, &
        E_Distr_ph_RcThc, E_Distr_ph_RcPhic, E_Distr_ph_ThcPhic, &
        E_Distr_e_XY, E_Distr_e_YZ, E_Distr_e_XZ, E_Distr_e_RL, E_Distr_e_RTheta, E_Distr_e_LTheta, &
@@ -219,33 +233,37 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
        E_Distr_SHI_RcThc, E_Distr_SHI_RcPhic, E_Distr_SHI_ThcPhic, &
        E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta, &
        E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic, &
+       E_Distr_mu_XY, E_Distr_mu_YZ, E_Distr_mu_XZ, E_Distr_mu_RL, E_Distr_mu_RTheta, E_Distr_mu_LTheta, &
+       E_Distr_mu_RcThc, E_Distr_mu_RcPhic, E_Distr_mu_ThcPhic, &
        E_Distr_ph_XYZ, E_Distr_ph_RLTheta, E_Distr_ph_RcThcPhic, &
        E_Distr_e_XYZ, E_Distr_e_RLTheta, E_Distr_e_RcThcPhic, &
        E_Distr_p_XYZ, E_Distr_p_RLTheta, E_Distr_p_RcThcPhic, &
        E_Distr_h_XYZ, E_Distr_h_RLTheta, E_Distr_h_RcThcPhic, &
        E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic, &
-       E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic )    ! below
+       E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic, &
+       E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic  )    ! below
    endif
    
 !    print*, 'analyze_MC_output_data 7'
 
    ! Now, having all arrays needed, go on and fill them with data:
-   call sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
-    Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
-    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
-    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
-    Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
-    Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
-    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
-    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
-    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, &
+   call sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, Spectrum_mu, &
+    Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X, &
+    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
+    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
+    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R, &
+    Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu, &
+    Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X, &
+    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
+    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
+    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
     Distr_p_X, Distr_p_Y, Distr_p_Z, Distr_p_R, Distr_p_L, Distr_p_Theta, Distr_p_Rc, Distr_p_Thetac, Distr_p_Phic, &
     Distr_h_X, Distr_h_Y, Distr_h_Z, Distr_h_R, Distr_h_L, Distr_h_Theta, Distr_h_Rc, Distr_h_Thetac, Distr_h_Phic, &
     Distr_SHI_X, Distr_SHI_Y, Distr_SHI_Z, Distr_SHI_R, Distr_SHI_L, Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic, &
     Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic, &
+    Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic, &
     Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta, &
     Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic, &
     Distr_e_XY, Distr_e_YZ, Distr_e_XZ, Distr_e_RL, Distr_e_RTheta, Distr_e_LTheta, &
@@ -258,12 +276,15 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic, &
     Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta, &
     Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic, &
+    Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+    Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic, &
     Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic, &
     Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic, &
     Distr_p_XYZ, Distr_p_RLTheta, Distr_p_RcThcPhic, &
     Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic, &
     Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic,&
     Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic,&
+    Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic, &
     E_Distr_ph_X, E_Distr_ph_Y, E_Distr_ph_Z, E_Distr_ph_R, E_Distr_ph_L, &
     E_Distr_ph_Theta, E_Distr_ph_Rc, E_Distr_ph_Thetac, E_Distr_ph_Phic, &
     E_Distr_e_X, E_Distr_e_Y, E_Distr_e_Z, E_Distr_e_R, E_Distr_e_L, E_Distr_e_Theta, E_Distr_e_Rc, E_Distr_e_Thetac, E_Distr_e_Phic, &
@@ -272,6 +293,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     E_Distr_SHI_X, E_Distr_SHI_Y, E_Distr_SHI_Z, E_Distr_SHI_R, E_Distr_SHI_L, &
     E_Distr_SHI_Theta, E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic, &
     E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z, E_Distr_a_R, E_Distr_a_L, E_Distr_a_Theta, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic, &
+    E_Distr_mu_X, E_Distr_mu_Y, E_Distr_mu_Z, E_Distr_mu_R, E_Distr_mu_L, E_Distr_mu_Theta, E_Distr_mu_Rc, E_Distr_mu_Thetac, E_Distr_mu_Phic, &
     E_Distr_ph_XY, E_Distr_ph_YZ, E_Distr_ph_XZ, E_Distr_ph_RL, E_Distr_ph_RTheta, E_Distr_ph_LTheta, &
     E_Distr_ph_RcThc, E_Distr_ph_RcPhic, E_Distr_ph_ThcPhic, &
     E_Distr_e_XY, E_Distr_e_YZ, E_Distr_e_XZ, E_Distr_e_RL, E_Distr_e_RTheta, E_Distr_e_LTheta, &
@@ -284,12 +306,15 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     E_Distr_SHI_RcThc, E_Distr_SHI_RcPhic, E_Distr_SHI_ThcPhic, &
     E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta, &
     E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic, &
+    E_Distr_mu_XY, E_Distr_mu_YZ, E_Distr_mu_XZ, E_Distr_mu_RL, E_Distr_mu_RTheta, E_Distr_mu_LTheta, &
+    E_Distr_mu_RcThc, E_Distr_mu_RcPhic, E_Distr_mu_ThcPhic, &
     E_Distr_ph_XYZ, E_Distr_ph_RLTheta, E_Distr_ph_RcThcPhic, &
     E_Distr_e_XYZ, E_Distr_e_RLTheta, E_Distr_e_RcThcPhic, &
     E_Distr_p_XYZ, E_Distr_p_RLTheta, E_Distr_p_RcThcPhic, &
     E_Distr_h_XYZ, E_Distr_h_RLTheta, E_Distr_h_RcThcPhic, &
     E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic, &
-    E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic )    ! below
+    E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic, &
+    E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic  )    ! below
    
 !    print*, 'analyze_MC_output_data 8'
 
@@ -744,22 +769,23 @@ subroutine get_total_values(used_target, numpar, MC, out_data)
 end subroutine get_total_values
 
 
-subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
-    Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
-    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
-    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
-    Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
-    Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
-    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
-    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
-    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, &
+subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, Spectrum_mu, &
+    Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X, &
+    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
+    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
+    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R, &
+    Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu, &
+    Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X, &
+    Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
+    Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
+    Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
     Distr_p_X, Distr_p_Y, Distr_p_Z, Distr_p_R, Distr_p_L, Distr_p_Theta, Distr_p_Rc, Distr_p_Thetac, Distr_p_Phic, &
     Distr_h_X, Distr_h_Y, Distr_h_Z, Distr_h_R, Distr_h_L, Distr_h_Theta, Distr_h_Rc, Distr_h_Thetac, Distr_h_Phic, &
     Distr_SHI_X, Distr_SHI_Y, Distr_SHI_Z, Distr_SHI_R, Distr_SHI_L, Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic, &
     Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic, &
+    Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic, &
     Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta, &
     Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic, &
     Distr_e_XY, Distr_e_YZ, Distr_e_XZ, Distr_e_RL, Distr_e_RTheta, Distr_e_LTheta, &
@@ -772,12 +798,15 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
     Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic, &
     Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta, &
     Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic, &
+    Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+    Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic, &
     Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic, &
     Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic, &
     Distr_p_XYZ, Distr_p_RLTheta, Distr_p_RcThcPhic, &
     Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic, &
     Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic, & 
     Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic, & 
+    Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic, &
     E_Distr_ph_X, E_Distr_ph_Y, E_Distr_ph_Z, E_Distr_ph_R, E_Distr_ph_L, &
     E_Distr_ph_Theta, E_Distr_ph_Rc, E_Distr_ph_Thetac, E_Distr_ph_Phic, &
     E_Distr_e_X, E_Distr_e_Y, E_Distr_e_Z, E_Distr_e_R, E_Distr_e_L, E_Distr_e_Theta, E_Distr_e_Rc, E_Distr_e_Thetac, E_Distr_e_Phic, &
@@ -786,6 +815,7 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
     E_Distr_SHI_X, E_Distr_SHI_Y, E_Distr_SHI_Z, E_Distr_SHI_R, E_Distr_SHI_L, &
     E_Distr_SHI_Theta, E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic, &
     E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z, E_Distr_a_R, E_Distr_a_L, E_Distr_a_Theta, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic, &
+    E_Distr_mu_X, E_Distr_mu_Y, E_Distr_mu_Z, E_Distr_mu_R, E_Distr_mu_L, E_Distr_mu_Theta, E_Distr_mu_Rc, E_Distr_mu_Thetac, E_Distr_mu_Phic, &
     E_Distr_ph_XY, E_Distr_ph_YZ, E_Distr_ph_XZ, E_Distr_ph_RL, E_Distr_ph_RTheta, E_Distr_ph_LTheta, &
     E_Distr_ph_RcThc, E_Distr_ph_RcPhic, E_Distr_ph_ThcPhic, &
     E_Distr_e_XY, E_Distr_e_YZ, E_Distr_e_XZ, E_Distr_e_RL, E_Distr_e_RTheta, E_Distr_e_LTheta, &
@@ -798,30 +828,33 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
     E_Distr_SHI_RcThc, E_Distr_SHI_RcPhic, E_Distr_SHI_ThcPhic, &
     E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta, &
     E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic, &
+    E_Distr_mu_XY, E_Distr_mu_YZ, E_Distr_mu_XZ, E_Distr_mu_RL, E_Distr_mu_RTheta, E_Distr_mu_LTheta, &
+    E_Distr_mu_RcThc, E_Distr_mu_RcPhic, E_Distr_mu_ThcPhic, &
     E_Distr_ph_XYZ, E_Distr_ph_RLTheta, E_Distr_ph_RcThcPhic, &
     E_Distr_e_XYZ, E_Distr_e_RLTheta, E_Distr_e_RcThcPhic, &
     E_Distr_p_XYZ, E_Distr_p_RLTheta, E_Distr_p_RcThcPhic, &
     E_Distr_h_XYZ, E_Distr_h_RLTheta, E_Distr_h_RcThcPhic, &
     E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic, &
-    E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic )
+    E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic, &
+    E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic )
    type(Matter), intent(in) :: used_target   ! parameters of the target
    type(MC_arrays), dimension(:), intent(in) :: MC	! all MC arrays for all particles; size = number of iterations
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), intent(in) :: tim   ! [fs] current time step
    ! Energy disributions (spectra):
-   real(8), dimension(:), intent(inout) :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI  ! energy spectra
+   real(8), dimension(:), intent(inout) :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI, Spectrum_mu  ! energy spectra
    real(8), dimension(:,:), intent(inout) :: Spectrum_h ! VB holes spectra for each material
-   real(8), dimension(:), intent(inout) :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI   ! velosity theta distribution
+   real(8), dimension(:), intent(inout) :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu   ! velosity theta distribution
    ! Spectra in 1d space:
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! energy spectra in space along X
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
    ! Theta distribution in 1d space:
-   real(8), dimension(:,:), intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X ! theta distr in space along X
-   real(8), dimension(:,:), intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y ! theta distr in space along Y
-   real(8), dimension(:,:), intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z ! theta distr in space along Z
-   real(8), dimension(:,:), intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R ! theta distr in space along R
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X ! theta distr in space along X
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y ! theta distr in space along Y
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z ! theta distr in space along Z
+   real(8), dimension(:,:), intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R ! theta distr in space along R
 
    ! Spatial distributions in 1d:
    real(8), dimension(:), intent(inout) :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, &
@@ -836,6 +869,8 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
                                                         Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic ! SHI
    real(8), dimension(:), intent(inout) :: Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, Distr_a_Theta, &
                                                         Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic ! Atom
+   real(8), dimension(:), intent(inout) :: Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, Distr_mu_Rc, &
+                                                        Distr_mu_Thetac, Distr_mu_Phic ! muon
    ! Spatial distributions in 2d:
    real(8), dimension(:,:), intent(inout) :: Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta
    real(8), dimension(:,:), intent(inout) :: Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic  ! photon
@@ -849,6 +884,8 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:,:), intent(inout) :: Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), intent(inout) :: Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta
    real(8), dimension(:,:), intent(inout) :: Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic  ! Atom
+   real(8), dimension(:,:), intent(inout) :: Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+                                             Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic  ! muon
    ! Spatial distributions in 3d:
    real(8), dimension(:,:,:), intent(inout) :: Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), intent(inout) :: Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic ! electron
@@ -856,6 +893,8 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:,:,:,:), intent(inout) :: Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), intent(inout) :: Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), intent(inout) :: Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic ! Atom
+   real(8), dimension(:,:,:), intent(inout) :: Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic ! muon
+
    ! Spatial energy distributions in 1d:
    real(8), dimension(:), intent(inout) :: E_Distr_ph_X, E_Distr_ph_Y, E_Distr_ph_Z, E_Distr_ph_R, E_Distr_ph_L, E_Distr_ph_Theta
    real(8), dimension(:), intent(inout):: E_Distr_ph_Rc, E_Distr_ph_Thetac, E_Distr_ph_Phic ! photon
@@ -869,6 +908,8 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:), intent(inout) :: E_Distr_SHI_Theta, E_Distr_SHI_Rc, E_Distr_SHI_Thetac, E_Distr_SHI_Phic ! SHI
    real(8), dimension(:), intent(inout) :: E_Distr_a_X, E_Distr_a_Y, E_Distr_a_Z, E_Distr_a_R, E_Distr_a_L
    real(8), dimension(:), intent(inout) :: E_Distr_a_Theta, E_Distr_a_Rc, E_Distr_a_Thetac, E_Distr_a_Phic ! Atom
+   real(8), dimension(:), intent(inout) :: E_Distr_mu_X, E_Distr_mu_Y, E_Distr_mu_Z, E_Distr_mu_R, E_Distr_mu_L, E_Distr_mu_Theta, &
+                                           E_Distr_mu_Rc, E_Distr_mu_Thetac, E_Distr_mu_Phic ! muon
    ! Spatial energy distributions in 2d:
    real(8), dimension(:,:), intent(inout) :: E_Distr_ph_XY, E_Distr_ph_YZ, E_Distr_ph_XZ, E_Distr_ph_RL, E_Distr_ph_RTheta, E_Distr_ph_LTheta
    real(8), dimension(:,:), intent(inout) :: E_Distr_ph_RcThc, E_Distr_ph_RcPhic, E_Distr_ph_ThcPhic  ! photon
@@ -882,6 +923,8 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:,:), intent(inout) :: E_Distr_SHI_RcThc, E_Distr_SHI_RcPhic, E_Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), intent(inout) :: E_Distr_a_XY, E_Distr_a_YZ, E_Distr_a_XZ, E_Distr_a_RL, E_Distr_a_RTheta, E_Distr_a_LTheta
    real(8), dimension(:,:), intent(inout) :: E_Distr_a_RcThc, E_Distr_a_RcPhic, E_Distr_a_ThcPhic  ! Atom
+   real(8), dimension(:,:), intent(inout) :: E_Distr_mu_XY, E_Distr_mu_YZ, E_Distr_mu_XZ, E_Distr_mu_RL, E_Distr_mu_RTheta, E_Distr_mu_LTheta, &
+                                             E_Distr_mu_RcThc, E_Distr_mu_RcPhic, E_Distr_mu_ThcPhic  ! muon
    ! Spatial energy distributions in 3d:
    real(8), dimension(:,:,:), intent(inout) :: E_Distr_ph_XYZ, E_Distr_ph_RLTheta, E_Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), intent(inout) :: E_Distr_e_XYZ, E_Distr_e_RLTheta, E_Distr_e_RcThcPhic ! electron
@@ -889,6 +932,7 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:,:,:,:), intent(inout) :: E_Distr_h_XYZ, E_Distr_h_RLTheta, E_Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), intent(inout) :: E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), intent(inout) :: E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic ! Atom
+   real(8), dimension(:,:,:), intent(inout) :: E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic ! muon
    !-------------------------------------------------------
    integer :: iter
 
@@ -902,7 +946,7 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
 ! goto 9999   ! Test
 
    ! Spectra:
-   !$omp do schedule(dynamic) reduction( + : Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI)
+   !$omp do schedule(dynamic) reduction( + : Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, Spectrum_mu)
    do iter = 1, numpar%NMC  ! analyze data in all iterations
       ! Get photon distributions:
       call get_photon_spectrum(MC(iter), numpar, Spectrum_ph)   ! below
@@ -918,6 +962,9 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
       
       ! Get SHI distributions:
       call get_SHI_spectrum(MC(iter), numpar, Spectrum_SHI)   ! below
+
+      ! Get muon distributions:
+      call get_muon_spectrum(MC(iter), numpar, Spectrum_mu)   ! below
    enddo
    !$omp enddo
    !$OMP BARRIER
@@ -3007,6 +3054,50 @@ end subroutine get_SHI_spectrum
 
 
 
+subroutine get_muon_spectrum(MC, numpar, Spectrum_mu)
+   type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   real(8), dimension(:), intent(inout) :: Spectrum_mu     ! muon spectrum
+   !------------------------------
+   real(8) :: dE, one_over_N
+   integer :: i, Nsiz, i_arr
+   logical :: anything_to_do
+
+   ! Construct spectrum only if user requested it:
+   SPEC:if (numpar%NRG_grid_par%along_axis) then ! energy data
+      ! Check if there is any active particle:
+      anything_to_do = any(MC%MC_Muons(:)%active)
+
+      ACTPAR:if (anything_to_do) then ! there are particles to distribute
+
+         if (MC%N_mu > 0) one_over_N = 1.0d0 / dble(MC%N_mu)  ! to normalize to the number of particles
+
+         ! Go through all muons and distribute them into arrays:
+         do i = 1, MC%N_mu
+            ! Include only active particles:
+            if (MC%MC_Muons(i)%active) then
+               ! Find where to put in on the given energy grid:
+               if (MC%MC_Muons(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
+                  i_arr = 1
+                  dE = numpar%NRG_grid(1)
+               else if (MC%MC_Muons(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+                  i_arr = size(numpar%NRG_grid)
+                  dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
+               else ! inside the grid
+                  call Find_in_array_monoton(numpar%NRG_grid, MC%MC_Muons(i)%Ekin, i_arr)  ! module "Little_subroutines"
+                  i_arr = i_arr + 1 ! assign particle to the end of the interval
+                  dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
+               endif
+
+               Spectrum_mu(i_arr) = Spectrum_mu(i_arr) + one_over_N/dE    ! add an electron into this array, per energy interval to make distribution
+            endif
+         enddo
+      endif ACTPAR
+   endif SPEC
+end subroutine get_muon_spectrum
+
+
+
 !sssssssssssssssssssssssssssssssssssssssssssssssss
 ! Spectra along 1d axis:
 subroutine get_spectra_in_space_1d(MC, numpar, tim, Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
@@ -3408,20 +3499,20 @@ end function add_cartesian_particle_for_theta_1d
 ! Allocating routines:
 
 subroutine allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
-    Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, &
-    Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
-    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
-    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  )
+    Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_h, Spectrum_SHI, Spectrum_mu, &
+    Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X, &
+    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
+    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
+    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  )
    integer, dimension(:), intent(in) :: Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3    ! sizes
    ! Energy disributions (spectra):
-   real(8), dimension(:), allocatable, intent(inout) :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI  ! energy spectra
+   real(8), dimension(:), allocatable, intent(inout) :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI, Spectrum_mu  ! energy spectra
    real(8), dimension(:,:), allocatable, intent(inout) :: Spectrum_h  ! VB holes in each target
    ! Spectra vs space 1d:
-   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! energy spectra in space along X
-   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R ! energy spectra in space along R
+   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
+   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
+   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
+   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R ! energy spectra in space along R
    
    ! Energy spectra:
    allocate(Spectrum_ph(Nsiz(1)), source = 0.0d0)
@@ -3429,46 +3520,51 @@ subroutine allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_
    allocate(Spectrum_p(Nsiz(1)), source = 0.0d0)
    allocate(Spectrum_h(size(Nsiz_VB),maxval(Nsiz_VB)), source = 0.0d0)
    allocate(Spectrum_SHI(Nsiz(1)), source = 0.0d0)
+   allocate(Spectrum_mu(Nsiz(1)), source = 0.0d0)
    ! Spectra vs space 1d:
    allocate(Spectra_ph_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)   ! X
    allocate(Spectra_e_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
    allocate(Spectra_p_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
    allocate(Spectra_h_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
    allocate(Spectra_SHI_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
+   allocate(Spectra_mu_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
    allocate(Spectra_ph_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)   ! Y
    allocate(Spectra_e_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
    allocate(Spectra_p_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
    allocate(Spectra_h_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
    allocate(Spectra_SHI_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0) 
+   allocate(Spectra_mu_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
    allocate(Spectra_ph_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)  ! Z
    allocate(Spectra_e_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
    allocate(Spectra_p_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
    allocate(Spectra_h_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
    allocate(Spectra_SHI_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
+   allocate(Spectra_mu_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
    allocate(Spectra_ph_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)   ! R
    allocate(Spectra_e_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
    allocate(Spectra_p_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
    allocate(Spectra_h_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
    allocate(Spectra_SHI_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
+   allocate(Spectra_mu_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
 end subroutine allocate_spectra_arrays
 
 
 
 
 subroutine allocate_vel_theta_arrays(Nsiz_vel, Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3, &
-            Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, &
-            Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, &
-            Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, &
-            Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
-            Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  )
+            Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu, &
+            Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X, &
+            Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
+            Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
+            Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  )
    integer, intent(in) :: Nsiz_vel    ! size
    integer, dimension(:), intent(in) :: Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3
-   real(8), dimension(:), allocatable, intent(inout) :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI
+   real(8), dimension(:), allocatable, intent(inout) :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu
    ! Theta distribution vs space in 1d:
-   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X  ! theta distribution in space along X
-   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y  ! theta distribution in space along Y
-   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z  ! theta distribution in space along Z
-   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R  ! theta distribution in space along R
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! theta distribution in space along X
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! theta distribution in space along Y
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! theta distribution in space along Z
+   real(8), dimension(:,:), allocatable, intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! theta distribution in space along R
    !------------------------------
    ! Velosity theta distributions:
    allocate(Vel_theta_ph(Nsiz_vel), source = 0.0d0)
@@ -3476,27 +3572,32 @@ subroutine allocate_vel_theta_arrays(Nsiz_vel, Ntheta_siz0, Ntheta_siz1, Ntheta_
    allocate(Vel_theta_p(Nsiz_vel), source = 0.0d0)
    allocate(Vel_theta_h(Nsiz_vel), source = 0.0d0)
    allocate(Vel_theta_SHI(Nsiz_vel), source = 0.0d0)
+   allocate(Vel_theta_mu(Nsiz_vel), source = 0.0d0)
    ! Velosity theta distributions vs space 1d:
    allocate(Theta_ph_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)   ! X
    allocate(Theta_e_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
    allocate(Theta_p_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
    allocate(Theta_h_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
    allocate(Theta_SHI_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
+   allocate(Theta_mu_X(Nsiz_vel, Ntheta_siz0(2)), source = 0.0d0)
    allocate(Theta_ph_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)   ! Y
    allocate(Theta_e_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
    allocate(Theta_p_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
    allocate(Theta_h_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
    allocate(Theta_SHI_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
+   allocate(Theta_mu_Y(Nsiz_vel, Ntheta_siz0(3)), source = 0.0d0)
    allocate(Theta_ph_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)  ! Z
    allocate(Theta_e_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
    allocate(Theta_p_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
    allocate(Theta_h_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
    allocate(Theta_SHI_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
+   allocate(Theta_mu_Z(Nsiz_vel, Ntheta_siz0(4)), source = 0.0d0)
    allocate(Theta_ph_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)   ! R
    allocate(Theta_e_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
    allocate(Theta_p_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
    allocate(Theta_h_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
    allocate(Theta_SHI_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
+   allocate(Theta_mu_R(Nsiz_vel, Ntheta_siz0(8)), source = 0.0d0)
 end subroutine allocate_vel_theta_arrays
 
 
@@ -3508,6 +3609,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
     Distr_h_X, Distr_h_Y, Distr_h_Z, Distr_h_R, Distr_h_L, Distr_h_Theta, Distr_h_Rc, Distr_h_Thetac, Distr_h_Phic, &
     Distr_SHI_X, Distr_SHI_Y, Distr_SHI_Z, Distr_SHI_R, Distr_SHI_L, Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic, &
     Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic, &
+    Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic, &
     Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta, &
     Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic, &
     Distr_e_XY, Distr_e_YZ, Distr_e_XZ, Distr_e_RL, Distr_e_RTheta, Distr_e_LTheta, &
@@ -3520,12 +3622,15 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
     Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic, &
     Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta, &
     Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic, &
+    Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+    Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic, &
     Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic, &
     Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic, &
     Distr_p_XYZ, Distr_p_RLTheta, Distr_p_RcThcPhic, &
     Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic, &
     Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic, &
-    Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic )
+    Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic, &
+    Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic )
    integer, dimension(:), intent(in) :: Nsiz, Nsiz1, Nsiz2, Nsiz3   ! sizes
    integer, intent(in) :: Nh_siz
    ! Spatial distributions in 1d:
@@ -3541,6 +3646,8 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
                                                             Distr_SHI_Theta, Distr_SHI_Rc, Distr_SHI_Thetac, Distr_SHI_Phic ! SHI
    real(8), dimension(:), allocatable, intent(inout) :: Distr_a_X, Distr_a_Y, Distr_a_Z, Distr_a_R, Distr_a_L, &
                                                             Distr_a_Theta, Distr_a_Rc, Distr_a_Thetac, Distr_a_Phic ! atom
+   real(8), dimension(:), allocatable, intent(inout) :: Distr_mu_X, Distr_mu_Y, Distr_mu_Z, Distr_mu_R, Distr_mu_L, Distr_mu_Theta, &
+                                                            Distr_mu_Rc, Distr_mu_Thetac, Distr_mu_Phic ! muon
    ! Spatial distributions in 2d:
    real(8), dimension(:,:), allocatable, intent(inout) :: Distr_ph_XY, Distr_ph_YZ, Distr_ph_XZ, Distr_ph_RL, Distr_ph_RTheta, Distr_ph_LTheta
    real(8), dimension(:,:), allocatable, intent(inout) :: Distr_ph_RcThc, Distr_ph_RcPhic, Distr_ph_ThcPhic  ! photon
@@ -3554,6 +3661,8 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    real(8), dimension(:,:), allocatable, intent(inout) :: Distr_SHI_RcThc, Distr_SHI_RcPhic, Distr_SHI_ThcPhic  ! SHI
    real(8), dimension(:,:), allocatable, intent(inout) :: Distr_a_XY, Distr_a_YZ, Distr_a_XZ, Distr_a_RL, Distr_a_RTheta, Distr_a_LTheta
    real(8), dimension(:,:), allocatable, intent(inout) :: Distr_a_RcThc, Distr_a_RcPhic, Distr_a_ThcPhic  ! atom
+   real(8), dimension(:,:), allocatable, intent(inout) :: Distr_mu_XY, Distr_mu_YZ, Distr_mu_XZ, Distr_mu_RL, Distr_mu_RTheta, Distr_mu_LTheta, &
+                                                          Distr_mu_RcThc, Distr_mu_RcPhic, Distr_mu_ThcPhic  ! muon
    ! Spatial distributions in 3d:
    real(8), dimension(:,:,:), allocatable, intent(inout) :: Distr_ph_XYZ, Distr_ph_RLTheta, Distr_ph_RcThcPhic ! photon
    real(8), dimension(:,:,:), allocatable, intent(inout) :: Distr_e_XYZ, Distr_e_RLTheta, Distr_e_RcThcPhic ! electron
@@ -3561,6 +3670,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    real(8), dimension(:,:,:,:), allocatable, intent(inout) :: Distr_h_XYZ, Distr_h_RLTheta, Distr_h_RcThcPhic ! hole
    real(8), dimension(:,:,:), allocatable, intent(inout) :: Distr_SHI_XYZ, Distr_SHI_RLTheta, Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable, intent(inout) :: Distr_a_XYZ, Distr_a_RLTheta, Distr_a_RcThcPhic ! atom
+   real(8), dimension(:,:,:), allocatable, intent(inout) :: Distr_mu_XYZ, Distr_mu_RLTheta, Distr_mu_RcThcPhic ! muon
 
    ! 1d data:
    allocate(Distr_ph_X(Nsiz(2)), source = 0.0d0)
@@ -3569,6 +3679,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_X(Nh_siz,Nsiz(2)), source = 0.0d0)
    allocate(Distr_SHI_X(Nsiz(2)), source = 0.0d0)
    allocate(Distr_a_X(Nsiz(2)), source = 0.0d0)
+   allocate(Distr_mu_X(Nsiz(2)), source = 0.0d0)
    
    allocate(Distr_ph_Y(Nsiz(3)), source = 0.0d0)
    allocate(Distr_e_Y(Nsiz(3)), source = 0.0d0)
@@ -3576,6 +3687,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_Y(Nh_siz,Nsiz(3)), source = 0.0d0)
    allocate(Distr_SHI_Y(Nsiz(3)), source = 0.0d0)
    allocate(Distr_a_Y(Nsiz(3)), source = 0.0d0)
+   allocate(Distr_mu_Y(Nsiz(3)), source = 0.0d0)
    
    allocate(Distr_ph_Z(Nsiz(4)), source = 0.0d0)
    allocate(Distr_e_Z(Nsiz(4)), source = 0.0d0)
@@ -3583,6 +3695,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_Z(Nh_siz,Nsiz(4)), source = 0.0d0)
    allocate(Distr_SHI_Z(Nsiz(4)), source = 0.0d0)
    allocate(Distr_a_Z(Nsiz(4)), source = 0.0d0)
+   allocate(Distr_mu_Z(Nsiz(4)), source = 0.0d0)
 
    allocate(Distr_ph_R(Nsiz(5)), source = 0.0d0)
    allocate(Distr_e_R(Nsiz(5)), source = 0.0d0)
@@ -3590,6 +3703,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_R(Nh_siz,Nsiz(5)), source = 0.0d0)
    allocate(Distr_SHI_R(Nsiz(5)), source = 0.0d0)
    allocate(Distr_a_R(Nsiz(5)), source = 0.0d0)
+   allocate(Distr_mu_R(Nsiz(5)), source = 0.0d0)
    
    allocate(Distr_ph_L(Nsiz(6)), source = 0.0d0)
    allocate(Distr_e_L(Nsiz(6)), source = 0.0d0)
@@ -3597,6 +3711,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_L(Nh_siz,Nsiz(6)), source = 0.0d0)
    allocate(Distr_SHI_L(Nsiz(6)), source = 0.0d0)
    allocate(Distr_a_L(Nsiz(6)), source = 0.0d0)
+   allocate(Distr_mu_L(Nsiz(6)), source = 0.0d0)
    
    allocate(Distr_ph_Theta(Nsiz(7)), source = 0.0d0)
    allocate(Distr_e_Theta(Nsiz(7)), source = 0.0d0)
@@ -3604,6 +3719,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_Theta(Nh_siz,Nsiz(7)), source = 0.0d0)
    allocate(Distr_SHI_Theta(Nsiz(7)), source = 0.0d0)
    allocate(Distr_a_Theta(Nsiz(7)), source = 0.0d0)
+   allocate(Distr_mu_Theta(Nsiz(7)), source = 0.0d0)
    
    allocate(Distr_ph_Rc(Nsiz(8)), source = 0.0d0)
    allocate(Distr_e_Rc(Nsiz(8)), source = 0.0d0)
@@ -3611,6 +3727,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_Rc(Nh_siz,Nsiz(8)), source = 0.0d0)
    allocate(Distr_SHI_Rc(Nsiz(8)), source = 0.0d0)
    allocate(Distr_a_Rc(Nsiz(8)), source = 0.0d0)
+   allocate(Distr_mu_Rc(Nsiz(8)), source = 0.0d0)
    
    allocate(Distr_ph_Thetac(Nsiz(9)), source = 0.0d0)
    allocate(Distr_e_Thetac(Nsiz(9)), source = 0.0d0)
@@ -3618,6 +3735,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_Thetac(Nh_siz,Nsiz(9)), source = 0.0d0)
    allocate(Distr_SHI_Thetac(Nsiz(9)), source = 0.0d0)
    allocate(Distr_a_Thetac(Nsiz(9)), source = 0.0d0)
+   allocate(Distr_mu_Thetac(Nsiz(9)), source = 0.0d0)
 
    allocate(Distr_ph_Phic(Nsiz(10)), source = 0.0d0)
    allocate(Distr_e_Phic(Nsiz(10)), source = 0.0d0)
@@ -3625,6 +3743,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_Phic(Nh_siz,Nsiz(10)), source = 0.0d0)
    allocate(Distr_SHI_Phic(Nsiz(10)), source = 0.0d0)
    allocate(Distr_a_Phic(Nsiz(10)), source = 0.0d0)
+   allocate(Distr_mu_Phic(Nsiz(10)), source = 0.0d0)
    
    ! 2d data:
    allocate(Distr_ph_XY(Nsiz1(1),Nsiz2(1)), source = 0.0d0)
@@ -3633,6 +3752,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_XY(Nh_siz,Nsiz1(1),Nsiz2(1)), source = 0.0d0)
    allocate(Distr_SHI_XY(Nsiz1(1),Nsiz2(1)), source = 0.0d0)
    allocate(Distr_a_XY(Nsiz1(1),Nsiz2(1)), source = 0.0d0)
+   allocate(Distr_mu_XY(Nsiz1(1),Nsiz2(1)), source = 0.0d0)
    
    allocate(Distr_ph_XZ(Nsiz1(2),Nsiz2(2)), source = 0.0d0)
    allocate(Distr_e_XZ(Nsiz1(2),Nsiz2(2)), source = 0.0d0)
@@ -3640,6 +3760,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_XZ(Nh_siz,Nsiz1(2),Nsiz2(2)), source = 0.0d0)
    allocate(Distr_SHI_XZ(Nsiz1(2),Nsiz2(2)), source = 0.0d0)
    allocate(Distr_a_XZ(Nsiz1(2),Nsiz2(2)), source = 0.0d0)
+   allocate(Distr_mu_XZ(Nsiz1(2),Nsiz2(2)), source = 0.0d0)
    
    allocate(Distr_ph_YZ(Nsiz1(3),Nsiz2(3)), source = 0.0d0)
    allocate(Distr_e_YZ(Nsiz1(3),Nsiz2(3)), source = 0.0d0)
@@ -3647,6 +3768,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_YZ(Nh_siz,Nsiz1(3),Nsiz2(3)), source = 0.0d0)
    allocate(Distr_SHI_YZ(Nsiz1(3),Nsiz2(3)), source = 0.0d0)
    allocate(Distr_a_YZ(Nsiz1(3),Nsiz2(3)), source = 0.0d0)
+   allocate(Distr_mu_YZ(Nsiz1(3),Nsiz2(3)), source = 0.0d0)
 
    allocate(Distr_ph_RL(Nsiz1(4),Nsiz2(4)), source = 0.0d0)
    allocate(Distr_e_RL(Nsiz1(4),Nsiz2(4)), source = 0.0d0)
@@ -3654,6 +3776,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_RL(Nh_siz,Nsiz1(4),Nsiz2(4)), source = 0.0d0)
    allocate(Distr_SHI_RL(Nsiz1(4),Nsiz2(4)), source = 0.0d0)
    allocate(Distr_a_RL(Nsiz1(4),Nsiz2(4)), source = 0.0d0)
+   allocate(Distr_mu_RL(Nsiz1(4),Nsiz2(4)), source = 0.0d0)
 
    allocate(Distr_ph_RTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    allocate(Distr_e_RTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
@@ -3661,6 +3784,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_RTheta(Nh_siz,Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    allocate(Distr_SHI_RTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    allocate(Distr_a_RTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
+   allocate(Distr_mu_RTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    
    allocate(Distr_ph_LTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    allocate(Distr_e_LTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
@@ -3668,6 +3792,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_LTheta(Nh_siz,Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    allocate(Distr_SHI_LTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    allocate(Distr_a_LTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
+   allocate(Distr_mu_LTheta(Nsiz1(5),Nsiz2(5)), source = 0.0d0)
    
    allocate(Distr_ph_RcThc(Nsiz1(6),Nsiz2(6)), source = 0.0d0)
    allocate(Distr_e_RcThc(Nsiz1(6),Nsiz2(6)), source = 0.0d0)
@@ -3675,6 +3800,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_RcThc(Nh_siz,Nsiz1(6),Nsiz2(6)), source = 0.0d0)
    allocate(Distr_SHI_RcThc(Nsiz1(6),Nsiz2(6)), source = 0.0d0)
    allocate(Distr_a_RcThc(Nsiz1(6),Nsiz2(6)), source = 0.0d0)
+   allocate(Distr_mu_RcThc(Nsiz1(6),Nsiz2(6)), source = 0.0d0)
    
    allocate(Distr_ph_RcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    allocate(Distr_e_RcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
@@ -3682,6 +3808,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_RcPhic(Nh_siz,Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    allocate(Distr_SHI_RcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    allocate(Distr_a_RcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
+   allocate(Distr_mu_RcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    
    allocate(Distr_ph_ThcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    allocate(Distr_e_ThcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
@@ -3689,6 +3816,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_ThcPhic(Nh_siz,Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    allocate(Distr_SHI_ThcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    allocate(Distr_a_ThcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
+   allocate(Distr_mu_ThcPhic(Nsiz1(7),Nsiz2(7)), source = 0.0d0)
    
    ! 3d data:
    allocate(Distr_ph_XYZ(Nsiz1(8),Nsiz2(8),Nsiz3(8)), source = 0.0d0)
@@ -3697,6 +3825,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_XYZ(Nh_siz,Nsiz1(8),Nsiz2(8),Nsiz3(8)), source = 0.0d0)
    allocate(Distr_SHI_XYZ(Nsiz1(8),Nsiz2(8),Nsiz3(8)), source = 0.0d0)
    allocate(Distr_a_XYZ(Nsiz1(8),Nsiz2(8),Nsiz3(8)), source = 0.0d0)
+   allocate(Distr_mu_XYZ(Nsiz1(8),Nsiz2(8),Nsiz3(8)), source = 0.0d0)
    
    allocate(Distr_ph_RLTheta(Nsiz1(9),Nsiz2(9),Nsiz3(9)), source = 0.0d0)
    allocate(Distr_e_RLTheta(Nsiz1(9),Nsiz2(9),Nsiz3(9)), source = 0.0d0)
@@ -3704,6 +3833,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_RLTheta(Nh_siz,Nsiz1(9),Nsiz2(9),Nsiz3(9)), source = 0.0d0)
    allocate(Distr_SHI_RLTheta(Nsiz1(9),Nsiz2(9),Nsiz3(9)), source = 0.0d0)
    allocate(Distr_a_RLTheta(Nsiz1(9),Nsiz2(9),Nsiz3(9)), source = 0.0d0)
+   allocate(Distr_mu_RLTheta(Nsiz1(9),Nsiz2(9),Nsiz3(9)), source = 0.0d0)
 
    allocate(Distr_ph_RcThcPhic(Nsiz1(10),Nsiz2(10),Nsiz3(10)), source = 0.0d0)
    allocate(Distr_e_RcThcPhic(Nsiz1(10),Nsiz2(10),Nsiz3(10)), source = 0.0d0)
@@ -3711,6 +3841,7 @@ subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
    allocate(Distr_h_RcThcPhic(Nh_siz,Nsiz1(10),Nsiz2(10),Nsiz3(10)), source = 0.0d0)
    allocate(Distr_SHI_RcThcPhic(Nsiz1(10),Nsiz2(10),Nsiz3(10)), source = 0.0d0)
    allocate(Distr_a_RcThcPhic(Nsiz1(10),Nsiz2(10),Nsiz3(10)), source = 0.0d0)
+   allocate(Distr_mu_RcThcPhic(Nsiz1(10),Nsiz2(10),Nsiz3(10)), source = 0.0d0)
 end subroutine allocate_output_arrays
 
 
@@ -4035,21 +4166,22 @@ subroutine allocate_output(used_target, numpar, out_data)
    ! Allocate the arrays when needed:
    if (.not.allocated(out_data%Spectrum_ph)) then    ! all spectra
       call allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
-            out_data%Spectrum_ph, out_data%Spectrum_e, out_data%Spectrum_p, out_data%Spectrum_h, out_data%Spectrum_SHI, &
-            out_data%Spectra_ph_X, out_data%Spectra_e_X, out_data%Spectra_p_X, out_data%Spectra_h_X, out_data%Spectra_SHI_X, &
-            out_data%Spectra_ph_Y, out_data%Spectra_e_Y, out_data%Spectra_p_Y, out_data%Spectra_h_Y, out_data%Spectra_SHI_Y, &
-            out_data%Spectra_ph_Z, out_data%Spectra_e_Z, out_data%Spectra_p_Z, out_data%Spectra_h_Z, out_data%Spectra_SHI_Z, &
-            out_data%Spectra_ph_R, out_data%Spectra_e_R, out_data%Spectra_p_R, out_data%Spectra_h_R, out_data%Spectra_SHI_R      ) ! below
+       out_data%Spectrum_ph, out_data%Spectrum_e, out_data%Spectrum_p, out_data%Spectrum_h, out_data%Spectrum_SHI, out_data%Spectrum_mu, &
+       out_data%Spectra_ph_X, out_data%Spectra_e_X, out_data%Spectra_p_X, out_data%Spectra_h_X, out_data%Spectra_SHI_X, out_data%Spectra_mu_X, &
+       out_data%Spectra_ph_Y, out_data%Spectra_e_Y, out_data%Spectra_p_Y, out_data%Spectra_h_Y, out_data%Spectra_SHI_Y, out_data%Spectra_mu_Y, &
+       out_data%Spectra_ph_Z, out_data%Spectra_e_Z, out_data%Spectra_p_Z, out_data%Spectra_h_Z, out_data%Spectra_SHI_Z, out_data%Spectra_mu_Z, &
+       out_data%Spectra_ph_R, out_data%Spectra_e_R, out_data%Spectra_p_R, out_data%Spectra_h_R, out_data%Spectra_SHI_R, out_data%Spectra_mu_R &
+            ) ! below
    endif
 
    ! Allocate velosity theta distributions:
    if (.not.allocated(out_data%Vel_theta_ph)) then   ! all velosity distributions
       call allocate_vel_theta_arrays(Nsiz_vel, Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3, &
-            out_data%Vel_theta_ph, out_data%Vel_theta_e, out_data%Vel_theta_p, out_data%Vel_theta_h, out_data%Vel_theta_SHI, &
-            out_data%Theta_ph_X, out_data%Theta_e_X, out_data%Theta_p_X, out_data%Theta_h_X, out_data%Theta_SHI_X, &
-            out_data%Theta_ph_Y, out_data%Theta_e_Y, out_data%Theta_p_Y, out_data%Theta_h_Y, out_data%Theta_SHI_Y, &
-            out_data%Theta_ph_Z, out_data%Theta_e_Z, out_data%Theta_p_Z, out_data%Theta_h_Z, out_data%Theta_SHI_Z, &
-            out_data%Theta_ph_R, out_data%Theta_e_R, out_data%Theta_p_R, out_data%Theta_h_R, out_data%Theta_SHI_R  )    ! below
+            out_data%Vel_theta_ph, out_data%Vel_theta_e, out_data%Vel_theta_p, out_data%Vel_theta_h, out_data%Vel_theta_SHI, out_data%Vel_theta_mu, &
+            out_data%Theta_ph_X, out_data%Theta_e_X, out_data%Theta_p_X, out_data%Theta_h_X, out_data%Theta_SHI_X, out_data%Theta_mu_X, &
+            out_data%Theta_ph_Y, out_data%Theta_e_Y, out_data%Theta_p_Y, out_data%Theta_h_Y, out_data%Theta_SHI_Y, out_data%Theta_mu_Y, &
+            out_data%Theta_ph_Z, out_data%Theta_e_Z, out_data%Theta_p_Z, out_data%Theta_h_Z, out_data%Theta_SHI_Z, out_data%Theta_mu_Z, &
+            out_data%Theta_ph_R, out_data%Theta_e_R, out_data%Theta_p_R, out_data%Theta_h_R, out_data%Theta_SHI_R, out_data%Theta_mu_R )    ! below
    endif
 
    ! Spatial distributions:
@@ -4067,6 +4199,8 @@ subroutine allocate_output(used_target, numpar, out_data)
        out_data%Distr_SHI_Theta, out_data%Distr_SHI_Rc, out_data%Distr_SHI_Thetac, out_data%Distr_SHI_Phic, &
        out_data%Distr_a_X, out_data%Distr_a_Y, out_data%Distr_a_Z, out_data%Distr_a_R, out_data%Distr_a_L, &
        out_data%Distr_a_Theta, out_data%Distr_a_Rc, out_data%Distr_a_Thetac, out_data%Distr_a_Phic, &
+       out_data%Distr_mu_X, out_data%Distr_mu_Y, out_data%Distr_mu_Z, out_data%Distr_mu_R, &
+       out_data%Distr_mu_L, out_data%Distr_mu_Theta, out_data%Distr_mu_Rc, out_data%Distr_mu_Thetac, out_data%Distr_mu_Phic, &
        out_data%Distr_ph_XY, out_data%Distr_ph_YZ, out_data%Distr_ph_XZ, out_data%Distr_ph_RL, out_data%Distr_ph_RTheta, &
        out_data%Distr_ph_LTheta, out_data%Distr_ph_RcThc, out_data%Distr_ph_RcPhic, out_data%Distr_ph_ThcPhic, &
        out_data%Distr_e_XY, out_data%Distr_e_YZ, out_data%Distr_e_XZ, out_data%Distr_e_RL, out_data%Distr_e_RTheta, &
@@ -4081,12 +4215,15 @@ subroutine allocate_output(used_target, numpar, out_data)
        out_data%Distr_a_XY, out_data%Distr_a_YZ, out_data%Distr_a_XZ, out_data%Distr_a_RL, &
        out_data%Distr_a_RTheta, out_data%Distr_a_LTheta, out_data%Distr_a_RcThc, &
        out_data%Distr_a_RcPhic, out_data%Distr_a_ThcPhic, &
+       out_data%Distr_mu_XY, out_data%Distr_mu_YZ, out_data%Distr_mu_XZ, out_data%Distr_mu_RL, out_data%Distr_mu_RTheta, &
+       out_data%Distr_mu_LTheta, out_data%Distr_mu_RcThc, out_data%Distr_mu_RcPhic, out_data%Distr_mu_ThcPhic, &
        out_data%Distr_ph_XYZ, out_data%Distr_ph_RLTheta, out_data%Distr_ph_RcThcPhic, &
        out_data%Distr_e_XYZ, out_data%Distr_e_RLTheta, out_data%Distr_e_RcThcPhic, &
        out_data%Distr_p_XYZ, out_data%Distr_p_RLTheta, out_data%Distr_p_RcThcPhic, &
        out_data%Distr_h_XYZ, out_data%Distr_h_RLTheta, out_data%Distr_h_RcThcPhic, &
        out_data%Distr_SHI_XYZ, out_data%Distr_SHI_RLTheta, out_data%Distr_SHI_RcThcPhic, &
-       out_data%Distr_a_XYZ, out_data%Distr_a_RLTheta, out_data%Distr_a_RcThcPhic )    ! below
+       out_data%Distr_a_XYZ, out_data%Distr_a_RLTheta, out_data%Distr_a_RcThcPhic, &
+       out_data%Distr_mu_XYZ, out_data%Distr_mu_RLTheta, out_data%Distr_mu_RcThcPhic )    ! below
    endif
    ! And for the energy arrays:
    if (.not.allocated(out_data%E_Distr_ph_X)) then
@@ -4103,6 +4240,8 @@ subroutine allocate_output(used_target, numpar, out_data)
        out_data%E_Distr_SHI_L, out_data%E_Distr_SHI_Theta, out_data%E_Distr_SHI_Rc, out_data%E_Distr_SHI_Thetac, out_data%E_Distr_SHI_Phic, &
        out_data%E_Distr_a_X, out_data%E_Distr_a_Y, out_data%E_Distr_a_Z, out_data%E_Distr_a_R, &
        out_data%E_Distr_a_L, out_data%E_Distr_a_Theta, out_data%E_Distr_a_Rc, out_data%E_Distr_a_Thetac, out_data%E_Distr_a_Phic, &
+       out_data%E_Distr_mu_X, out_data%E_Distr_mu_Y, out_data%E_Distr_mu_Z, out_data%E_Distr_mu_R, &
+       out_data%E_Distr_mu_L, out_data%E_Distr_mu_Theta, out_data%E_Distr_mu_Rc, out_data%E_Distr_mu_Thetac, out_data%E_Distr_mu_Phic, &
        out_data%E_Distr_ph_XY, out_data%E_Distr_ph_YZ, out_data%E_Distr_ph_XZ, out_data%E_Distr_ph_RL, &
        out_data%E_Distr_ph_RTheta, out_data%E_Distr_ph_LTheta, &
        out_data%E_Distr_ph_RcThc, out_data%E_Distr_ph_RcPhic, out_data%E_Distr_ph_ThcPhic, &
@@ -4121,12 +4260,16 @@ subroutine allocate_output(used_target, numpar, out_data)
        out_data%E_Distr_a_XY, out_data%E_Distr_a_YZ, out_data%E_Distr_a_XZ, &
        out_data%E_Distr_a_RL, out_data%E_Distr_a_RTheta, out_data%E_Distr_a_LTheta, &
        out_data%E_Distr_a_RcThc, out_data%E_Distr_a_RcPhic, out_data%E_Distr_a_ThcPhic, &
+       out_data%E_Distr_mu_XY, out_data%E_Distr_mu_YZ, out_data%E_Distr_mu_XZ, &
+       out_data%E_Distr_mu_RL, out_data%E_Distr_mu_RTheta, out_data%E_Distr_mu_LTheta, &
+       out_data%E_Distr_mu_RcThc, out_data%E_Distr_mu_RcPhic, out_data%E_Distr_mu_ThcPhic, &
        out_data%E_Distr_ph_XYZ, out_data%E_Distr_ph_RLTheta, out_data%E_Distr_ph_RcThcPhic, &
        out_data%E_Distr_e_XYZ, out_data%E_Distr_e_RLTheta, out_data%E_Distr_e_RcThcPhic, &
        out_data%E_Distr_p_XYZ, out_data%E_Distr_p_RLTheta, out_data%E_Distr_p_RcThcPhic, &
        out_data%E_Distr_h_XYZ, out_data%E_Distr_h_RLTheta, out_data%E_Distr_h_RcThcPhic, &
        out_data%E_Distr_SHI_XYZ, out_data%E_Distr_SHI_RLTheta, out_data%E_Distr_SHI_RcThcPhic, &
-       out_data%E_Distr_a_XYZ, out_data%E_Distr_a_RLTheta, out_data%E_Distr_a_RcThcPhic )    ! below
+       out_data%E_Distr_a_XYZ, out_data%E_Distr_a_RLTheta, out_data%E_Distr_a_RcThcPhic, &
+       out_data%E_Distr_mu_XYZ, out_data%E_Distr_mu_RLTheta, out_data%E_Distr_mu_RcThcPhic  )    ! below
    endif
    
 end subroutine allocate_output

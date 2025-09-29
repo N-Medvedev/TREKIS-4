@@ -27,7 +27,7 @@ subroutine get_CDF(numpar, used_target, Err)
    type(Error_handling), intent(inout) :: Err	! error log
    !---------------------------------------------------------------
    real(8), dimension(:), allocatable :: lambda, CDF_data
-   real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin, temp(3)
+   real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin, temp(3), N_at_mol
    integer :: i, j, k, m, Nat, Nsiz, FN, FN2, N_CDF, Reason, count_lines, N_elem, N_temp
    character(200) :: folder, folder_with_cdf, file_with_cdf, command, file_with_coefs, Path_valent, File_name
    logical :: file_exist, read_well
@@ -364,7 +364,22 @@ subroutine get_CDF(numpar, used_target, Err)
          Omega = w_plasma( 1d6*used_target%Material(i)%At_Dens/dble(SUM(used_target%Material(i)%Elements(:)%percentage)), &
                                          Mass=used_target%Material(i)%Mean_Mass )  ! module "CDF_Ritchi"
          call sum_rules(used_target%Material(i)%CDF_phonon%A,  used_target%Material(i)%CDF_phonon%E0, &
-                                used_target%Material(i)%CDF_phonon%Gamma, 1.0d-8, Omega, ksum, fsum)	! module "CDF_Ritchi"
+                                used_target%Material(i)%CDF_phonon%Gamma, 1.0d-8, Omega, ksum, fsum)  ! module "CDF_Ritchi"
+
+         select case (numpar%CDF_elast_Zeff) ! only in case of using the Chihara-like formalism:
+         case (2:3)  ! dynamical screening of the nucleus by electrons via form factors
+            N_at_mol = dble(SUM(used_target%Material(i)%Elements(:)%percentage))   ! number of atoms in a molecule
+            ! Renormalize to the number of atoms (exclude optical change, will be replaced by the screened charge in CS):
+            used_target%Material(i)%CDF_phonon%A(:) = used_target%Material(i)%CDF_phonon%A(:) * N_at_mol/ksum
+            ! Recalculate sum-rules to check:
+            call sum_rules(used_target%Material(i)%CDF_phonon%A,  used_target%Material(i)%CDF_phonon%E0, &
+                                used_target%Material(i)%CDF_phonon%Gamma, 1.0d-8, Omega, ksum, fsum)  ! module "CDF_Ritchi"
+         endselect
+
+         ! Parameters used for delta-CDF:
+         used_target%Material(i)%CDF_phonon%h_omega_e2 = (g_h/g_e)*(g_h/g_e)*Omega*dble(SUM(used_target%Material(i)%Elements(:)%percentage)) ! [eV^2]
+         used_target%Material(i)%CDF_phonon%h_omega_e2 = g_Pi*0.5d0*used_target%Material(i)%CDF_phonon%h_omega_e2 ! with coefficient to convert to "alpha"
+
          write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Na=', dble(SUM(used_target%Material(i)%Elements(:)%percentage)), ' F-sum rule:', fsum
          print*, '------------------------'
       else

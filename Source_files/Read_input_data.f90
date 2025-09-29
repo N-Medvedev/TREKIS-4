@@ -25,7 +25,7 @@ implicit none
 
 ! All paths to input data and databases are collected here within this module:
 character(50) :: m_databases, m_input_minimal, m_input_data, m_numerical_parameters, m_EADL, m_EPDL
-character(50) :: m_photon_CS, m_electron_CS, m_ion_CS, m_positron_CS, m_hole_CS
+character(50) :: m_photon_CS, m_electron_CS, m_ion_CS, m_positron_CS, m_hole_CS, m_muon_CS
 character(50) :: m_raw_EPDL, m_interpolated_Ph_CS, m_folder_materials
 character(50) :: m_folder_normalized_CDF, m_folder_DOS, m_folder_MD
 character(50) :: m_optical_data, m_fitted_coeffs, m_photon_Compton
@@ -34,6 +34,7 @@ character(50) :: m_photon_pair, m_photon_Rayleigh, m_photon_absorption
 character(50) :: m_electron_inelast_CS, m_electron_elast_CS, m_electron_Brems_CS
 character(50) :: m_ion_inelast_CS, m_holes_inelast_CS, m_holes_elast_CS
 character(50) :: m_positron_inelast_CS, m_positron_elast_CS, m_positron_Brems_CS, m_positron_annihilation
+character(50) :: m_muon_inelast_CS, m_muon_elast_CS, m_muon_Brems_CS, m_muon_pair
 
 
 ! All input folders / directories:
@@ -43,6 +44,7 @@ parameter(m_electron_CS = 'Electron_cross_sections')	! folder with all electron 
 parameter(m_hole_CS = 'Valence_hole_cross_sections')	! folder with all valence holes cross sections and MFPs
 parameter(m_ion_CS = 'Ion_cross_sections')	! folder with all ion cross sections and MFPs
 parameter(m_positron_CS = 'Positron_cross_sections')	! folder with all positron cross sections and MFPs
+parameter(m_muon_CS = 'Muon_cross_sections')	! folder with all muon cross sections and MFPs
 parameter(m_folder_materials = 'Materials_parameters')	! folder with all material parameters files (chemical formalae, density, etc.)
 parameter(m_folder_normalized_CDF = 'Normalized_CDF')	! folder with normalized CDFdata for all elements comvmerted from CSs extracted from EPDL
 parameter(m_folder_DOS = 'DOS')	    ! folder with all material DOSes
@@ -81,7 +83,10 @@ parameter(m_positron_Brems_CS = 'Positron_Bremsstrahlung_CS')	! part of name of 
 parameter(m_positron_annihilation = 'Positron_annihilation_CS')	! part of name of files with positron annihilation
 parameter(m_holes_inelast_CS = 'Holes_inelastic_CS')	! part of name of files with valence hole inelastic CS
 parameter(m_holes_elast_CS = 'Holes_elastic_CS')	! part of name of files with valence hole elastic CS
-
+parameter(m_muon_inelast_CS = 'Muon_inelastic_CS')	! part of name of files with muon inelastic CS
+parameter(m_muon_elast_CS = 'Muon_elastic_CS')	! part of name of files with muon elastic CS
+parameter(m_muon_Brems_CS = 'Muon_Bremsstrahlung_CS')	! part of name of files with muon Bremsstrahlung CS
+parameter(m_muon_pair = 'Muon_Pair_CS')	! part of name of files with Muon pair production (not ready)
 
  contains
 
@@ -1312,7 +1317,7 @@ subroutine Read_single_file_input(FN, File_name, used_target, bunch, numpar, Err
 
       !----------------------
       case ('Holes', 'HOLES', 'holes', '::: MODELS FOR HOLES :::')
-         ! 9) Optional numerical details for positrons
+         ! 9) Optional numerical details for holes
          call read_optional_holes_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
          if (.not. read_well) then
             stay_in_the_loop = .false. ! time to leave
@@ -1320,8 +1325,17 @@ subroutine Read_single_file_input(FN, File_name, used_target, bunch, numpar, Err
          endif
 
       !----------------------
+      case ('Muons', 'MUONS', 'muons', 'muon', 'Muon', 'MUON', '::: MODELS FOR MUONS :::')
+         ! 10) Optional numerical details for muons
+         call read_optional_muons_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
+         if (.not. read_well) then
+            stay_in_the_loop = .false. ! time to leave
+            exit ML  ! exit the main loop
+         endif
+
+      !----------------------
       case ('CDF', 'cdf', '::: MODELS FOR CDF :::')
-         ! 10) Optional numerical details for CDF
+         ! 11) Optional numerical details for CDF
          call read_optional_CDF_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
          if (.not. read_well) then
             stay_in_the_loop = .false. ! time to leave
@@ -1330,7 +1344,7 @@ subroutine Read_single_file_input(FN, File_name, used_target, bunch, numpar, Err
 
       !----------------------
       case ('Quenching', 'QUENCHING', 'quenching', 'MD', '::: MODELS FOR MD :::')
-         ! 11) Optional numerical details for CDF
+         ! 12) Optional numerical details for CDF
          call read_optional_MD_numerics(FN, File_name, numpar, count_lines, read_well, Err)    ! below
          if (.not. read_well) then
             stay_in_the_loop = .false. ! time to leave
@@ -1818,6 +1832,66 @@ subroutine read_optional_electrons_numerics(FN, File_name, numpar, count_lines, 
 
 end subroutine read_optional_electrons_numerics
 
+
+
+subroutine read_optional_muons_numerics(FN, File_name, numpar, count_lines, read_well, Err)
+   integer, intent(in) :: FN	! file number to read from
+   character(*), intent(in) :: File_name	! file name with input data
+   type(Num_par), intent(inout) :: numpar	! all numerical parametersn
+   integer, intent(inout) :: count_lines  ! number of the read line
+   logical, intent(inout) :: read_well
+   type(Error_handling), intent(inout) :: Err	! error log
+   !------------------------
+   integer :: Reason
+   character(200) :: Error_descript
+
+
+   ! inelastic scattering: 0=excluded, 1=relativ.CDF, 2=RBEB, 3=delta, 4=nonrelativ.CDF (DO NOT USE!), 5=SPdelta
+   read(FN,*,IOSTAT=Reason) numpar%Mu_inelast
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF
+   read(FN,*,IOSTAT=Reason) numpar%Mu_elastic
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Bremsstrahlung: 0=excluded, 1=BHW
+   read(FN,*,IOSTAT=Reason) numpar%Mu_Brems
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! Electron-positron pair creation: 0=excluded, 1= ... (NOT READY YET!)
+   read(FN,*,IOSTAT=Reason) numpar%Mu_Pairs
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! [eV] Cut-off energy (muons with lower energies are excluded from calculation):
+   read(FN,*,IOSTAT=Reason) numpar%Mu_Cutoff
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+end subroutine read_optional_muons_numerics
 
 
 subroutine read_mandatory_output(FN, File_name, numpar, count_lines, read_well, Err)
@@ -2420,7 +2494,7 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%CDF_plasmon = 0     ! Include plasmon integration limit (0=no, 1=yes)
    numpar%CDF_Eeq_factor = 10.0d0 ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (INELASTIC)
    numpar%CDF_Eeq_elast= 10.0d0   ! coeff.k where to switch from nonrelativistic to Delta CDF for ELASTIC scattering: E = k * Wmin
-   numpar%CDF_elast_Zeff = 0      ! use for target atoms Zeff (set 0), or Z=1 (set 1)
+   numpar%CDF_elast_Zeff = 0      ! use for target atoms Z=Zeff (set 0), Z=1 (set 1), Z=Z^2/CDF_e (set 2)
    numpar%CDF_int_n_inelastE = 50  ! n grid points for INELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
    numpar%CDF_int_n_inelastQ = 100 ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
    numpar%CDF_int_n_elastE = 10  ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
@@ -2433,6 +2507,13 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%H_inelast = 1 ! Valence hole inelastic scattering: 0=excluded, 1=CDF, 2=BEB, 3=Delta
    numpar%H_elast = 1   ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF (NOT READY YET!), 5=SP-CDF
    numpar%H_Cutoff = 0.1d0       ! [eV] Cut-off energy (holes with lower energies are excluded from calculation)
+
+   !::: MODELS FOR MUONS :::
+   numpar%Mu_inelast = 3      ! inelastic scattering: 0=excluded, 1=CDF, 2=RBEB
+   numpar%Mu_elastic = 1      ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF
+   numpar%Mu_Brems = 1        ! Bremsstrahlung: 0=excluded, 1= BHW
+   numpar%Mu_Pairs = 0        ! Electron-positron pair creation: 0=excluded, 1= ... (not ready)
+   numpar%Mu_Cutoff = 0.1d0   ! [eV] Cut-off energy (electrons with lower energies are excluded from calculation)
 
    ! ::: MD MODEL PARAMETERS :::
    ! Use quenching in MD (T=true; F=false), when to start [fs], how often nullify velocities [fs]:

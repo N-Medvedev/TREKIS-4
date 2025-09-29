@@ -34,6 +34,7 @@ interface extend_MC_array
    module procedure extend_MC_array_Positrons
    module procedure extend_MC_array_Atoms
    module procedure extend_MC_array_SHIs
+   module procedure extend_MC_array_Muons
 end interface extend_MC_array
 
 interface copy_MC_array
@@ -42,6 +43,7 @@ interface copy_MC_array
    module procedure copy_MC_array_hole
    module procedure copy_MC_array_positron
    module procedure copy_MC_array_electron
+   module procedure copy_MC_array_muon
 end interface copy_MC_array
 
 
@@ -872,7 +874,7 @@ end subroutine flight_time_to_boundary
             
             ! Check consistency:
             if (all( abs(n(:)) < m_tollerance_eps)) then ! try another way: find the nearest boundary
-               if (present(INFO)) INFO = 1  ! particle is too far from a rectangle bondary
+               if (present(INFO)) INFO = 1  ! particle is too far from a rectangle boundary
 !                print*, 'ERROR in define_normal_to_surface: ', trim(adjustl(message_in))
 !                print*, 'Cannot find the surface the particles is crossing'
 !                print*, 'n=', n
@@ -896,7 +898,14 @@ end subroutine flight_time_to_boundary
                   n(3) = 1.0d0
                endselect
             endif
-            
+
+            ! Update INFO:
+            if (all( abs(n(:)) < m_tollerance_eps)) then ! after trying another way
+               if (present(INFO)) INFO = 1  ! particle is too far from a rectangle boundary
+            else
+               if (present(INFO)) INFO = 0  ! everything is fine
+            endif
+
 !             print*, 'define_normal_to_surface 2', n, Zcr - ARRAY%Zstart, Zcr - ARRAY%Zend
             
             ! Rotate it to the lab.coordinate system:
@@ -1538,6 +1547,70 @@ end subroutine get_positron_flight_time
 
 
 
+subroutine get_muon_flight_time(used_target, numpar, Prtcl, no_scatternig) ! Find within which given particle is now
+   type(Matter), intent(in), target :: used_target   ! parameters of the target
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   type(Muon), intent(inout) :: Prtcl        ! muon as an object
+   logical, optional :: no_scatternig       ! recalculate the scattering event, or leave the old time
+   !-------------------------------------------
+   real(8) :: T  ! time and distance to the cross point
+   real(8) :: CS_total, MFP_total, Sampled_path  ! total cross section and MFP
+   real(8) :: V ! [A/fs] velosity
+   real(8) :: eps
+   type(Target_atoms), pointer :: matter
+   logical :: do_scattering
+
+   eps = 1.0d-12    ! energy precision
+
+   if (abs(Prtcl%Ekin) < eps) then ! muon with zero energy cannot fly
+      Prtcl%ti = 1.0d26
+      Prtcl%t_sc = 1.0d25
+   else ! non-zero-energy muon can fly
+
+      ! Check how far it is from the border of the simulation box boundary:
+      call flight_time_to_boundary(used_target, numpar, Prtcl, T) ! module "MC_general_tools"
+      ! The time of the next event (for boundary crossing):
+      Prtcl%ti = Prtcl%t0 + T  ! [fs]
+
+      do_scattering = .true.   ! by default, recalculate the scattering time
+      if (present(no_scatternig) .or. ( abs(Prtcl%Ekin) < eps) ) then  ! electron with zero energy cannot scatter
+         if (no_scatternig) do_scattering = .false.
+      endif
+
+      if (do_scattering) then     ! recalculate scattering event time:
+         ! Now check the time to a scattering event:
+         if (Prtcl%in_target > 0) then    ! it is not in vacuum
+            ! Properties of the target material, inside of which the particle is:
+            matter => used_target%Material(Prtcl%in_target)
+            ! a) get the total cross sections from all possible scattering channels:
+            CS_total = total_CS_from_chennels(Prtcl%Ekin, matter%Muon_inelastic_total%E, matter%Muon_inelastic_total%Total, &
+                    E_array2=matter%Muon_elastic_total%E, CS_array2=matter%Muon_elastic_total%Total, &
+                    E_array3=matter%Muon_Brems_total%E, CS_array3=matter%Muon_Brems_total%Total) ! module "CS_general_tools"
+            ! b) get the total mean free path:
+            MFP_total = MFP_from_sigma(CS_total, matter%At_Dens)  ! module "CS_general_tools"
+            ! Sample free flight:
+            Sampled_path = sample_Poisson(MFP_total)  ! module "Little_subroutines"
+            ! c) get the total flight time:
+            V = sqrt( SUM(Prtcl%V(:)*Prtcl%V(:)) )   ! Positron speed is the speed of light [A/fs]
+            T =  Time_from_MFP(Sampled_path, V) ! [fs] module "CS_general_tools"
+            ! The time of the next event (for scattering):
+            Prtcl%t_sc = Prtcl%t0 + T  ! [fs]
+         else ! not inside of any target
+            Prtcl%t_sc = 1.0d25    ! no scattering in vacuum
+         endif
+      endif ! do_scattering
+
+      ! Check which event is shorter: boundary crossing or scattering:
+      if (Prtcl%ti >= Prtcl%t_sc) Prtcl%ti = Prtcl%t_sc    ! the next event will be scattering
+   endif !  (abs(Prtcl%Ekin) < eps))
+
+   ! If user provided cut-off energy, check if positron crossed it:
+   call check_cut_off(numpar%Mu_Cutoff, Prtcl)   ! below
+
+   nullify(matter)
+end subroutine get_muon_flight_time
+
+
 subroutine get_SHI_flight_time(used_target, numpar, Prtcl) ! Find within which given particle is now
    type(Matter), intent(in), target :: used_target   ! parameters of the target
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
@@ -1835,7 +1908,10 @@ subroutine remove_particle_from_MC_array(N_particles, i_remove, Prtcl)
             Prtcl(i)%Force(:) = Prtcl(i+1)%Force(:) 
          type is (Positron)
             Prtcl(i)%A(:) = Prtcl(i+1)%A(:) 
-            Prtcl(i)%Force(:) = Prtcl(i+1)%Force(:) 
+            Prtcl(i)%Force(:) = Prtcl(i+1)%Force(:)
+         type is (Muon)
+            Prtcl(i)%A(:) = Prtcl(i+1)%A(:)
+            Prtcl(i)%Force(:) = Prtcl(i+1)%Force(:)
          type is (Hole)
             Prtcl(i)%A(:) = Prtcl(i+1)%A(:) 
             Prtcl(i)%Force(:) = Prtcl(i+1)%Force(:) 
@@ -2244,6 +2320,99 @@ end subroutine extend_MC_array_Positrons
 
 
 
+pure subroutine extend_MC_array_Muons(Prtcl)
+   type(Muon), dimension(:), allocatable, intent(inout) :: Prtcl    ! all electrons as objects
+   type(Muon), dimension(:), allocatable :: Prtcl_temp     ! temporary aray of electrons
+   integer :: siz, siz2, j
+   siz = size(Prtcl)
+   ! Allocate the temporary array to transiently store data:
+   allocate(Prtcl_temp(siz))
+
+   Prtcl_temp(:)%active = Prtcl(:)%active
+   Prtcl_temp(:)%generation = Prtcl(:)%generation
+   Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin
+   Prtcl_temp(:)%t0 = Prtcl(:)%t0
+   Prtcl_temp(:)%ti = Prtcl(:)%ti
+   Prtcl_temp(:)%t_sc = Prtcl(:)%t_sc
+   Prtcl_temp(:)%R(1) = Prtcl(:)%R(1)
+   Prtcl_temp(:)%R(2) = Prtcl(:)%R(2)
+   Prtcl_temp(:)%R(3) = Prtcl(:)%R(3)
+   Prtcl_temp(:)%S(1) = Prtcl(:)%S(1)
+   Prtcl_temp(:)%S(2) = Prtcl(:)%S(2)
+   Prtcl_temp(:)%S(3) = Prtcl(:)%S(3)
+   Prtcl_temp(:)%V(1) = Prtcl(:)%V(1)
+   Prtcl_temp(:)%V(2) = Prtcl(:)%V(2)
+   Prtcl_temp(:)%V(3) = Prtcl(:)%V(3)
+   Prtcl_temp(:)%SV(1) = Prtcl(:)%SV(1)
+   Prtcl_temp(:)%SV(2) = Prtcl(:)%SV(2)
+   Prtcl_temp(:)%SV(3) = Prtcl(:)%SV(3)
+   Prtcl_temp(:)%R0(1) = Prtcl(:)%R0(1)
+   Prtcl_temp(:)%R0(2) = Prtcl(:)%R0(2)
+   Prtcl_temp(:)%R0(3) = Prtcl(:)%R0(3)
+   Prtcl_temp(:)%S0(1) = Prtcl(:)%S0(1)
+   Prtcl_temp(:)%S0(2) = Prtcl(:)%S0(2)
+   Prtcl_temp(:)%S0(3) = Prtcl(:)%S0(3)
+   Prtcl_temp(:)%V0(1) = Prtcl(:)%V0(1)
+   Prtcl_temp(:)%V0(2) = Prtcl(:)%V0(2)
+   Prtcl_temp(:)%V0(3) = Prtcl(:)%V0(3)
+   Prtcl_temp(:)%SV0(1) =Prtcl(:)%SV0(1)
+   Prtcl_temp(:)%SV0(2) =Prtcl(:)%SV0(2)
+   Prtcl_temp(:)%SV0(3) =Prtcl(:)%SV0(3)
+   Prtcl_temp(:)%Mass = Prtcl(:)%Mass
+
+   call copy_MC_array(Prtcl_temp, Prtcl) ! below
+
+   siz2 = 2*siz
+   deallocate(Prtcl)
+   allocate(Prtcl(siz2))
+
+   ! Copy the data back into the arrays:
+   Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
+   Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
+   Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin
+   Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
+   Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
+   Prtcl(1:siz)%t_sc = Prtcl_temp(1:siz)%t_sc
+   Prtcl(1:siz)%R(1) = Prtcl_temp(1:siz)%R(1)
+   Prtcl(1:siz)%R(2) = Prtcl_temp(1:siz)%R(2)
+   Prtcl(1:siz)%R(3) = Prtcl_temp(1:siz)%R(3)
+   Prtcl(1:siz)%S(1) = Prtcl_temp(1:siz)%S(1)
+   Prtcl(1:siz)%S(2) = Prtcl_temp(1:siz)%S(2)
+   Prtcl(1:siz)%S(3) = Prtcl_temp(1:siz)%S(3)
+   Prtcl(1:siz)%V(1) = Prtcl_temp(1:siz)%V(1)
+   Prtcl(1:siz)%V(2) = Prtcl_temp(1:siz)%V(2)
+   Prtcl(1:siz)%V(3) = Prtcl_temp(1:siz)%V(3)
+   Prtcl(1:siz)%SV(1) = Prtcl_temp(1:siz)%SV(1)
+   Prtcl(1:siz)%SV(2) = Prtcl_temp(1:siz)%SV(2)
+   Prtcl(1:siz)%SV(3) = Prtcl_temp(1:siz)%SV(3)
+   Prtcl(1:siz)%R0(1) = Prtcl_temp(1:siz)%R0(1)
+   Prtcl(1:siz)%R0(2) = Prtcl_temp(1:siz)%R0(2)
+   Prtcl(1:siz)%R0(3) = Prtcl_temp(1:siz)%R0(3)
+   Prtcl(1:siz)%S0(1) = Prtcl_temp(1:siz)%S0(1)
+   Prtcl(1:siz)%S0(2) = Prtcl_temp(1:siz)%S0(2)
+   Prtcl(1:siz)%S0(3) = Prtcl_temp(1:siz)%S0(3)
+   Prtcl(1:siz)%V0(1) = Prtcl_temp(1:siz)%V0(1)
+   Prtcl(1:siz)%V0(2) = Prtcl_temp(1:siz)%V0(2)
+   Prtcl(1:siz)%V0(3) = Prtcl_temp(1:siz)%V0(3)
+   Prtcl(1:siz)%SV0(1) =Prtcl_temp(1:siz)%SV0(1)
+   Prtcl(1:siz)%SV0(2) =Prtcl_temp(1:siz)%SV0(2)
+   Prtcl(1:siz)%SV0(3) =Prtcl_temp(1:siz)%SV0(3)
+   Prtcl(1:siz)%Mass = Prtcl_temp(1:siz)%Mass
+
+   call copy_MC_array(Prtcl(1:siz), Prtcl_temp(1:siz)) ! below
+
+ ! All beyond are default to start with:
+   do j = siz+1, siz2
+      call set_default_particle(Prtcl(j))  ! above
+   enddo
+   ! clean up:
+   deallocate(Prtcl_temp)
+end subroutine extend_MC_array_Muons
+
+
+
 pure subroutine extend_MC_array_Atoms(Prtcl)
    type(Atom), dimension(:), allocatable, intent(inout) :: Prtcl    ! all electrons as objects 
    type(Atom), dimension(:), allocatable :: Prtcl_temp     ! temporary aray of electrons
@@ -2470,6 +2639,17 @@ pure subroutine copy_MC_array_hole(array1, array2)
    array1(:)%Sh = array2(:)%Sh
 !    array1(:)%valent = array2(:)%valent
 end subroutine copy_MC_array_hole
+
+pure subroutine copy_MC_array_muon(array1, array2)
+   type(Muon), dimension(:), intent(inout) :: array1
+   type(Muon), dimension(:), intent(inout) :: array2
+   array1(:)%A(1) = array2(:)%A(1)
+   array1(:)%A(2) = array2(:)%A(2)
+   array1(:)%A(3) = array2(:)%A(3)
+   array1(:)%Force(1) = array2(:)%Force(1)
+   array1(:)%Force(2) = array2(:)%Force(2)
+   array1(:)%Force(3) = array2(:)%Force(3)
+end subroutine copy_MC_array_muon
 
 pure subroutine copy_MC_array_positron(array1, array2)
    type(Positron), dimension(:), intent(inout) :: array1

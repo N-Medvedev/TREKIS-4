@@ -3,7 +3,7 @@
 # available at: https://github.com/N-Medvedev/TREKIS-4
 # The makefile compiles (type make) and makes an executable called TREKIS.x
 # This file was written by N.Medvedev 
-# in 2018-2024
+# in 2018-2025
 #----------------------------------------------------- 
 
 EXEPATH = .
@@ -58,7 +58,7 @@ else
 endif
 
 # list the files necessary for the compilation in the order of their dependencies
-OBJS = Universal_constants.o Geometries.o Little_subroutines.o Objects.o Variables.o Gnuplotting.o Periodic_table.o Dealing_with_files.o Dealing_with_EADL.o Dealing_with_cdf_files.o Read_numerical_parameters.o Relativity.o SHI_charge_state.o CS_general_tools.o CS_integration_limits.o CDF_Ritchi.o CDF_Mermin.o CDF_delta.o Dealing_with_XYZ_files.o MD_general_tools.o Dealing_with_LAMMPS.o Read_MD_parameters.o Read_input_data.o Dealing_with_DOS.o Initial_conditions.o CDF_get_from_data.o CS_photons_pair_creation.o CS_photons_Compton.o CS_photons_Rayleigh.o CS_electrons_inelastic.o CS_electrons_elastic.o CS_electrons_Bremsstrahlung.o CS_ion_inelastic.o CS_positrons_inelastic.o CS_positrons_elastic.o CS_positrons_Bremsstrahlung.o CS_positrons_annihilation.o CS_holes_elastic.o CS_holes_inelastic.o Output.o MC_general_tools.o MC_data_analysis.o MC_photon.o MC_electron.o MC_positron.o MC_hole.o MC_SHI.o MC.o MD_data_analysis.o MD_Pot_Simple.o MD_Pot_ZBL.o MD_Pot_Buck.o MD_Pot_SW.o MD_Pot_Coulomb.o MD.o TREKIS_main_file.o
+OBJS = Universal_constants.o Geometries.o Little_subroutines.o Objects.o Variables.o Gnuplotting.o Periodic_table.o Dealing_with_files.o Dealing_with_EADL.o Dealing_with_cdf_files.o Read_numerical_parameters.o Relativity.o SHI_charge_state.o CS_general_tools.o CS_integration_limits.o CDF_Ritchi.o CDF_Mermin.o CDF_delta.o Dealing_with_XYZ_files.o MD_general_tools.o Dealing_with_LAMMPS.o Read_MD_parameters.o Read_input_data.o Dealing_with_DOS.o Initial_conditions.o CDF_get_from_data.o CS_photons_pair_creation.o CS_photons_Compton.o CS_photons_Rayleigh.o CS_electrons_inelastic.o CS_electrons_elastic.o CS_electrons_Bremsstrahlung.o CS_ion_inelastic.o CS_positrons_inelastic.o CS_positrons_elastic.o CS_positrons_Bremsstrahlung.o CS_positrons_annihilation.o CS_holes_elastic.o CS_holes_inelastic.o CS_muon_inelastic.o CS_muon_elastic.o CS_muon_Bremsstrahlung.o Output.o MC_general_tools.o MC_data_analysis.o MC_photon.o MC_electron.o MC_positron.o MC_hole.o MC_SHI.o MC_muon.o MC.o MD_data_analysis.o MD_Pot_Simple.o MD_Pot_ZBL.o MD_Pot_Buck.o MD_Pot_SW.o MD_Pot_Coulomb.o MD.o TREKIS_main_file.o
 
 # print explanations
 default:

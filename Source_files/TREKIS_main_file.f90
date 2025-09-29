@@ -175,6 +175,17 @@ call get_hole_IMFP(g_target%Material, g_numpar, g_Err)  ! module "CS_holes_inela
 ! e.2) Elastic scattering:
 call get_holes_EMFP(g_target%Material, g_numpar, g_Err)  ! module "CS_holes_elastic"
 
+! f) Muon:
+! f.1) Inelastic:
+call get_muon_IMFP(g_target%Material, g_numpar, g_Err)	! module "CS_muon_inelastic"
+! f.2) Elastic:
+call get_muon_EMFP(g_target%Material, g_numpar, g_Err)	! module "CS_muon_elastic"
+! f.3) Bremsstrahlung:
+call get_muon_Brems(g_target%Material, g_numpar, g_Err)	! module "CS_muon_Bremsstrahlung"
+! f.4) Pair creation:
+! NOT READY
+
+
 !--------------------------------------------------------------
 ! Prepare output files with mean free paths, if user requested:
 call print_MFPs(g_target, g_numpar, g_bunch)  ! module "Output"

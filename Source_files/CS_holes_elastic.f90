@@ -48,7 +48,8 @@ subroutine get_holes_EMFP(Material, numpar, Err)
    
    eps = 1.0d-6 ! margin for considering effective mass equal to free electron mass
    
-   write(*, '(a)') ' Obtaining valence holes elastic scattering cross sections...'
+   !write(*, '(a)') ' Obtaining valence hole elastic scattering cross sections...'
+   write(*, '(a)', advance='no') ' Obtaining velence hole elastic scattering cross sections...'
    
    path_sep => numpar%path_sep
    Path = trim(adjustl(m_input_folder))//path_sep//trim(adjustl(m_hole_CS))	! Electron CSs are storred in this folder
@@ -236,6 +237,8 @@ subroutine get_holes_EMFP(Material, numpar, Err)
       endif
       
    enddo TRGT
+
+   write(*,'(a)') ' Done.'
 
    nullify(path_sep, E, Element)
 end subroutine get_holes_EMFP
