@@ -86,7 +86,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 21.09.2025)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 29.09.2025)'
 
 
 ! All output file names:
@@ -3073,25 +3073,26 @@ subroutine printout_Se_and_ranges(used_target, numpar, bunch)
          enddo
          call close_file('save', FN=FN)  ! module "Dealing_with_files"
 
-         ! Define axes for the plot of Se:
-         x_start = 1.0d0
-         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
-         y_start = 0.0d0
-         y_end = 10.0d0
-         ! Prepare gnuplot script:
-         call create_Se_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron') ! below
+         if (numpar%Pos_inelast /= 0) then ! gnuplot only if used
+            ! Define axes for the plot of Se:
+            x_start = 1.0d0
+            x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+            y_start = 0.0d0
+            y_end = 10.0d0
+            ! Prepare gnuplot script:
+            call create_Se_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron') ! below
 
-         ! Define axes for plotting Range:
-         x_start = 10.0d0
-         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
-         y_start = 10.0d0
-         y_end = 1.0d12
-         ! Prepare gnuplot script:
-         call create_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron')    ! below
-         x_start = 10.0d0
-         x_end = 1.0d12
-         call create_Se_vs_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron')    ! below
-
+            ! Define axes for plotting Range:
+            x_start = 10.0d0
+            x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+            y_start = 10.0d0
+            y_end = 1.0d12
+            ! Prepare gnuplot script:
+            call create_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron')    ! below
+            x_start = 10.0d0
+            x_end = 1.0d12
+            call create_Se_vs_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'positron')    ! below
+         endif
 
          ! 4) Muon:
          ! Pointer to the cross section:
@@ -3129,25 +3130,26 @@ subroutine printout_Se_and_ranges(used_target, numpar, bunch)
          enddo
          call close_file('save', FN=FN)  ! module "Dealing_with_files"
 
-         ! Define axes for the plot of Se:
-         x_start = 10.0d0
-         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
-         y_start = 0.0d0
-         y_end = 10.0d0
-         ! Prepare gnuplot script:
-         call create_Se_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon') ! below
+         if (numpar%Mu_inelast /= 0) then ! gnuplot only if used
+            ! Define axes for the plot of Se:
+            x_start = 10.0d0
+            x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+            y_start = 0.0d0
+            y_end = 10.0d0
+            ! Prepare gnuplot script:
+            call create_Se_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon') ! below
 
-         ! Define axes for plotting Range:
-         x_start = 10.0d0
-         x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
-         y_start = 10.0d0
-         y_end = 1.0d12
-         ! Prepare gnuplot script:
-         call create_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon')    ! below
-         x_start = 10.0d0
-         x_end = 1.0d12
-         call create_Se_vs_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon')    ! below
-
+            ! Define axes for plotting Range:
+            x_start = 10.0d0
+            x_end = 10.0**dble(-1 + find_order_of_number(CS%E(size(CS%E))) ) ! module "Little_subroutines"
+            y_start = 10.0d0
+            y_end = 1.0d12
+            ! Prepare gnuplot script:
+            call create_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon')    ! below
+            x_start = 10.0d0
+            x_end = 1.0d12
+            call create_Se_vs_Range_gnuplot(used_target%Material(i), numpar, trim(adjustl(Filename_gnu)), x_start, x_end, y_start, y_end, 'muon')    ! below
+         endif
 
          
          !=========================

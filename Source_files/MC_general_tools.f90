@@ -874,7 +874,7 @@ end subroutine flight_time_to_boundary
             
             ! Check consistency:
             if (all( abs(n(:)) < m_tollerance_eps)) then ! try another way: find the nearest boundary
-               if (present(INFO)) INFO = 1  ! particle is too far from a rectangle bondary
+               if (present(INFO)) INFO = 1  ! particle is too far from a rectangle boundary
 !                print*, 'ERROR in define_normal_to_surface: ', trim(adjustl(message_in))
 !                print*, 'Cannot find the surface the particles is crossing'
 !                print*, 'n=', n
@@ -898,7 +898,14 @@ end subroutine flight_time_to_boundary
                   n(3) = 1.0d0
                endselect
             endif
-            
+
+            ! Update INFO:
+            if (all( abs(n(:)) < m_tollerance_eps)) then ! after trying another way
+               if (present(INFO)) INFO = 1  ! particle is too far from a rectangle boundary
+            else
+               if (present(INFO)) INFO = 0  ! everything is fine
+            endif
+
 !             print*, 'define_normal_to_surface 2', n, Zcr - ARRAY%Zstart, Zcr - ARRAY%Zend
             
             ! Rotate it to the lab.coordinate system:

@@ -106,7 +106,7 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    !------------------------------------------------------
    real(8), dimension(3)  :: R_shift, norm_to_surf, V_perp, V
    real(8) :: Vnorm, Ekin_norm, T, RN, Vabs, Z
-   integer :: target_ind 
+   integer :: target_ind, i
    logical :: transmit
    type(Emission_barrier), pointer :: Em_Barr
    
@@ -114,6 +114,7 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    ! 1) Kinetic energy towards crossing the boundary:
    call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, 'event_electron_target_boundary', INFO)    ! module "MC_general_tools"
    if (INFO /=0) then   !some error occured
+      print*, 'ERROR #', INFO
       print*, 'Electron: define_normal_to_surface failed for Prtcl:', NOP
       print*, 'R=', Prtcl%R
       print*, 'V=', Prtcl%V
@@ -162,7 +163,17 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
       ! Find which target's boundary the particle is crossing:
       !Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
       !R_shift = m_tollerance_eps * Prtcl%V(:)/Vabs     ! to place particle inside of the material
-      R_shift = 10.0d0*m_tollerance_eps * Prtcl%V(:)/abs(Prtcl%V(:))     ! to place particle inside of the material
+
+      ! For all directions, make sure it is not undefined:
+      do i = 1, 3
+         if ( abs(Prtcl%V(i)) > 0.5d0*m_tollerance_eps ) then
+            R_shift(i) = 10.0d0*m_tollerance_eps * Prtcl%V(i)/abs(Prtcl%V(i))     ! to place particle inside of the material
+         else ! zero velosity -> no shift
+            R_shift(i) = 0.0d0
+         endif
+      enddo
+
+
       ! Update particle's material index according to the new material it enters:
       call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
 !        print*, 'Transmission'

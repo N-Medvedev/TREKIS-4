@@ -2494,7 +2494,7 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%CDF_plasmon = 0     ! Include plasmon integration limit (0=no, 1=yes)
    numpar%CDF_Eeq_factor = 10.0d0 ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (INELASTIC)
    numpar%CDF_Eeq_elast= 10.0d0   ! coeff.k where to switch from nonrelativistic to Delta CDF for ELASTIC scattering: E = k * Wmin
-   numpar%CDF_elast_Zeff = 0      ! use for target atoms Zeff (set 0), or Z=1 (set 1)
+   numpar%CDF_elast_Zeff = 0      ! use for target atoms Z=Zeff (set 0), Z=1 (set 1), Z=Z^2/CDF_e (set 2)
    numpar%CDF_int_n_inelastE = 50  ! n grid points for INELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
    numpar%CDF_int_n_inelastQ = 100 ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
    numpar%CDF_int_n_elastE = 10  ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n

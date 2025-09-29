@@ -12,6 +12,8 @@
 ! [3] I. Plante, F,Cucinotta, New Journal of Physics 11 (2009) 063047
 ! [4] "Transport of Electrons and Photons"  Edited by Jenkins, Nelson, Rindi
 ! [5] Kim, Santos, Parente, PRB 62 (2000) 052710
+! [6] N. Medvedev et al., Advanced Theory and Simulations 5, 2200091 (2022)
+! [7] N. Medvedev, D.I. Zainutdinov, A.E. Volkov, J. Appl. Phys. 137, 015903 (2025)
 
 
 module CS_electrons_elastic
@@ -89,11 +91,14 @@ subroutine get_electron_EMFP(Material, numpar, Err)
          case (5)   ! Single pole
             write(temp_c4,'(a)') '_SP_'    ! Single-pole
          endselect
-         if (numpar%CDF_elast_Zeff /= 1) then
+         select case (numpar%CDF_elast_Zeff)
+         case (1)
             write(temp_c3,'(a)') '_Zeff'
-         else
+         case (0)
             write(temp_c3,'(a)') '_Z1'
-         endif
+         case default
+            write(temp_c3,'(a)') '_Zdyn'
+         end select
          
          Model_name = 'CDF_delta_T_'//trim(adjustl(temp_c))//'K'//trim(adjustl(temp_c4))//'Eeq_'//trim(adjustl(temp_c2))//trim(adjustl(temp_c3))
 
@@ -254,11 +259,12 @@ subroutine get_el_elastic_CS(Ee, Material, Element, numpar, sigma, mu_max_in, E_
    select case (numpar%El_elastic)  ! elastic scattering: 0=excluded, 1=CDF, 2=Mott, 3=DSF, 4=nonrelativistic, 5=single-pole
    case (1,5) ! CDF
       ! Target mean atomic number:
-      if (numpar%CDF_elast_Zeff /= 1) then
+      select case (numpar%CDF_elast_Zeff)
+      case(0)           ! Z=Zeff (Barkas-like) [6]
          Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, Material%Mean_Z, (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
-      else
+      case default         ! Z=1 (constant; or dynamical screening used inside the momentum transfer subroutine)
          Zeff = 1.0d0    ! electron charge
-      endif
+      endselect
       
       ! Maximal phonon frequency is defined by the maximal phononic CDF peak:
       hw_ph_max = maxval( Material%CDF_phonon%E0(:) + 10.0d0*Material%CDF_phonon%Gamma(:) )  ! Testing
