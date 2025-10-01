@@ -48,10 +48,10 @@ subroutine get_electron_IMFP(Material, numpar, Err)
    integer :: i, j, k, m, Ngrid, N_targets, N_elements, N_shells, FN, Reason, count_lines, Nsiz
    real(8) :: sigma, Se, lambda, sigma_cur, Se_cur, lambda_cur
    real(8) :: Total_Se, Total_lambda, N_elem, elem_contrib
-   character(200) :: Path, Folder_with_CS, command, File_name, Model_name
+   character(200) :: Path, Folder_with_CS, command, File_name, Model_name, File_name_part, File_name_diff_CS, Folder_diff_CS
    character(200) :: Path_valent
    character(10) :: temp_c, temp_c2, temp_c3
-   logical :: file_exist, read_well
+   logical :: file_exist, read_well, file_exist_diff_CS
    !--------------------------------
    real(8), pointer :: E
    character, pointer :: path_sep
@@ -132,10 +132,24 @@ subroutine get_electron_IMFP(Material, numpar, Err)
                   allocate(Material(i)%El_inelastic_valent%Total_MFP(Nsiz))
                   allocate(Material(i)%El_inelastic_valent%Total_Se(Nsiz))
                   !allocate(Material(i)%El_inelastic_valent%Per_shell(Element%N_shl,Nsiz)) ! --- leave it not allocated !!!
+
                   ! Check file with CSs:
-                  !File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_electron_inelast_CS))//'_valence_'//trim(adjustl(Model_name))//'.dat'
-                  File_name = trim(adjustl(Path_valent))//path_sep//trim(adjustl(m_electron_inelast_CS))//'_valence_'//trim(adjustl(Model_name))//'.dat'
-                  inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+                  File_name_part = trim(adjustl(Path_valent))//path_sep//trim(adjustl(m_electron_inelast_CS))//'_valence_'//trim(adjustl(Model_name))
+                  File_name = trim(adjustl(File_name_part))//'.dat'
+                  inquire(file=trim(adjustl(File_name)), exist=file_exist) ! check if this file is there
+
+                  ! And files with diff.CS, if used:
+                  select case (numpar%CDF_CS_method)
+                  case default ! diff.CS save in falies
+                     Folder_diff_CS = File_name_part
+
+
+                  case (1) ! calcualte each time needed
+                     file_exist_diff_CS = .true.      ! files are just not needed, so ignor this option
+
+                  end select
+
+
                   if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then   ! just read from the file, no need to recalculate:
                      open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
                      ! Get the MFP and CDF points:
@@ -663,6 +677,8 @@ subroutine renormalize_alpha_CDF(numpar, Material, switch_SHI) ! module "CDF_get
    type(Atom_kind), pointer :: Element
    logical :: it_is_SHI
 
+   if (numpar%verbose) print*, 'Renormalizing alpha_CDF...'
+
    ! Identify if this subroutine is used for SHI:
    if (present(switch_SHI)) then    ! if user provided
       it_is_SHI = switch_SHI
@@ -810,6 +826,7 @@ subroutine renormalize_alpha_CDF(numpar, Material, switch_SHI) ! module "CDF_get
       enddo TRGT2
    end select ! Elastic
    
+   if (numpar%verbose) print*, 'alpha_CDF renormalized successfully'
 end subroutine renormalize_alpha_CDF
 
 

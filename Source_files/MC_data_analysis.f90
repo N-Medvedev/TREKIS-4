@@ -4143,6 +4143,8 @@ subroutine allocate_output(used_target, numpar, out_data)
    integer :: i_DOS
    real(8) :: dE
 
+   if (numpar%verbose) print*, 'Allocating output data arrays...'
+
    out_data%Eph = 0.0d0
    out_data%Ee = 0.0d0
    out_data%Eh_kin = 0.0d0
@@ -4272,6 +4274,8 @@ subroutine allocate_output(used_target, numpar, out_data)
        out_data%E_Distr_mu_XYZ, out_data%E_Distr_mu_RLTheta, out_data%E_Distr_mu_RcThcPhic  )    ! below
    endif
    
+
+   if (numpar%verbose) print*, 'Output data arrays allocated successfully.'
 end subroutine allocate_output
 
 
