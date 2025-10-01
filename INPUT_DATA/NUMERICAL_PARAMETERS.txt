@@ -44,13 +44,14 @@ F           ! Recalculate cross sections and MFPs (T=true; F=false)
 0           ! CDF model for slow particles: 0 = Ritchie CDF, 1 = Mermin CDF
 0   -1      ! target dispersion relation: 0=free electron, 1=plasmon-pole, 2=Ritchie;  eff.mass [in me] (0=from DOS of VB; -1=free-electron)
 0           ! Include plasmon integration limit (0=no, 1=yes)
-5.0d0      ! coeff.k where to switch from nonrelativistic to Delta CDF for INELASTIC scattering: E = k * Wmin (default is 10.0)
+5.0d0       ! coeff.k where to switch from nonrelativistic to Delta CDF for INELASTIC scattering: E = k * Wmin (default is 10.0)
 10.0d0      ! coeff.k where to switch from nonrelativistic to Delta CDF for ELASTIC scattering: E = k * Wmin (default is 5.0)
 0           ! use for target atoms Zeff (set 0), or Z=1 (set 1)
 50          ! n grid points for INELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
 100         ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
 10          ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
 100         ! n grid points for ELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
+0           ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
 ::: MODELS FOR HOLES :::
 1           ! Auger decays: 0=excluded, 1=EADL
 1           ! Radiative decays: 0=excluded, 1=EADL
@@ -71,6 +72,8 @@ png         ! format of figures prepared by gnuplot (eps, jpeg, gif, png, pdf); 
 T           ! printout DOS (T=true, F=false)
 T           ! printout MFPs (T=true, F=false)
 T           ! printout Ranges (T=true, F=false)
+
+!verbose
 
 !print_each_step     ! to printout timing of each MD step
 

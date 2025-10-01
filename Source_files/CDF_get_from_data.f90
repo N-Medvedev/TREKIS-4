@@ -124,7 +124,9 @@ subroutine get_CDF(numpar, used_target, Err)
             inquire(file=trim(adjustl(file_with_coefs)),exist=file_exist) ! check if this file is there
             if (file_exist) then	! just read from the file, no need to recalculate:
                if (.not.Element%valent(m)) then
-                  print*, 'Reading CDF coefficients for '//trim(adjustl(Element%Name))//', shell '//trim(adjustl(Element%Shell_name(m)))
+                  if (numpar%verbose) then
+                     print*, 'Reading CDF coefficients for '//trim(adjustl(Element%Name))//', shell '//trim(adjustl(Element%Shell_name(m)))
+                  endif
                endif
                open(newunit = FN2, FILE = trim(adjustl(file_with_coefs)))	! file with coefficients
                call Count_lines_in_file(FN2, N_CDF, skip_lines=1)	! modul "Dealing_with_files"
@@ -169,8 +171,10 @@ subroutine get_CDF(numpar, used_target, Err)
             
             call sum_rules(Element%CDF(m)%A,  Element%CDF(m)%E0, Element%CDF(m)%Gamma, Element%Ip(m), Omega, ksum, fsum)	! module "CDF_Ritchi"
             if (.not.Element%valent(m)) then ! only for core orbitals
-               write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Ne=', Element%Ne_shell(m), ' F-sum rule:', fsum
-               print*, '------------------------'
+               if (numpar%verbose) then
+                  write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Ne=', Element%Ne_shell(m), ' F-sum rule:', fsum
+                  print*, '------------------------'
+               endif
             endif
             ! Save the coefficient of the electronic plasma frequency:
             if (.not.allocated(Element%CDF(m)%h_omega_e2)) allocate(Element%CDF(m)%h_omega_e2(size(Element%CDF(m)%A)))
@@ -330,11 +334,13 @@ subroutine get_CDF(numpar, used_target, Err)
          endif !  (.not.allocated(used_target%Material(i)%Ph_absorption_valent%E))
 
          ! Print out k-sum rule:
-         print*, 'Valence band in '//trim(adjustl(used_target%Material(i)%Name))
+         if (numpar%verbose) print*, 'Valence band in '//trim(adjustl(used_target%Material(i)%Name))
          Omega =  w_plasma( 1d6*used_target%Material(i)%At_Dens/dble(SUM(used_target%Material(i)%Elements(:)%percentage)))	! module "CDF_Ritchi"
          call sum_rules(used_target%Material(i)%CDF_valence%A,  used_target%Material(i)%CDF_valence%E0, used_target%Material(i)%CDF_valence%Gamma, used_target%Material(i)%DOS%Egap, Omega, ksum, fsum)	! module "CDF_Ritchi"
-         write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Ne=', used_target%Material(i)%N_VB_el, ' F-sum rule:', fsum
-         print*, '------------------------'
+         if (numpar%verbose) then
+            write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Ne=', used_target%Material(i)%N_VB_el, ' F-sum rule:', fsum
+            print*, '------------------------'
+         endif
          ! Save the coefficient of the electronic plasma frequency:
          if (.not.allocated(used_target%Material(i)%CDF_valence%h_omega_e2)) then
             allocate(used_target%Material(i)%CDF_valence%h_omega_e2(size(used_target%Material(i)%CDF_valence%A)))
@@ -360,7 +366,7 @@ subroutine get_CDF(numpar, used_target, Err)
       ! Also deal with phonons if possible:
       if (allocated(used_target%Material(i)%CDF_phonon%A) .and. (numpar%El_elastic == 1)) then
          ! Print out k-sum rule for phonons:
-         print*, 'Phonons in '//trim(adjustl(used_target%Material(i)%Name))
+         if (numpar%verbose) print*, 'Phonons in '//trim(adjustl(used_target%Material(i)%Name))
          Omega = w_plasma( 1d6*used_target%Material(i)%At_Dens/dble(SUM(used_target%Material(i)%Elements(:)%percentage)), &
                                          Mass=used_target%Material(i)%Mean_Mass )  ! module "CDF_Ritchi"
          call sum_rules(used_target%Material(i)%CDF_phonon%A,  used_target%Material(i)%CDF_phonon%E0, &
@@ -380,8 +386,10 @@ subroutine get_CDF(numpar, used_target, Err)
          used_target%Material(i)%CDF_phonon%h_omega_e2 = (g_h/g_e)*(g_h/g_e)*Omega*dble(SUM(used_target%Material(i)%Elements(:)%percentage)) ! [eV^2]
          used_target%Material(i)%CDF_phonon%h_omega_e2 = g_Pi*0.5d0*used_target%Material(i)%CDF_phonon%h_omega_e2 ! with coefficient to convert to "alpha"
 
-         write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Na=', dble(SUM(used_target%Material(i)%Elements(:)%percentage)), ' F-sum rule:', fsum
-         print*, '------------------------'
+         if (numpar%verbose) then
+            write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Na=', dble(SUM(used_target%Material(i)%Elements(:)%percentage)), ' F-sum rule:', fsum
+            print*, '------------------------'
+         endif
       else
          print*, 'Do not have CDF for phonons in '//trim(adjustl(used_target%Material(i)%Name))
          print*, 'Using single-pole approximation instead'
@@ -420,8 +428,10 @@ subroutine get_CDF(numpar, used_target, Err)
          ! Now we can recalculate sum-rules:
          call sum_rules(used_target%Material(i)%CDF_phonon%A,  used_target%Material(i)%CDF_phonon%E0, &
                                 used_target%Material(i)%CDF_phonon%Gamma, 1.0d-8, Omega, ksum, fsum)	! module "CDF_Ritchi"
-         write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Na=', dble(SUM(used_target%Material(i)%Elements(:)%percentage)), ' F-sum rule:', fsum
-         print*, '------------------------'
+         if (numpar%verbose) then
+            write(*,'(a,f10.3,a,f10.3,a,f12.5)') 'K-sum rule:', ksum, ' Na=', dble(SUM(used_target%Material(i)%Elements(:)%percentage)), ' F-sum rule:', fsum
+            print*, '------------------------'
+         endif
       endif
 
       ! And the total CS:
@@ -505,7 +515,9 @@ subroutine get_CDF(numpar, used_target, Err)
             !   allocate(Element%CDF(m)%alpha_SHI(size(Element%CDF(m)%A)))
             !endif
             if (.not.Element%valent(m)) then ! only for core orbitals
-               print*, trim(adjustl(Element%Name)), ' '//trim(adjustl(Element%Shell_name(m))), ' CDF parameters for delta-function:'
+               if (numpar%verbose) then
+                  print*, trim(adjustl(Element%Name)), ' '//trim(adjustl(Element%Shell_name(m))), ' CDF parameters for delta-function:'
+               endif
             endif
             do k = 1, size(Element%CDF(m)%A)   ! for all oscillators describing this shell's CDF:
 !                 call define_alpha(Element%CDF(m)%A(k), Element%CDF(m)%Gamma(k), Element%CDF(m)%E0(k), Element%Ip(m), Element%CDF(m)%alpha(k))  ! module "CDF_delta"
@@ -517,14 +529,18 @@ subroutine get_CDF(numpar, used_target, Err)
                call define_alpha_OLD(Element%CDF(m)%A(k), Element%CDF(m)%Gamma(k), Element%CDF(m)%E0(k), Element%CDF(m)%E0(k), Element%CDF(m)%alpha(k))  ! module "CDF_delta"
 
                if (.not.Element%valent(m)) then ! only for core orbitals
-                  print*, k, 'E0:', Element%CDF(m)%E0(k)
-                  print*, k, 'alpha:', Element%CDF(m)%alpha(k)
+                  if (numpar%verbose) then
+                     print*, k, 'E0:', Element%CDF(m)%E0(k)
+                     print*, k, 'alpha:', Element%CDF(m)%alpha(k)
+                  endif
                endif
                !! Save for SHI:
                !Element%CDF(m)%alpha_SHI(k) = Element%CDF(m)%alpha(k)
 
             enddo
-            if (.not.Element%valent(m)) print*, '------------------------'
+            if (numpar%verbose) then
+               if (.not.Element%valent(m)) print*, '------------------------'
+            endif
          enddo ! m = 1, Element%N_shl
       enddo ! j = 1, used_target%Material(i)%N_Elements
       ! And also valence band, if present:
@@ -535,7 +551,7 @@ subroutine get_CDF(numpar, used_target, Err)
          !if (.not.allocated(used_target%Material(i)%CDF_valence%alpha_SHI)) then
          !   allocate(used_target%Material(i)%CDF_valence%alpha_SHI(size(used_target%Material(i)%CDF_valence%A)))
          !endif
-         print*, 'Valence band CDF parameters for delta-function:'
+         if (numpar%verbose) print*, 'Valence band CDF parameters for delta-function:'
          do k = 1, size(used_target%Material(i)%CDF_valence%A)   ! for all oscillators describing valence CDF
 !             call define_alpha(used_target%Material(i)%CDF_valence%A(k), used_target%Material(i)%CDF_valence%Gamma(k), used_target%Material(i)%CDF_valence%E0(k), used_target%Material(i)%DOS%Egap, used_target%Material(i)%CDF_valence%alpha(k))  ! module "CDF_delta"
 !             print*, k, 'E0:', used_target%Material(i)%CDF_valence%E0(k)
@@ -547,13 +563,15 @@ subroutine get_CDF(numpar, used_target, Err)
 !                ! Account for the fact that integration limit in the cross section starts from Wmin=2*Ip:
 !                call define_alpha_OLD(used_target%Material(i)%CDF_valence%A(k), used_target%Material(i)%CDF_valence%Gamma(k), &
 !                 used_target%Material(i)%CDF_valence%E0(k), 1.5d0*used_target%Material(i)%DOS%Egap, used_target%Material(i)%CDF_valence%alpha(k))  ! module "CDF_delta"
-               print*, k, 'E0:', used_target%Material(i)%CDF_valence%E0(k)
-               print*, k, 'alpha:', used_target%Material(i)%CDF_valence%alpha(k)
+               if (numpar%verbose) then
+                  print*, k, 'E0:', used_target%Material(i)%CDF_valence%E0(k)
+                  print*, k, 'alpha:', used_target%Material(i)%CDF_valence%alpha(k)
+               endif
                !! Save for SHI:
                !used_target%Material(i)%CDF_valence%alpha_SHI(k) = used_target%Material(i)%CDF_valence%alpha(k)
 
          enddo
-         print*, '------------------------'
+         if (numpar%verbose) print*, '------------------------'
       endif
       ! And also phonons, if present:
       if (allocated(used_target%Material(i)%CDF_phonon%A)) then
@@ -564,7 +582,7 @@ subroutine get_CDF(numpar, used_target, Err)
          !   allocate(used_target%Material(i)%CDF_phonon%alpha_SHI(size(used_target%Material(i)%CDF_phonon%A)))
          !endif
 
-         print*, 'Phonons CDF parameters for delta-function:'
+         if (numpar%verbose) print*, 'Phonons CDF parameters for delta-function:'
          do k = 1, size(used_target%Material(i)%CDF_phonon%A)   ! for all oscillators describing valence CDF
             ! For scattering on atoms, also account for the mass factor in the sum rule:
 !             call define_alpha(used_target%Material(i)%CDF_phonon%A(k), used_target%Material(i)%CDF_phonon%Gamma(k), &
@@ -577,8 +595,10 @@ subroutine get_CDF(numpar, used_target, Err)
                                       used_target%Material(i)%CDF_phonon%E0(k), 1.0d-10, &
 !                                       used_target%Material(i)%CDF_phonon%E0(k), minval(used_target%Material(i)%CDF_phonon%E0(:)), &
                                       used_target%Material(i)%CDF_phonon%alpha(k), mass_target = used_target%Material(i)%Mean_Mass)  ! module "CDF_delta"
-            print*, k, 'E0,A:', used_target%Material(i)%CDF_phonon%E0(k), used_target%Material(i)%CDF_phonon%A(k)
-            print*, k, 'alpha:', used_target%Material(i)%CDF_phonon%alpha(k) !, used_target%Material(i)%Mean_Mass
+            if (numpar%verbose) then
+               print*, k, 'E0,A:', used_target%Material(i)%CDF_phonon%E0(k), used_target%Material(i)%CDF_phonon%A(k)
+               print*, k, 'alpha:', used_target%Material(i)%CDF_phonon%alpha(k) !, used_target%Material(i)%Mean_Mass
+            endif
             !! Save for SHI:
             !used_target%Material(i)%CDF_phonon%alpha_SHI(k) = used_target%Material(i)%CDF_phonon%alpha(k)
             
@@ -590,7 +610,7 @@ subroutine get_CDF(numpar, used_target, Err)
 !          endif
 !          used_target%Material(i)%CDF_phonon%h_omega_e2 = (g_h/g_e)*(g_h/g_e) * Omega * used_target%Material(i)%N_VB_el ! [eV^2]
 !          used_target%Material(i)%CDF_phonon%h_omega_e2 = g_Pi * 0.5d0* used_target%Material(i)%CDF_phonon%h_omega_e2 ! with coefficient to convert to "alpha"
-         print*, '------------------------'
+         if (numpar%verbose) print*, '------------------------'
       endif
       
    enddo TRGT

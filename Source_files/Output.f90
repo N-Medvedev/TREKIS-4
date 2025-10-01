@@ -86,7 +86,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 29.09.2025)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 01.10.2025)'
 
 
 ! All output file names:
@@ -4704,9 +4704,9 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    !write(print_to,'(a)') trim(adjustl(m_starline))
    !**********************************************
    if (numpar%new_input_format) then ! new format used
-      write(print_to,'(a)') 'Input read from the file: '//trim(adjustl(m_input_minimal))
+      write(print_to,'(a)') ' Input read from the file: '//trim(adjustl(m_input_minimal))
    else
-      write(print_to,'(a)') 'Input read from files: '//trim(adjustl(m_input_data))//' and '//&
+      write(print_to,'(a)') ' Input read from files: '//trim(adjustl(m_input_data))//' and '//&
                                                        trim(adjustl(m_numerical_parameters))
    endif
 
@@ -4851,7 +4851,12 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    end select
 
    if (numpar%Ph_Cutoff > 0.0d0) then
-      write(text,'(f12.3)') numpar%Ph_Cutoff
+      if (abs(numpar%Ph_Cutoff) < 1.0d7) then
+         write(text,'(f12.3)') numpar%Ph_Cutoff
+      else
+         write(text,'(es20.3)') numpar%Ph_Cutoff
+      endif
+
       write(print_to,'(a,a)') ' Photon energy cut-off: ', trim(adjustl(text))//' [eV]'
    else
       write(print_to,'(a)') ' No energy cut-off for photon transport'
@@ -4930,7 +4935,12 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    write(print_to,'(a,a)') ' Electron Bremsstrahlung: ', trim(adjustl(text))
 
    if (numpar%El_Cutoff > 0.0d0) then
-      write(text,'(f12.3)') numpar%El_Cutoff
+      if (abs(numpar%El_Cutoff) < 1.0d7) then
+         write(text,'(f12.3)') numpar%El_Cutoff
+      else
+         write(text,'(es20.3)') numpar%El_Cutoff
+      endif
+
       write(print_to,'(a,a)') ' Electron energy cut-off: ', trim(adjustl(text))//' [eV]'
    else
       write(print_to,'(a)') ' No energy cut-off for electron transport'
@@ -4961,7 +4971,12 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    write(print_to,'(a,a)') ' Ion inelastic scattering: ', trim(adjustl(text))
 
    if (numpar%SHI_Cutoff > 0.0d0) then
-      write(text,'(f12.3)') numpar%SHI_Cutoff
+      if (abs(numpar%SHI_Cutoff) < 1.0d7) then
+         write(text,'(f12.3)') numpar%SHI_Cutoff
+      else
+         write(text,'(es20.3)') numpar%SHI_Cutoff
+      endif
+
       write(print_to,'(a,a)') ' SHI energy cut-off: ', trim(adjustl(text))//' [eV]'
    else
       write(print_to,'(a)') ' No energy cut-off for SHI transport'
@@ -5030,7 +5045,12 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    write(print_to,'(a,a)') ' Positron annihilation: ', trim(adjustl(text))
 
    if (numpar%Pos_Cutoff > 0.0d0) then
-      write(text,'(f12.3)') numpar%Pos_Cutoff
+      if (abs(numpar%Pos_Cutoff) < 1.0d7) then
+         write(text,'(f12.3)') numpar%Pos_Cutoff
+      else
+         write(text,'(es20.3)') numpar%Pos_Cutoff
+      endif
+
       write(print_to,'(a,a)') ' Positron energy cut-off: ', trim(adjustl(text))//' [eV]'
    else
       write(print_to,'(a)') ' No energy cut-off for positron transport'
@@ -5083,7 +5103,11 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    write(print_to,'(a,a)') ' Core hole radiative decay: ', trim(adjustl(text))
 
    if (numpar%H_Cutoff > 0.0d0) then
-      write(text,'(f12.3)') numpar%H_Cutoff
+      if (abs(numpar%H_Cutoff) < 1.0d7) then
+         write(text,'(f12.3)') numpar%H_Cutoff
+      else
+         write(text,'(es20.3)') numpar%H_Cutoff
+      endif
       write(print_to,'(a,a)') ' VB holes energy cut-off: ', trim(adjustl(text))//' [eV]'
    else
       write(print_to,'(a)') ' No energy cut-off for VB holes transport'
@@ -5153,7 +5177,12 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    write(print_to,'(a,a)') ' Muon pair creation: ', trim(adjustl(text))
 
    if (numpar%Mu_Cutoff > 0.0d0) then
-      write(text,'(f12.3)') numpar%Mu_Cutoff
+      if (abs(numpar%Mu_Cutoff) < 1.0d7) then
+         write(text,'(f12.3)') numpar%Mu_Cutoff
+      else
+         write(text,'(es20.3)') numpar%Mu_Cutoff
+      endif
+
       write(print_to,'(a,a)') ' Muon energy cut-off: ', trim(adjustl(text))//' [eV]'
    else
       write(print_to,'(a)') ' No energy cut-off for muon transport'

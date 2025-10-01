@@ -559,6 +559,15 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       call Save_error_details(Err, 2, Error_descript)	! module "Objects"
       goto 9998
    endif
+
+   ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+   read(FN,*,IOSTAT=Reason) numpar%CDF_CS_method
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
    
    
    !==================================================
@@ -906,6 +915,11 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
       else  !  (.not. read_well)
          
          select case (trim(adjustl(temp_ch)))
+
+         !============================================
+         ! Verbose option:
+         case ('Verbose', 'verbose', 'VERBOSE')
+            numpar%verbose = .true. ! set TREKIS verbose, prints out extra info
 
          !============================================
          ! Printout atomic displacements:

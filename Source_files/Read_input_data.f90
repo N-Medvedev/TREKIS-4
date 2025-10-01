@@ -135,7 +135,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       goto 9992	! skip executing the program, exit the subroutine
    endif
    
-   print*, 'Deciphering the chemical formula of the target, reading periodic table...'
+   if (numpar%verbose) print*, 'Deciphering the chemical formula of the target, reading periodic table...'
    
    numpar%N_sh_tot = 0  ! to start counting number of total shells
    
@@ -176,7 +176,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       endif
       open(newunit = FN, FILE = trim(adjustl(File_name3)), status = 'old', action='read')
       ! Read the chemical fomula from the file:
-      call read_material_parameters(FN, File_name3, chemical_formula, used_target%Material(i), Err)	! below
+      call read_material_parameters(FN, File_name3, numpar, chemical_formula, used_target%Material(i), Err)	! below
       close (FN)	! done reading material parameters
 
       ! Make sure parameters are consistent:
@@ -248,13 +248,15 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
    
 !       print*, 'TARGET', i, used_target%Material(i)%N_Elements, used_target%Material(i)%Elements(:)%Name, used_target%Material(i)%Elements(:)%Zat, used_target%Material(i)%Elements(:)%percentage, used_target%Material(i)%Elements(:)%Mass, used_target%Material(i)%Elements(:)%NVB
       
-      write(*,'(a)', advance='no')  ' Periodic table read successfully for: '
-      do j = 1, size(used_target%Material(i)%Elements(:))
-         write(*,'(a,a)', advance='no') used_target%Material(i)%Elements(j)%Name, " "
-      enddo
-      write(*,'(a)')
+      if (numpar%verbose) then
+         write(*,'(a)', advance='no')  ' Periodic table read successfully for: '
+         do j = 1, size(used_target%Material(i)%Elements(:))
+            write(*,'(a,a)', advance='no') used_target%Material(i)%Elements(j)%Name, " "
+         enddo
+         write(*,'(a)')
 !       print*, 'Z: ', used_target%Material(i)%Elements(:)%Zat
-      print*, 'Reading EADL database with atomic data...'
+         print*, 'Reading EADL database with atomic data...'
+      endif
       
       !--------------------------------------------------
       ! 2) Read EADL database with atomic parameters for the target atoms
@@ -342,8 +344,10 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       ! Count how many core shell there are in total, in all types of atoms:
       numpar%N_sh_tot = numpar%N_sh_tot + 1 ! add also valence band as a separate shell
       
-      print*, 'EADL database read successfully.'
-      print*, 'Reading EPDL database for photon cross sections...'
+      if (numpar%verbose) then
+         print*, 'EADL database read successfully.'
+         print*, 'Reading EPDL database for photon cross sections...'
+      endif
       
       !--------------------------------------------------
       ! 3) Read EPDL database with atomic parameters for the target atoms
@@ -508,10 +512,12 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
          call print_error(Error_descript_extended)   ! module "Little_subroutines"
          goto 9992	! skip executing the program, exit the subroutin
       endif ! (file_opened)
-      print*, 'EPDL database read successfully.'
-      
-      
-      print*, 'Constructing valence and total grids...'
+
+      if (numpar%verbose) then
+         print*, 'EPDL database read successfully.'
+         print*, 'Constructing valence and total grids...'
+      endif
+
       !--------------------------------------------------
       ! 4) Since energy grids have special points corresponding to the ionization potential of the element,
       ! different elements have to be combined to construct the grids for the valence band and the total cross sections:
@@ -535,14 +541,16 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
       call create_energy_grid(1.0d0, used_target%Material(i)%Elements(1)%Phot_absorption%E(size(used_target%Material(i)%Elements(1)%Phot_absorption%E)), used_target%Material(i)%Ph_absorption_valent%E, special_points=Ip_target)	! module "Little_subroutines"
       allocate(used_target%Material(i)%Ph_absorption_total%E(size(used_target%Material(i)%Ph_absorption_valent%E)))
       used_target%Material(i)%Ph_absorption_total%E = used_target%Material(i)%Ph_absorption_valent%E
-      print*, 'Valence and total grids constructed successfully.'
 
       !print*, 'Val=', used_target%Material(i)%Ph_absorption_valent%E(:)
       !print*, 'Tot=', used_target%Material(i)%Ph_absorption_total%E(:)
       !pause 'PHOTON_VAL'
 
-      
-      print*, 'Reading Compton profiles database...'      
+      if (numpar%verbose) then
+         print*, 'Valence and total grids constructed successfully.'
+         print*, 'Reading Compton profiles database...'
+      endif
+
       !--------------------------------------------------
       ! 5) Read Compton profiles for the target material:
       ! The database was extracted from:
@@ -576,10 +584,13 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
          close(FN6)
       case default	! no Compton effect included
       end select
-      print*, 'Compton profiles read successfully.'
-      
-      
-      print*, 'Reading pair creation coefficients database...'
+
+
+      if (numpar%verbose) then
+         print*, 'Compton profiles read successfully.'
+         print*, 'Reading pair creation coefficients database...'
+      endif
+
       !--------------------------------------------------
       ! 6) Read Pair creation coefficients for the target material:
       ! The database was extracted from:
@@ -612,10 +623,12 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
          close(FN7)
       else  ! no pair creation included
       end if
-      print*, 'Pair creation coefficients  read successfully.'
-      
-      
-      print*, 'Reading form factors coefficients database...'
+
+      if (numpar%verbose) then
+         print*, 'Pair creation coefficients  read successfully.'
+         print*, 'Reading form factors coefficients database...'
+      endif
+
       !--------------------------------------------------
       ! 7) Read form factors coefficients for the target material:
       ! The database was extracted from PyPENELOPE source code files (ElementPhysicalData.py):
@@ -650,7 +663,8 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
          close(FN7)
       case default	! no pair creation included
       end select
-      print*, 'Form factors coefficients  read successfully.'
+
+      if (numpar%verbose) print*, 'Form factors coefficients  read successfully.'
       
    enddo TRGT
    
@@ -815,9 +829,10 @@ end subroutine read_Compton_profiles
 
 
 
-subroutine read_material_parameters(FN, File_name, chemical_formula, Material, Err)
+subroutine read_material_parameters(FN, File_name, numpar, chemical_formula, Material, Err)
    integer, intent(in) :: FN	! file from where to read
    character(*), intent(in) :: File_name	! file name
+   type(Num_par), intent(in) :: numpar	! all numerical parameters
    character(*), intent(out) :: chemical_formula	! chemical formula of a target material
    type(Target_atoms), intent(inout):: Material	!material parameters of each target that it's constructed of
    type(Error_handling), intent(inout) :: Err	! error log
@@ -912,7 +927,7 @@ subroutine read_material_parameters(FN, File_name, chemical_formula, Material, E
                   print*, 'Using atomic approximation'
                   read_well = .true.    ! to continue reading from the file
                else
-                  print*, 'Valence band CDF parameters read from file successfully'
+                  if (numpar%verbose) print*, 'Valence band CDF parameters read from file successfully'
                endif
             endif
          case ('PHONONS', 'PHONON', 'Phonons', 'Phonon', 'phonons', 'phonon', 'PHON', 'Phon', 'phon')
@@ -930,7 +945,7 @@ subroutine read_material_parameters(FN, File_name, chemical_formula, Material, E
                   print*, 'Using atomic approximation'
                   read_well = .true.    ! to continue reading from the file
                else
-                  print*, 'Phonons CDF parameters read from file successfully'
+                  if (numpar%verbose) print*, 'Phonons CDF parameters read from file successfully'
                endif
             endif
          case ('DOS', 'DOs', 'Dos', 'dos')
@@ -970,10 +985,10 @@ subroutine read_material_parameters(FN, File_name, chemical_formula, Material, E
    enddo
    ! Print out warning messages:
    if (.not.valence_present) then
-      print*, 'Could not find CDF parameters for Valence band in the file '//trim(adjustl(File_name))
+      if (numpar%verbose) print*, 'Could not find CDF parameters for Valence band in the file '//trim(adjustl(File_name))
    endif
    if (.not.phonon_present) then
-      print*, 'Could not find CDF parameters for Phonons in the file '//trim(adjustl(File_name))
+      if (numpar%verbose) print*, 'Could not find CDF parameters for Phonons in the file '//trim(adjustl(File_name))
    endif
    
 9990 continue
@@ -1151,13 +1166,13 @@ subroutine Read_input(used_target, numpar, bunch, Err)
 
    numpar%new_input_format = .false. ! to start with, assumed new format wasn't used
    File_name_new = trim(adjustl(Folder_name))//trim(adjustl(m_input_minimal))
-   print*, 'Reading file: '//trim(adjustl(File_name_new))
+   if (numpar%verbose) print*, 'Reading file: '//trim(adjustl(File_name_new))
    FN3 = 103
    ! Check if files exist and open them:
    call open_file(FN3, File_name_new, Error_descript, status = 'old', action='read')	! module "Dealing_with_files"
    if (LEN(trim(adjustl(Error_descript))) > 0) then	! it means, some error occured
       Error_descript = ''    ! renew it, and just skip the file
-      print*, 'Could not read it, checking if old format of input exists...'
+      if (numpar%verbose) print*, 'Could not read it, checking if old format of input exists...'
    else
       call Read_single_file_input(FN3, File_name_new, used_target, bunch, numpar, Err)   ! below
       numpar%new_input_format = .true. ! new format was used
@@ -1191,11 +1206,11 @@ subroutine Read_input(used_target, numpar, bunch, Err)
       endif
       !---------------------------
       ! Read the file with input data:
-      print*, 'Reading file: '//trim(adjustl(File_name))
+      if (numpar%verbose) print*, 'Reading file: '//trim(adjustl(File_name))
       call read_input_parameters(FN, File_name, used_target, bunch, Err)	! see below
       !---------------------------
       ! Read the file with all numerical parameters:
-      print*, 'Reading file: '//trim(adjustl(File_name_2))
+      if (numpar%verbose) print*, 'Reading file: '//trim(adjustl(File_name_2))
       call read_num_pars(FN2, File_name_2, numpar, Err)	! module "Read_numerical_parameters"
    endif ! (.not.numpar%new_input_format)
    
@@ -1490,6 +1505,15 @@ subroutine read_optional_CDF_numerics(FN, File_name, numpar, count_lines, read_w
 
    ! effective number of grid points for elastic cross section integration over momentum
    read(FN,*,IOSTAT=Reason) numpar%CDF_int_n_elastQ
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+   if (.not. read_well) then
+      write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+      call Save_error_details(Err, 2, Error_descript)	! module "Objects"
+      return
+   endif
+
+   ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+   read(FN,*,IOSTAT=Reason) numpar%CDF_CS_method
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
       write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
@@ -2427,6 +2451,7 @@ subroutine set_defaults(used_target, bunch, numpar)
    bunch(1)%FWHM = 0.0d0 ! [fs] FWHM-duration of the pulse (ignorred for single particles)
 
    ! NUMERICAL PARAMETERS:
+   numpar%verbose = .false.   ! not verbose, no need to printout extra info
    numpar%NMC = 1       ! number of MC iterations
    numpar%NOMP = 1      ! number of threads for parallel calculations with OpenMP (1 if nonparrelelized)
    numpar%dt_MD = 1.0d0 ! time step
@@ -2490,7 +2515,7 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%CDF_model = 0 ! CDF model: 0 = Drude / Lindhard CDF, 1=Mermin CDF, 2=Full conserving CDF (not ready)
    ! target dispersion relation: 0=free electron, 1=plasmon-pole, 2=Ritchie; effective mass [in me] (0=effective mass from DOS of VB; -1=free-electron):
    numpar%CDF_dispers = 0
-   numpar%CDF_m_eff = 0
+   numpar%CDF_m_eff = 0 ! target electron/hole effective mass model
    numpar%CDF_plasmon = 0     ! Include plasmon integration limit (0=no, 1=yes)
    numpar%CDF_Eeq_factor = 10.0d0 ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (INELASTIC)
    numpar%CDF_Eeq_elast= 10.0d0   ! coeff.k where to switch from nonrelativistic to Delta CDF for ELASTIC scattering: E = k * Wmin
@@ -2499,6 +2524,7 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%CDF_int_n_inelastQ = 100 ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
    numpar%CDF_int_n_elastE = 10  ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
    numpar%CDF_int_n_elastQ = 100 ! n grid points for ELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
+   numpar%CDF_CS_method = 0 ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
 
    !::: MODELS FOR HOLES :::
    numpar%H_Auger = 1   ! Auger decays:  0=excluded, 1=EADL

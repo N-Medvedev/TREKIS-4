@@ -47,7 +47,7 @@ subroutine Set_initial_parameters(numpar, used_target, bunch, MC)
    integer :: INFO  ! 0=file read well; 1=no file; 2=couldn't open; 3=error while reading
    character(100) :: error_message , Path
    
-   print*, 'Setting initial conditions...'
+   if (numpar%verbose) print*, 'Setting initial conditions...'
    
    ! Read the periodic table, in case we need it:
    Path = trim(adjustl(m_input_folder))//numpar%path_sep//trim(adjustl(m_databases)) ! where to find the periodic table
@@ -90,7 +90,7 @@ subroutine Set_initial_parameters(numpar, used_target, bunch, MC)
    !deallocate(bunch, Periodic_table)
    deallocate(Periodic_table)
    
-   print*, 'Initial conditions all set, ready to start simulation.'
+   if (numpar%verbose) print*, 'Initial conditions all set, ready to start simulation.'
 end subroutine Set_initial_parameters
 
 

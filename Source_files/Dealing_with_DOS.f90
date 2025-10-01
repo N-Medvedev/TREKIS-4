@@ -33,7 +33,7 @@ subroutine read_DOS_files(used_target, numpar, Err)
    character, pointer :: path_sep
    type(Density_of_states), pointer :: DOS
    
-   print*, 'Getting DOS of materials...'
+   if (numpar%verbose) print*, 'Getting DOS of materials...'
    
    ! The limit for smallest effective hole allowed:
    eps = 1.0d-2     ! [me]
@@ -61,14 +61,14 @@ subroutine read_DOS_files(used_target, numpar, Err)
 
       if (file_exist) then ! use DOS from the file:
          open(newunit = FN, FILE = trim(adjustl(File_name)), status = 'old', action='read')
-         print*, 'Reading DOS from file '//trim(adjustl(File_name))
+         if (numpar%verbose) print*, 'Reading DOS from file '//trim(adjustl(File_name))
          ! Read DOS from it into the arrays:
          call read_DOS_from_file(FN, File_name, used_target%Material(i)%DOS, Err)    ! below
          
          ! Close the file after reading DOS from it:
          call close_file('close',FN=FN)
       else ! construct free-electron DOS:
-         print*, 'Creating free-electron DOS...'
+         if (numpar%verbose) print*, 'Creating free-electron DOS...'
          call construct_free_electron_DOS(used_target%Material(i)%DOS)
       endif
       
@@ -142,7 +142,7 @@ subroutine read_DOS_files(used_target, numpar, Err)
       nullify (DOS)
    enddo TRGT
    
-   print*, 'DOS of all materials read successfully.'
+   if (numpar%verbose) print*, 'DOS of all materials read successfully.'
 9992 continue
 end subroutine read_DOS_files
 

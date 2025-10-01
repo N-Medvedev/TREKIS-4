@@ -75,7 +75,7 @@ call reset_dt(g_numpar, 0.0d0)  ! below
 call process_user_gnu_parameters(g_numpar%gnupl%gnu_extension, g_numpar%gnupl%gnu_terminal, g_numpar%gnupl%do_gnuplot)   ! module "Gnuplotting"
 
 ! Set the OpenMP parallelization options:
-call set_OMP_number(g_numpar%NOMP, .true., 6)    ! module "Output"
+call set_OMP_number(g_numpar%NOMP, g_numpar%verbose, 6)    ! module "Output"
 
 ! Set default values:
 call Set_defaults(g_numpar, g_bunch, g_MC)  ! module "Initial_conditions"

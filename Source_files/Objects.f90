@@ -78,18 +78,28 @@ type :: Ritchi_CDF
    real(8), dimension(:), allocatable :: h_omega_e2    ! [eV^2] (h*Omega_e)^2 where Omega_e is the electron plasma frequency
 end type Ritchi_CDF
 
+
+!==============================================
+! Differential cross sections to be saved and reused:
+type diff_CS_dE
+   real(8), dimension(:), allocatable :: dsdhw
+   real(8), dimension(:), allocatable :: hw
+end type diff_CS_dE
+
 !============================================== 
 ! Precalculated cross section arrays:
 type :: Cross_section
    real(8), dimension(:), allocatable :: E              ! [eV] energy grid
-   real(8), dimension(:), allocatable :: Total         ! [A^2] total cross section
+   real(8), dimension(:), allocatable :: Total          ! [A^2] total cross section
    real(8), dimension(:,:), allocatable :: Per_shell    ! number of shell,  [A^2] cross section for chosen shell
-   real(8), dimension(:,:), allocatable :: MFP        ! [A] mean free path per shell
+   real(8), dimension(:,:), allocatable :: MFP          ! [A] mean free path per shell
    real(8), dimension(:,:), allocatable :: Se           ! [eV/A] energy loss per shell
    real(8), dimension(:), allocatable :: Total_MFP      ! [A] total mean free path
-   real(8), dimension(:), allocatable :: Total_Se         !  [eV/A] total energy loss 
-   real(8), dimension(:), allocatable :: Total_Range    !  [A] total range
+   real(8), dimension(:), allocatable :: Total_Se       ! [eV/A] total energy loss
+   real(8), dimension(:), allocatable :: Total_Range    ! [A] total range
+   type(diff_CS_dE), dimension(:), allocatable :: Int_diff_CS    ! differential CS arrays
 end type Cross_section
+
 
 !============================================== 
 ! Parameters of atoms and ions:
@@ -480,6 +490,7 @@ end type MD_potential
 ! Data type containing all numerical parameters used in the code:
 type Num_par
    character(1) :: path_sep	! path separator for the environment
+   logical :: verbose       ! flag to printout extra info on the screen
 
    logical :: new_input_format  ! flag if new input format was used
 
@@ -640,7 +651,7 @@ type Num_par
    integer :: SHI_ch_shape	! SHI charge shape: 0=point-like charge; 1=Brandt-Kitagawa ion
    real(8) :: SHI_Cutoff		! [eV] Cut-off energy (electrons with lower energies are excluded from calculation)
    ! MODEL PARAMETERS FOR CDF:
-   integer :: CDF_model	! CDF model: 0 = Drude / Lindhard CDF, 1=Mermin CDF, 2=Full conserving CDF
+   integer :: CDF_model	! CDF model: 0 = Drude / Lindhard CDF, 1=Mermin CDF, 2=Full conserving CDF (not ready)
    integer :: CDF_dispers	! target dispersion relation: 1=free electron, 2=plasmon-pole, 3=Ritchie
    integer :: CDF_m_eff	! effective mass [in me] (0=effective mass from DOS of VB; -1=free-electron)
    integer :: CDF_plasmon	! Include plasmon integration limit (0=no, 1=yes)
@@ -651,6 +662,7 @@ type Num_par
    integer :: CDF_int_n_inelastQ ! effective number of grid points for inelastic cross section integration over momentum
    integer :: CDF_int_n_elastE ! effective number of grid points for elastic cross section integration over energy
    integer :: CDF_int_n_elastQ ! effective number of grid points for elastic cross section integration over momentum
+   integer :: CDF_CS_method      ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
    ! MODELS FOR HOLES:
    integer :: H_Auger		! Auger decays: 0=excluded, 1=provided in cdf-file, 2=EADL
    integer :: H_Radiat		! Radiative decays: 0=excluded, 1=EADL
