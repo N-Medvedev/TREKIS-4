@@ -560,7 +560,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
       goto 9998
    endif
 
-   ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+   ! flag which type of diff.CS grid: 1=old T3; 2=T4; 3(or 0)=new T4; (-1=T3 without files; -2=T4 without files; -3=new T4 without files):
    read(FN,*,IOSTAT=Reason) numpar%CDF_CS_method
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then

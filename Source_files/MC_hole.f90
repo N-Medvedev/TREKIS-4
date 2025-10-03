@@ -151,6 +151,7 @@ subroutine event_hole_target_boundary(used_target, numpar, Prtcl, NOP, INFO, MD_
       Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/abs(Prtcl%V(:))
    else 
       print*, 'Hole has zero velosity'
+      Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps
    endif
    
    ! Find next scattering event on the boundary (but keep old (in-)elastic scattering time):

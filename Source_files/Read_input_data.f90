@@ -1512,7 +1512,7 @@ subroutine read_optional_CDF_numerics(FN, File_name, numpar, count_lines, read_w
       return
    endif
 
-   ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+   ! flag which type of diff.CS grid: 1=old T3; 2=T4; 3(or 0)=new T4; (-1=T3 without files; -2=T4 without files; -3=new T4 without files):
    read(FN,*,IOSTAT=Reason) numpar%CDF_CS_method
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
@@ -2520,11 +2520,11 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%CDF_Eeq_factor = 10.0d0 ! Coefficient where to switch from Ritchie to Delta CDF: E = k * Wmin (INELASTIC)
    numpar%CDF_Eeq_elast= 10.0d0   ! coeff.k where to switch from nonrelativistic to Delta CDF for ELASTIC scattering: E = k * Wmin
    numpar%CDF_elast_Zeff = 0      ! use for target atoms Z=Zeff (set 0), Z=1 (set 1), Z=Z^2/CDF_e (set 2)
-   numpar%CDF_int_n_inelastE = 50  ! n grid points for INELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
+   numpar%CDF_int_n_inelastE = 100  ! n grid points for INELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
    numpar%CDF_int_n_inelastQ = 100 ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
    numpar%CDF_int_n_elastE = 10  ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
    numpar%CDF_int_n_elastQ = 100 ! n grid points for ELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
-   numpar%CDF_CS_method = 0 ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+   numpar%CDF_CS_method = 0 ! diff.CS grid: 1=old T3; 2 (or 0)=T4; 3=new T4; (-1=T3 without files; -2=T4 without files; -3=new T4 without files)
 
    !::: MODELS FOR HOLES :::
    numpar%H_Auger = 1   ! Auger decays:  0=excluded, 1=EADL

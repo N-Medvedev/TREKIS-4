@@ -1425,6 +1425,10 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
       if (present(no_scatternig) .or. ( abs(Prtcl%Ekin) < eps) ) then  ! electron with zero energy cannot scatter
          if (no_scatternig) do_scattering = .false.
       endif
+
+      if (Prtcl%in_target == 0) then    ! particle in vacuum
+         Prtcl%t_sc = 1.2d25    ! make sure there is no scattering in vacuum
+      endif
    
       if (do_scattering) then     ! recalculate scattering event time:
          ! Now check the time to a scattering event:
@@ -1457,7 +1461,7 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
 !             write(*,'(f,f,f,f)') Prtcl%Ekin, Sampled_path, MFP_total
             
          else ! not inside of any target
-            Prtcl%t_sc = 1.0d25    ! no scattering in vacuum
+            Prtcl%t_sc = 1.1d25    ! no scattering in vacuum
          endif
 !          print*, 'get_electron_flight_time', Prtcl%ti, Prtcl%t_sc
       endif

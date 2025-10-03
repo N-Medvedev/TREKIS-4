@@ -18,6 +18,28 @@ implicit none
 
 
 !-------------------------------------------------------------
+! Choice of the integration limit depending on the model used:
+
+pure subroutine define_integration_limits(E_start, E_end, CS_method, Emin, Emax, E0_min, E0_max)
+   real(8), intent(out) :: E_start, E_end
+   integer, intent(in) :: CS_method
+   real(8), intent(in) :: Emin, Emax
+   real(8), intent(in) :: E0_min, E0_max
+   !------------------
+   select case (abs(CS_method))
+   case default   ! Old default, don't redefine
+      E_start = Emin
+      E_end = Emax
+
+   case (3) ! New default, exclude empty space
+      E_start = max(Emin, E0_min)
+      E_end = min(Emax, E0_max)
+   end select
+
+end subroutine define_integration_limits
+
+
+!-------------------------------------------------------------
 ! Relativistic transferred momentum limits:
 pure function Q_min(M, mt, E, W) result(Qmin)   ! Eq.(A.31) [2]
    real(8) Qmin ! [eV] energy corresponding to the minimum transfered momentum

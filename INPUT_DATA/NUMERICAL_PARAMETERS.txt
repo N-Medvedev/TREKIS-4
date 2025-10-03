@@ -1,10 +1,10 @@
 ::: NUMERICAL PARAMETERS :::
-10           ! number of MC iterations to be performed
-1           ! number of threads for parallel calculations with OpenMP (1 = nonparallelized; <=0 = all available processors)
+1000           ! number of MC iterations to be performed
+30           ! number of threads for parallel calculations with OpenMP (1 = nonparallelized; <=0 = all available processors)
 1.0d0       ! [fs] Time-step
 10.0d0       ! [fs] How often to print out data into files; 1.0d0 or Tgrid.txt
 0.0d0       ! [fs] when to start simulation
-1.0d0      ! [fs] when to stop simulation
+100.0d0      ! [fs] when to stop simulation
 1           ! Activate MC module (1) or not (0)
 0           ! Activate MD module (1) or not (0)
 0           ! Activate TTM module (1) or not (0)
@@ -51,7 +51,7 @@ F           ! Recalculate cross sections and MFPs (T=true; F=false)
 100         ! n grid points for INELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
 10          ! n grid points for ELASTIC cross section integration over energy (E): dE = max((E - E0(:)), G(:))/n
 100         ! n grid points for ELASTIC cross section integration over momentum (Q): dQ = max((Q - (W-E0(:))), G(:))/n
-0           ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+0           ! diff.CS grid: 0=default, 1=old T3; 2(or0)=T4; (-1=T3 without files; -2=T4 without files)
 ::: MODELS FOR HOLES :::
 1           ! Auger decays: 0=excluded, 1=EADL
 1           ! Radiative decays: 0=excluded, 1=EADL
@@ -73,9 +73,9 @@ T           ! printout DOS (T=true, F=false)
 T           ! printout MFPs (T=true, F=false)
 T           ! printout Ranges (T=true, F=false)
 
-!verbose
+verbose
 
-!print_each_step     ! to printout timing of each MD step
+print_each_step     ! to printout timing of each MD step
 
 ----------------------
 ::: MD output data :::

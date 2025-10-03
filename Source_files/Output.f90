@@ -22,8 +22,8 @@ use Dealing_with_files, only: copy_file, close_file, get_file_stat, Count_lines_
 use Dealing_with_XYZ_files, only: write_XYZ
 use Dealing_with_LAMMPS, only: Write_LAMMPS_input_file
 use Gnuplotting
-use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy
-use Read_input_data, only: m_input_minimal, m_input_data, m_numerical_parameters, m_input_folder, m_databases, m_starline, &
+use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy, m_starline, m_dashline
+use Read_input_data, only: m_input_minimal, m_input_data, m_numerical_parameters, m_input_folder, m_databases, &
                            m_EADL, m_EPDL
 use Periodic_table, only : Atomic_data, Read_from_periodic_table
 use Initial_conditions, only: count_types_of_SHIs, repeated_type
@@ -4819,6 +4819,60 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    ! MODELS:
    write(print_to,'(a)') trim(adjustl(m_starline)) 
    write(print_to,'(a)') ' Models used:'
+
+   ! CDF numerical parameters:
+   !if (numpar%verbose) then
+      select case (abs(numpar%CDF_CS_method))
+      case (1)
+         write(print_to,'(a)') ' Using TREKIS-3 default integration grid'
+      case (2)
+         write(print_to,'(a)') ' Using TREKIS-4 default integration grid'
+      case default
+         write(print_to,'(a)') ' Using accelerated TREKIS-4 integration grid'
+      end select
+
+      if (numpar%CDF_CS_method < 0) then
+         write(print_to,'(a)') ' Integrating diff.CS every time required'
+      else
+         write(print_to,'(a)') ' Precalculated diff.CS are interpolated'
+      endif
+
+      select case (numpar%CDF_plasmon)
+      case default
+         write(print_to,'(a)') ' Plasmon integration limit unused'
+      case (1)
+         write(print_to,'(a)') ' Plasmon integration limit used'
+      end select
+
+
+      write(text1,'(f16.2)') numpar%CDF_Eeq_factor
+      write(print_to,'(a)') ' Coefficient switching from Ritchie to Delta CDF: E = k*Wmin (inelastic): '//trim(adjustl(text1))
+
+      write(text1,'(f16.2)') numpar%CDF_Eeq_elast
+      write(print_to,'(a)') ' Coefficient switching from Ritchie to Delta CDF: E = k*Wmin (elastic): '//trim(adjustl(text1))
+
+      select case (numpar%CDF_elast_Zeff)
+      case default
+         write(print_to,'(a)') ' Effective charge of target atoms: Barkas-like'
+      case (1)
+         write(print_to,'(a)') ' Effective charge of target atoms: Z=1'
+      end select
+
+      write(text1,'(i0)') numpar%CDF_int_n_inelastE
+      write(print_to,'(a)') ' Effective number of grid points for inelastic CS (energy): '//trim(adjustl(text1))
+
+      write(text1,'(i0)') numpar%CDF_int_n_inelastQ
+      write(print_to,'(a)') ' Effective number of grid points for inelastic CS (momentum): '//trim(adjustl(text1))
+
+      write(text1,'(i0)') numpar%CDF_int_n_elastE
+      write(print_to,'(a)') ' Effective number of grid points for elastic CS (energy): '//trim(adjustl(text1))
+
+      write(text1,'(i0)') numpar%CDF_int_n_elastQ
+      write(print_to,'(a)') ' Effective number of grid points for elastic CS (momentum): '//trim(adjustl(text1))
+
+      write(print_to,'(a)') trim(adjustl(m_dashline))
+   !endif
+
    ! Photons:
    select case (numpar%Ph_absorb) ! Include photoabsorption
    case (1)
