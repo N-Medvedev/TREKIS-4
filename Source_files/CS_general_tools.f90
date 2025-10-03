@@ -303,41 +303,67 @@ pure function plasmon_energy(Nel, At_Dens, Egap) result(Epl)
 end function plasmon_energy
 
 
-pure function remap_energy_step(E, n, G, E0, useold) result(dE)
+function remap_energy_step(E, n, CS_method, G, E0, E0_min, E0_max, dE_min) result(dE)
    real(8) :: dE
    real(8), intent(in) :: E ! [eV] integration point in energy
    integer, intent(in) :: n ! effective number of integration points
    real(8), dimension(:), intent(in), optional :: E0, G ! [eV] E0 and Gamma parameters of CDF
-   logical, intent(in), optional :: useold  ! use the old (TREKIS-3) mapping instead of the new one
+   integer, intent(in), optional :: CS_method  ! which integration method to use (old from TREKIS-3, new, upgraded)
+   real(8), intent(in), optional :: E0_min, E0_max, dE_min ! both must be present for NEW grid; dE_min for minimal step optional
+   !--------------------------------------
    logical :: old_mapping
    integer :: i, Nsiz
-   real(8) :: E_min, E_cur
-   
-   ! Check if the user wants to use old mapping or new one:
-   old_mapping = .false.
-   if (present(useold)) then
-      if (useold) then
-         old_mapping = .true.
-      else
-         old_mapping = .false.
-      endif
+   real(8) :: E_min, E_cur, dE_min_use
+
+   ! Check if the minimal possible dE is provided:
+   if (present(dE_min)) then
+      dE_min_use = dE_min
+   else ! use default value (typically the case for inelastic scsattering)
+      dE_min_use = 0.001d0   ! [eV] step smaller than this is not allowed
    endif
    
-   if (old_mapping) then
+   select case (abs(CS_method))
       ! the integration step is chosen by this mapping as to provide small steps at low energies
       ! (where there are peaks in CDF), and larger steps at higher energies along smooth decreesing tails:
+   case (1) ! old (TREKIS-3) integration grid
       dE = (1.0d0/(E+1.0d0) + E)/dble(n)
-   else     ! use new mapping
+   case default ! TREKIS-4 default method
       ! the integration step is chosen small around CDF peaks, but larger away from any of them:
-      Nsiz = size(E0)  ! number of CDF oscillators
-      E_min = 1d20     ! to start with
-      do i = 1, Nsiz
-         E_cur = max( (E - E0(i)), G(i) )
-         if (E_min > E_cur) E_min = E_cur
-!          print*, E, E - E0(i)
-      enddo
-      dE = E_min/dble(n) 
+      if ( (present(E0)) .and. (present(G)) ) then
+         Nsiz = size(E0)  ! number of CDF oscillators
+         E_min = 1d20     ! to start with
+         do i = 1, Nsiz
+            E_cur = max( (E - E0(i)), G(i) )
+            if (E_min > E_cur) E_min = E_cur
+!             print*, E, E - E0(i)
+         enddo
+         dE = E_min/dble(n)
+      else ! use old grid
+         dE = (1.0d0/(E+1.0d0) + E)/dble(n)  ! start with old, if there are no parameters for the new
+      endif
+   case (3) ! New sped up integration grid:
+      if ( (present(E0_min)) .and. (present(E0_max)) ) then
+         if ( (E > E0_min) .and. (E < E0_max) ) then   ! fine grid in the interval
+            dE = (E0_max - E0_min)/dble(n)
+         else !if (E > E0_max) then ! high-energy - too far from the peak, no need for fine resolution
+            dE = E/dble(n)
+         !else ! low energy - too far from the peak, no need for fine resolution (usually unused, but anyway...)
+         !   dE = (E-E0_min)/dble(n) ! step not smaller than this
+         endif
+      else ! use old grid
+         dE = (1.0d0/(E+1.0d0) + E)/dble(n)  ! start with old, if there are no parameters for the new
+      endif
+   endselect
+
+   if (dE < 0.0e0) then
+      if ( (present(E0_min)) .and. (present(E0_max)) ) then
+         print*, 'Error in remap_energy_step (dE<0):', n, E, E0_min, E0_max
+      else
+         print*, 'Error in remap_energy_step (dE<0):', n, E
+      endif
    endif
+
+   dE = max(dE, dE_min_use)  ! step not smaller than this
 end function remap_energy_step
 
 

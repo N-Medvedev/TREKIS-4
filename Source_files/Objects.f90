@@ -662,7 +662,7 @@ type Num_par
    integer :: CDF_int_n_inelastQ ! effective number of grid points for inelastic cross section integration over momentum
    integer :: CDF_int_n_elastE ! effective number of grid points for elastic cross section integration over energy
    integer :: CDF_int_n_elastQ ! effective number of grid points for elastic cross section integration over momentum
-   integer :: CDF_CS_method      ! flag which type of diff.CS to use: saved in file and extrapolated (0), or calculated each time (1)
+   integer :: CDF_CS_method    ! diff.CS grid: 1=old T3; 2 (or 0)=T4; 3=new T4; (-1=T3 without files; -2=T4 without files; -3=new T4 without files)
    ! MODELS FOR HOLES:
    integer :: H_Auger		! Auger decays: 0=excluded, 1=provided in cdf-file, 2=EADL
    integer :: H_Radiat		! Radiative decays: 0=excluded, 1=EADL

@@ -26,7 +26,7 @@ use Read_input_data, only: m_electron_CS, m_input_folder, m_electron_inelast_CS,
 use Dealing_with_files, only: read_file
 use CS_general_tools, only: MFP_from_sigma, plasmon_energy, remap_energy_step, temperature_factor, remap_dq
 use Little_subroutines, only: interpolate_data_single, find_in_array_monoton, print_time_step
-use CS_integration_limits, only: W_max, Q_min_nonrel, Q_max_nonrel, find_Wmax_equal_Wmin, W_min, W_max_nonrel_free
+use CS_integration_limits, only: W_max, Q_min_nonrel, Q_max_nonrel, find_Wmax_equal_Wmin, W_min, W_max_nonrel_free, define_integration_limits
 use SHI_charge_state, only: Equilibrium_charge_SHI
 
 implicit none
@@ -156,7 +156,8 @@ subroutine get_electron_IMFP(Material, numpar, Err)
                      count_lines = 0
                      do m = 1, Nsiz	! for all energy grid points:
                         E => Material(i)%El_inelastic_valent%E(m)	! electron energy [eV]
-                        read(FN,'(es,es,es,es)', IOSTAT=Reason) E, Material(i)%El_inelastic_valent%Total(m), Material(i)%El_inelastic_valent%Total_MFP(m), Material(i)%El_inelastic_valent%Total_Se(m)
+                        read(FN,'(es,es,es,es)', IOSTAT=Reason) E, Material(i)%El_inelastic_valent%Total(m), &
+                                    Material(i)%El_inelastic_valent%Total_MFP(m), Material(i)%El_inelastic_valent%Total_Se(m)
                         call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                         if (.not.read_well) then
                            close(FN)	! redo the file
@@ -945,6 +946,7 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
    real(8) :: eps, Wmax, Wmin, M_in, Mc2, mtc2, mass_temp, Eplasmon, dE, E_cur, E_cur0, E_cur1, ddEdx
    real(8) :: sigma1, sigma0, sigma2, sigma_cur, dEdx1, dEdx0, dEdx2, dEdx_cur
    real(8) :: dEdx, prefact, Tfact0, Tfact1, Tfact2, dsigma_max, dE_test
+   real(8) :: E_start, E_end, E_low, E_high
    integer :: n
    
 !    if (present(hw_phonon)) then
@@ -995,6 +997,12 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
 !             if (Eplasmon >= Wmax) Wmax = Eplasmon ! single atom vs plasmon
          endif
          if (Ekin < Wmax) Wmax = Ekin ! no more than the total electron energy
+
+         ! Now, take into account that there is no need to integrate empty space:
+         ! Define the interval of integration where the peak are (requires fined grid):
+         E_low = minval(CDF%E0 - 5.0d0*CDF%Gamma)
+         E_high = maxval(CDF%E0 + 5.0d0*CDF%Gamma)
+         call define_integration_limits(E_start, E_end, NumPar%CDF_CS_method, Wmin, Wmax, E_low, E_high)  ! module "CS_integration_limits"
    
          ! Start integration by energy (non-relativistic case):
          if (present(hw_phonon)) then
@@ -1003,7 +1011,8 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
             n = numpar%CDF_int_n_inelastE    ! number of integration steps
          endif
 
-         E_cur = Wmin    ! to start integration
+         !E_cur = Wmin    ! to start integration
+         E_cur = E_start
          ! Just to start from the min transfered energy:
          if (present(Sigma_sampled) .and. present(E_sampled)) then   ! it is a searching expedition
             E_sampled = E_cur
@@ -1027,19 +1036,18 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
          dEdx = 0.0d0
          sigma = 0.0d0
          
-!          print*, 'Before', E_cur, dE, Wmin, Wmax
-         
          ! Integrate:
-         SRCH:do while (E_cur <= Wmax)
+         !SRCH:do while (E_cur <= Wmax)
+         SRCH:do while (E_cur <= E_end)
+
             ! Change integration step as needed by change of the energy:
-            dE = remap_energy_step(E_cur, n, G=CDF%Gamma, E0=CDF%E0)  ! module "CS_general_tools" CORRECT
-            
-!             if (.not.present(hw_phonon)) then ! do not do for phonons
-!                dE = remap_energy_step(E_cur, n, minval(CDF%Gamma))  ! module "CS_general_tools"               
-!             else
-!                dE = remap_energy_step(E_cur, n)  ! module "CS_general_tools" CORRECT
-!             endif
-            
+            if (present(hw_phonon)) then ! For phonons, use small min_dE:
+               dE = remap_energy_step(E_cur, n, numpar%CDF_CS_method, &
+                    G=CDF%Gamma, E0=CDF%E0, E0_min=E_start, E0_max=E_end, dE_min=1.0e-5)  ! module "CS_general_tools" CORRECT
+            else ! for inelastic scattering, use defult min_dE
+               dE = remap_energy_step(E_cur, n, numpar%CDF_CS_method, &
+                    G=CDF%Gamma, E0=CDF%E0, E0_min=E_start, E0_max=E_end)  ! module "CS_general_tools" CORRECT
+            endif
             ! Simpson integration:
             E_cur0 =  E_cur + dE/2.0d0    ! middle step [eV]
             
@@ -1049,7 +1057,8 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
 !             endif
             
             
-            if (E_cur0 > Wmax) exit
+            !if (E_cur0 > Wmax) exit
+            if (E_cur0 > E_end) exit
             ! Differential cross section at this point:
             if (present(v_f) .and. present(CDF_dispers)) then
                call Diff_cross_section(numpar,sigma1, Ekin, E_cur0, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, &
@@ -1069,7 +1078,8 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
             
             ! End-point for this step:
             E_cur1 = E_cur + dE
-            if (E_cur1 > Wmax) exit
+            !if (E_cur1 > Wmax) exit
+            if (E_cur1 > E_end) exit
             ! Differential cross section at this point:
             if (present(v_f) .and. present(CDF_dispers)) then
                call Diff_cross_section(numpar,sigma2, Ekin, E_cur1, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, &
@@ -1134,6 +1144,213 @@ subroutine CDF_total_CS_nonrel(numpar, sigma, Se, Ekin, Mass, Zeff, Ip, T_target
 !    if (Ekin == 1000.0d0) pause 'CDF_total_CS_nonrel' ! Testing
    
 end subroutine CDF_total_CS_nonrel
+
+
+! The next procidure is the dummy version of "CDF_total_CS_nonrel"
+! going through the same integration points (without any calculations inside)
+! just to construct the integration grid:
+subroutine CDF_setting_dE_grid(numpar, sigma, Ekin, Mass, Zeff, Ip, T_target, CDF, M_sc, &
+                   k, Eff_m, identical, m_eff, At_Dens, DOS, CDF_model, &
+                   v_f, Zmodel, hw_phonon, Nel, CDF_dispers, Wmax_in, Sigma_sampled, E_sampled)
+   type(Num_par), intent(in) :: numpar	! all numerical parameters
+   real(8), intent(out) :: sigma	! [A^2] cross section
+   real(8), intent(in) :: Ekin	! [eV] kinetic energy of incident electron
+   real(8), intent(in) :: Mass	! [kg] mass of the incident particle
+   real(8), intent(in) :: Zeff	! [e] effective charge of the incident particle
+   real(8), intent(in) :: Ip	! [eV] ionization potential of the concidered shell
+   real(8), intent(in) :: T_target	! [eV] target temeprature
+   type(Ritchi_CDF), intent(in) :: CDF	! CDF coefficients
+   real(8), intent(in) :: M_sc	! [kg] mass of the target scattering center (eletron, atom)
+   real(8), dimension(:), intent(in) :: k, Eff_m	! arrays with the target dispersion curve from DOS
+   logical, intent(in) :: identical ! are those particles identical or not (electron-electron vs hole-electron, etc.)
+   real(8), intent(in) :: m_eff ! coefficient of the effective mass of the incident particle
+   real(8), intent(in):: At_Dens ! atomic density [1/cm^3]
+   type(Density_of_states), intent(in) :: DOS    ! DOS
+   integer, intent(in) :: CDF_model ! which model to use for slow particles
+   real(8), intent(in), optional :: v_f	! fermi velosity
+   integer, intent(in), optional :: Zmodel	! sets model choice for the effective charge for SHI (variable not used for other particles)
+   real(8), intent(in), optional :: hw_phonon   ! maximal phonon frequency, for particle-phonon scattering
+   real(8), intent(in), optional :: Nel ! electrons per atom (to get plasmon energy)
+   integer, intent(in), optional :: CDF_dispers     ! whilch model to use for the extension of the dielectric functions
+   real(8), intent(in), optional :: Wmax_in ! [eV] maximal transfered energy
+   real(8), intent(in), optional :: Sigma_sampled   ! to search for transfered energy, sampled cross section
+   real(8), intent(inout), optional :: E_sampled    ! energy corresponding to sampled cross section
+   !----------------------------------------
+   real(8) :: eps, Wmax, Wmin, M_in, Mc2, mtc2, mass_temp, Eplasmon, dE, E_cur, E_cur0, E_cur1, ddEdx
+   real(8) :: sigma1, sigma0, sigma2, sigma_cur, dEdx1, dEdx0, dEdx2, dEdx_cur
+   real(8) :: dEdx, prefact, Tfact0, Tfact1, Tfact2, dsigma_max, dE_test
+   real(8) :: E_start, E_end, E_low, E_high
+   integer :: n
+
+!    if (present(hw_phonon)) then
+!       print*, 'CDF_total_CS_nonrel', hw_phonon, Ekin, Ip
+!    endif
+
+   if (Ekin > Ip) then  ! ionization is possible
+      eps = 1.0d-6 ! margin within which the effective mass is equal to zero
+      ! Get the particle mass:
+      if (m_eff > eps) then ! a constant coefficient * me
+         M_in = m_eff * g_me
+      elseif (abs(m_eff) < eps) then ! equals to user-provided mass (electron, ion, etc.)
+         M_in = Mass
+      else  ! effective mass from DOS
+         call interpolate_data_single(DOS%E, DOS%Eff_m, (DOS%E_VB_top - Ekin), mass_temp) ! module "Little_subroutines"
+         M_in = mass_temp * g_me
+         !print*, 'M_eff:', Ekin, mass_temp, DOS%E_VB_top - Ekin
+      endif
+      ! Incident particle mass in the energy units:
+      Mc2 = rest_energy(M_in)   ! module "Relativity"
+      ! Target particle mass in the energy units:
+      mtc2 = rest_energy(M_sc)   ! module "Relativity"
+      ! Upper integration limit [eV]:
+      if (present(Wmax_in)) then
+         Wmax = Wmax_in ! user defined
+      elseif (present(hw_phonon)) then
+         !Wmax = W_max(Mc2, mtc2, identical, Ekin, Ip, hw_phonon) ! module "CS_integration_limits"
+         Wmax = W_max_nonrel_free(Mc2, mtc2, identical, Ekin, Ip, hw_phonon)   ! module "CS_integration_limits"
+      else
+         !Wmax = W_max(Mc2, mtc2, identical, Ekin, Ip) ! module "CS_integration_limits"
+         Wmax = W_max_nonrel_free(Mc2, mtc2, identical, Ekin, Ip)   ! module "CS_integration_limits"
+      endif
+      ! Minimal transfered energy:
+      Wmin = W_min(Ip, Mc2, mtc2, Ekin, Ip) ! module "CS_integration_limits"
+!       print*, 'CDF_total_CS_2', Ekin, Wmax, Wmin
+
+      WiP:if ( Wmax > Ip ) then  ! ionization is possible
+!       WiP:if ( Wmax > max(Ip,Wmin) ) then  ! ionization is possible
+         ! Get the constant prefactor for the cross section
+         prefact = (Zeff*Zeff) * P_prefactor_nonrel(M_in, Ekin, At_Dens)  ! below
+
+         ! Lower integration limit:
+         Wmin = Ip ! [eV] minimal transferred energy
+
+         ! Use maximal plasmon energy as the upper limit of integration
+         if ( (present(Nel)) .and.  (.not.present(Wmax_in)) ) then       ! If included, only for total cross section
+            Eplasmon = plasmon_energy(Nel, At_Dens, Ip)    ! module "CS_general_tools"
+!             if (Eplasmon >= Wmax) Wmax = Eplasmon ! single atom vs plasmon
+         endif
+         if (Ekin < Wmax) Wmax = Ekin ! no more than the total electron energy
+
+         ! Now, take into account that there is no need to integrate empty space:
+         ! Define the interval of integration where the peak are (requires fined grid):
+         E_low = minval(CDF%E0 - 5.0d0*CDF%Gamma)
+         E_high = maxval(CDF%E0 + 5.0d0*CDF%Gamma)
+         call define_integration_limits(E_start, E_end, NumPar%CDF_CS_method, Wmin, Wmax, E_low, E_high)  ! module "CS_integration_limits"
+
+         ! Start integration by energy (non-relativistic case):
+         if (present(hw_phonon)) then
+            n = numpar%CDF_int_n_elastE    ! number of integration steps
+         else
+            n = numpar%CDF_int_n_inelastE    ! number of integration steps
+         endif
+
+         !E_cur = Wmin    ! to start integration
+         E_cur = E_start
+         ! Just to start from the min transfered energy:
+         if (present(Sigma_sampled) .and. present(E_sampled)) then   ! it is a searching expedition
+            E_sampled = E_cur
+         endif
+
+         ! Differential cross section:
+         if (present(v_f) .and. present(CDF_dispers)) then
+            call Diff_cross_section(numpar,sigma0, Ekin, E_cur, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, &
+                        E0_model=CDF_dispers, v_f=v_f, Mass=M_sc)  ! below
+         elseif (present(CDF_dispers)) then
+            call Diff_cross_section(numpar,sigma0, Ekin, E_cur, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, E0_model=CDF_dispers)  ! below
+         elseif (present(hw_phonon)) then
+            call Diff_cross_section(numpar,sigma0, Ekin, E_cur, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, hw_phonon=hw_phonon)  ! below
+         else ! by defualt, no additional parameters
+            call Diff_cross_section(numpar,sigma0, Ekin, E_cur, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model)  ! below
+         endif
+         ! Temperature factor:
+         Tfact0 = temperature_factor(E_cur, T_target)    ! module "CS_general_tools"
+         sigma0 = sigma0*Tfact0   ! include temprature factor
+         dsigma_max = sigma0    ! current definition of the maximal value, to be changed below
+         dEdx = 0.0d0
+         sigma = 0.0d0
+
+         ! Integrate:
+         !SRCH:do while (E_cur <= Wmax)
+         SRCH:do while (E_cur <= E_end)
+
+            ! Change integration step as needed by change of the energy:
+            if (present(hw_phonon)) then ! For phonons, use small min_dE:
+               dE = remap_energy_step(E_cur, n, numpar%CDF_CS_method, &
+                    G=CDF%Gamma, E0=CDF%E0, E0_min=E_start, E0_max=E_end, dE_min=1.0e-5)  ! module "CS_general_tools" CORRECT
+            else ! for inelastic scattering, use defult min_dE
+               dE = remap_energy_step(E_cur, n, numpar%CDF_CS_method, &
+                    G=CDF%Gamma, E0=CDF%E0, E0_min=E_start, E0_max=E_end)  ! module "CS_general_tools" CORRECT
+            endif
+            ! Simpson integration:
+            E_cur0 =  E_cur + dE/2.0d0    ! middle step [eV]
+
+            !if (E_cur0 > Wmax) exit
+            if (E_cur0 > E_end) exit
+            ! Differential cross section at this point:
+            if (present(v_f) .and. present(CDF_dispers)) then
+               call Diff_cross_section(numpar,sigma1, Ekin, E_cur0, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, &
+                            E0_model=CDF_dispers, v_f=v_f, Mass=M_sc)  ! below
+            elseif (present(CDF_dispers)) then
+               call Diff_cross_section(numpar,sigma1, Ekin, E_cur0, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, E0_model=CDF_dispers)  ! below
+            elseif (present(hw_phonon)) then
+               call Diff_cross_section(numpar,sigma1, Ekin, E_cur0, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, hw_phonon=hw_phonon)  ! below
+            else ! by defualt, no additional parameters
+               call Diff_cross_section(numpar,sigma1, Ekin, E_cur0, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model)  ! below
+            endif
+            ! Temperature factor:
+            Tfact1 = temperature_factor(E_cur0, T_target)    ! module "CS_general_tools"
+            sigma1 = sigma1*Tfact1   ! include temprature factor
+
+!             write(*,'(a,es,es,es,es,es,es)') 'CS:', Ekin, dE, E_cur0, Wmin, Wmax, sigma1 ! Testing
+
+            ! End-point for this step:
+            E_cur1 = E_cur + dE
+            !if (E_cur1 > Wmax) exit
+            if (E_cur1 > E_end) exit
+            ! Differential cross section at this point:
+            if (present(v_f) .and. present(CDF_dispers)) then
+               call Diff_cross_section(numpar,sigma2, Ekin, E_cur1, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, &
+                            E0_model=CDF_dispers, v_f=v_f, Mass=M_sc)  ! below
+            elseif (present(CDF_dispers)) then
+               call Diff_cross_section(numpar,sigma2, Ekin, E_cur1, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, E0_model=CDF_dispers)  ! below
+            elseif (present(hw_phonon)) then
+               call Diff_cross_section(numpar,sigma2, Ekin, E_cur1, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model, hw_phonon=hw_phonon)  ! below
+            else ! by defualt, no additional parameters
+               call Diff_cross_section(numpar,sigma2, Ekin, E_cur1, CDF%A, CDF%E0, CDF%Gamma, M_in, M_sc, CDF_model)  ! below
+            endif
+            ! Temperature factor:
+            Tfact2 = temperature_factor(E_cur1, T_target)    ! module "CS_general_tools"
+            sigma2 = sigma2*Tfact2    ! include temprature factor
+
+            ! Integral of diff.cross section according to Simpson method:
+            sigma_cur = dE/6.0d0*(sigma0 + 4.0d0*sigma1 + sigma2)
+            !if (sigma_cur > dsigma_max) dsigma_max = sigma_cur  ! redefine the maximal value
+            ! Sum it into the total cross section:
+            sigma = sigma + sigma_cur     ! integrated cross section ([eV], to be converted into [A^2] below)
+            ! Sum the energy loss (stopping power) function:
+            dEdx = dEdx + E_cur*sigma_cur ! stopping power  ([eV^2], to be converted into [eV/A] below)
+            sigma0 = sigma2   ! save for the next step
+            E_cur = E_cur1  ! [eV] save for the next step
+
+            if (present(Sigma_sampled) .and. present(E_sampled)) then   ! it is a searching expedition
+               E_sampled = E_cur     ! save corresponding energy
+               if (sigma*prefact >= Sigma_sampled) then ! found the cross section that equals to the sampled one
+!                   print*, 'CDF_total_CS_nonrel', sigma, Sigma_sampled, E_cur
+                  exit SRCH ! if found the energy, no need to continue, exit the cicle
+               endif
+            endif
+
+         enddo SRCH
+
+
+      else WiP  ! ionization is impossible
+
+      endif WiP
+
+   else ! ionization is impossible
+
+   endif
+end subroutine CDF_setting_dE_grid
 
 
 

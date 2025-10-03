@@ -142,6 +142,16 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%MC_Electrons(MC(iter)%N_e)%R(1) = sample_Gaussian(bunch(ibunch)%R(1), bunch(ibunch)%R_spread(1))    ! module "Little_subroutines"
       MC(iter)%MC_Electrons(MC(iter)%N_e)%R(2) = sample_Gaussian(bunch(ibunch)%R(2), bunch(ibunch)%R_spread(2))    ! module "Little_subroutines"
       MC(iter)%MC_Electrons(MC(iter)%N_e)%R(3) = sample_Gaussian(bunch(ibunch)%R(3), bunch(ibunch)%R_spread(3))    ! module "Little_subroutines"
+
+      if ( (isnan(MC(iter)%MC_Electrons(MC(iter)%N_e)%R(1))) .or. &
+           (isnan(MC(iter)%MC_Electrons(MC(iter)%N_e)%R(2))) .or. &
+           (isnan(MC(iter)%MC_Electrons(MC(iter)%N_e)%R(3))) ) then
+         print*, 'ERROR in define_projectile: Electron'
+         print*, 'R:', MC(iter)%MC_Electrons(MC(iter)%N_e)%R(:)
+         print*, 'i:', iter, MC(iter)%N_e
+         print*, 'sp', bunch(ibunch)%R_spread(:)
+      endif
+
       ! Absolute value of velosity:
       V = velosity_from_kinetic_energy(MC(iter)%MC_Electrons(MC(iter)%N_e)%Ekin, g_me)  ! [A/fs] module "Relativity"
 !       V = V * g_ms2Afs    ! [m/s] -> [A/fs]

@@ -49,12 +49,13 @@ subroutine MC_electron_event(used_target, numpar, N_e, Prtcl, NOP, MC, MD_supce,
        (SUM(ABS(Prtcl(NOP)%V(:))) < 1.0d-12) .or. (Prtcl(NOP)%Ekin < 0.0d0) ) then
       print*, 'Error in MC_electron_event:',  Prtcl(NOP)%active
       print*, 'N=', NOP, MC%N_e
-      print*, Prtcl(NOP)%R(:)
-      print*, Prtcl(NOP)%R0(:) 
-      print*, Prtcl(NOP)%V(:)
-      print*, Prtcl(NOP)%V0(:)
-      print*, Prtcl(NOP)%Ekin
-      print*, Prtcl(NOP)%ti - Prtcl(NOP)%t0, Prtcl(NOP)%ti, Prtcl(NOP)%t0
+      print*, 'In target:', Prtcl(NOP)%in_target
+      print*, 'R:', Prtcl(NOP)%R(:)
+      print*, 'R0', Prtcl(NOP)%R0(:)
+      print*, 'V:', Prtcl(NOP)%V(:)
+      print*, 'V0', Prtcl(NOP)%V0(:)
+      print*, "E=", Prtcl(NOP)%Ekin
+      print*, 't:', Prtcl(NOP)%ti - Prtcl(NOP)%t0, Prtcl(NOP)%ti, Prtcl(NOP)%t0
    endif
    
    R0 = Prtcl(NOP)%R0   ! save for testing
@@ -74,11 +75,21 @@ subroutine MC_electron_event(used_target, numpar, N_e, Prtcl, NOP, MC, MD_supce,
    select case(i_type)
    case (0) ! target boundary crossing
       call event_electron_target_boundary(used_target, numpar, Prtcl(NOP), NOP, MD_supce, E_e, INFO)   ! below
-      if (INFO /= 0) then   ! somthing went wrong in the boundary scattering:
+      if ( (INFO /= 0) .or. &
+           (isnan(Prtcl(NOP)%R(1))) .or. &
+           (isnan(Prtcl(NOP)%R(2))) .or. &
+           (isnan(Prtcl(NOP)%R(3))) ) then   ! somthing went wrong in the boundary scattering:
          print*, 'Error in MC_electron_event'
          print*, 'problem with event_electron_target_boundary'
+         print*, 'N=', NOP, MC%N_e
+         print*, 'In target:', Prtcl(NOP)%in_target
+         print*, 'R:', Prtcl(NOP)%R(:)
+         print*, 'R0', Prtcl(NOP)%R0(:)
+         print*, 'V:', Prtcl(NOP)%V(:)
+         print*, 'V0', Prtcl(NOP)%V0(:)
+         print*, "E=", Prtcl(NOP)%Ekin
+         print*, 't:', Prtcl(NOP)%ti - Prtcl(NOP)%t0, Prtcl(NOP)%ti, Prtcl(NOP)%t0
          print*, 't0=', t0
-         print*, 'R0=', R0
          print*, '****************************************'
       endif
    case (1) ! inelastic
@@ -113,11 +124,16 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    ! Find whether an electron crosses the boundary or reflects back:
    ! 1) Kinetic energy towards crossing the boundary:
    call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, 'event_electron_target_boundary', INFO)    ! module "MC_general_tools"
-   if (INFO /=0) then   !some error occured
+   if ( (INFO /=0) .or. &
+        (isnan(Prtcl%R(1))) .or. &
+        (isnan(Prtcl%R(2))) .or. &
+        (isnan(Prtcl%R(3))) ) then   !some error occured
       print*, 'ERROR #', INFO
       print*, 'Electron: define_normal_to_surface failed for Prtcl:', NOP
       print*, 'R=', Prtcl%R
+      print*, 'R0', Prtcl%R0(:)
       print*, 'V=', Prtcl%V
+      print*, 'V0', Prtcl%V0
       print*, 'E=', Prtcl%Ekin
       print*, 'ti=', Prtcl%ti
       print*, 't_sc=', Prtcl%t_sc
@@ -183,13 +199,19 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
       !Prtcl%R(:) = Prtcl%R(:) + 1.0d-6 * Prtcl%V(:)/Vabs
       Prtcl%R(:) = Prtcl%R(:) + R_shift(:)
       
-      if (INFO /=0) then   !some error occured
+      if ( (INFO /=0) .or. &
+           (isnan(Prtcl%R(1))) .or. &
+           (isnan(Prtcl%R(2))) .or. &
+           (isnan(Prtcl%R(3))) ) then   !some error occured
          print*, 'After Transmission:'
          print*, 'R=', Prtcl%R(:)
+         print*, 'R0', Prtcl%R0(:)
          print*, 'V=', Prtcl%V(:)
+         print*, 'V0', Prtcl%V
          print*, 'Vnorm=', Vnorm
          print*, 'Ekin_norm=', Ekin_norm
          print*, 'Shift:', R_shift(:)
+         print*, 'target:', Prtcl%in_target
       endif
 
       ! 6.b) Get the next flight inside the new target (transmitted) or old target (reflected):
@@ -197,18 +219,30 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    else ! reflection back
       ! Change velosity according to reflection from the surface with given normal:
       call reflection_from_surface(Prtcl%V, norm_to_surf)   ! module "MC_general_tools"
-      if (INFO /=0) then   !some error occured
-         print*, 'After Reflection:'
+      if ( (INFO /=0) .or. &
+           (isnan(Prtcl%R(1))) .or. &
+           (isnan(Prtcl%R(2))) .or. &
+           (isnan(Prtcl%R(3))) ) then   !some error occured
          print*, 'R=', Prtcl%R(:)
+         print*, 'R0', Prtcl%R0(:)
          print*, 'V=', Prtcl%V
+         print*, 'V0', Prtcl%V
          print*, 'Vnorm=', Vnorm
          print*, 'Ekin_norm=', Ekin_norm
+         print*, 'target:', Prtcl%in_target
       endif
       
       ! 6.c) Shift electron just across the border (along the direction of velocity):
 !       Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
 !       Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
-      Prtcl%R(:) = Prtcl%R(:) + 10.0d0*m_tollerance_eps * Prtcl%V(:)/abs(Prtcl%V(:))     ! to place particle inside of the material
+
+      do i = 1, 3
+         if ( abs(Prtcl%V(i)) > 0.5d0*m_tollerance_eps ) then
+            Prtcl%R(i) = Prtcl%R(i) + 10.0d0*m_tollerance_eps * Prtcl%V(i)/abs(Prtcl%V(i))     ! to place particle inside of the material
+         else ! zero velosity -> no shift
+            ! Don't shift, if it's not moving anyway
+         endif
+      enddo
       
       ! To check exceptional cases of particles hitting a corner of a target and emitting through another wall,
       ! update particle's material index according to the new material it may enter:
@@ -218,6 +252,21 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
       call get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, .true.)  ! module "MC_general_tools"
    endif
    
+
+   if ( (isnan(Prtcl%R(1))) .or. &
+        (isnan(Prtcl%R(2))) .or. &
+        (isnan(Prtcl%R(3))) ) then   !some error occured
+      print*, 'ERROR in define_normal_to_surface failed for Prtcl: Electron (end)'
+      print*, 'R=', Prtcl%R(:)
+      print*, 'R0', Prtcl%R0(:)
+      print*, 'V=', Prtcl%V
+      print*, 'V0', Prtcl%V
+      print*, 'Vnorm=', Vnorm
+      print*, 'Ekin_norm=', Ekin_norm
+      print*, 'target:', Prtcl%in_target
+   endif
+
+
 !      print*, 'V1=', Prtcl%V(:)
 !      print*, 'R1=', Prtcl%R(:)
 !     print*, 'Flight time:', Prtcl%ti, Prtcl%t_sc
@@ -961,6 +1010,18 @@ subroutine find_type_of_electron_event(used_target, numpar, Prtcl, i_type)
 !        print*, 'Box:', numpar%box_start_x, numpar%box_end_x, &
 !                 numpar%box_start_y, numpar%box_end_y, numpar%box_start_z, numpar%box_end_z
    else ! it is a scattering-type event
+
+      if (Prtcl%in_target == 0) then ! particle is in vacuum, cannot scatter
+         print*, 'ERROR in find_type_of_electron_event:', Prtcl%in_target
+         print*, 'scattering event occured for a particle in vacuum'
+         print*, 't=', Prtcl%ti, Prtcl%t_sc
+         print*, 'R=', Prtcl%R(:)
+         print*, 'R0', Prtcl%R0(:)
+         print*, 'V=', Prtcl%V
+         print*, 'V0', Prtcl%V
+      endif
+
+
       ! Properties of the target material, inside of which the particle is:
       matter => used_target%Material(Prtcl%in_target)
       

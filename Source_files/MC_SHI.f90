@@ -89,7 +89,11 @@ subroutine event_SHI_target_boundary(used_target, numpar, Prtcl)
    ! 1) Find which target's boundary the particle is crossing:
    !R_shift = 1.0d-7 * Prtcl%V(:)     ! to place particle inside of the material
    PrtclV = max( SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) ), m_tollerance_eps) ! exclude zero
-   R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
+   if (PrtclV > 0.5d0*m_tollerance_eps) then
+      R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
+   else
+      R_shift = m_tollerance_eps     ! to place particle inside of the material
+   endif
    ! Update particle's material index according to the new material it enters:
    call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
    

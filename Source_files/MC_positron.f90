@@ -125,12 +125,21 @@ subroutine event_positron_target_boundary(used_target, numpar, Prtcl)
       ! Find into which target this positron enters:
       ! Find which target's boundary the particle is crossing:
       Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
-      R_shift = m_tollerance_eps * Prtcl%V(:)/Vabs     ! to place particle inside of the material 
+      if (Vabs > 0.5d0*m_tollerance_eps) then
+         R_shift = m_tollerance_eps * Prtcl%V(:)/Vabs     ! to place particle inside of the material
+      else
+         R_shift = m_tollerance_eps
+      endif
       ! Update particle's material index according to the new material it enters:
       call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
 
       ! 6.a) Shift positron just across the border:
-      Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
+      !Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
+      if (Vabs > 0.5d0*m_tollerance_eps) then
+         Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
+      else
+         Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps
+      endif
 
       ! 6.b) Get the next flight inside the new target (transmitted) or old target (reflected):
       call get_positron_flight_time(used_target, numpar, Prtcl)  ! module "MC_general_tools"
@@ -140,7 +149,11 @@ subroutine event_positron_target_boundary(used_target, numpar, Prtcl)
 
       ! 6.c) Shift positron just across the border:
       Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
-      Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
+      if (Vabs > 0.5d0*m_tollerance_eps) then
+         Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
+      else
+         Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps
+      endif
 
       ! 6.d) Get the next flight inside the new target (transmitted) or old target (reflected):
       call get_positron_flight_time(used_target, numpar, Prtcl, .true.)  ! module "MC_general_tools"
