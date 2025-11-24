@@ -310,8 +310,8 @@ subroutine get_CDF(numpar, used_target, Err)
 
                   !pause 'sigma_cur'
 
-                  ! At sufficiently low energy (100 eV), a peak in valence CDF should cross the atomic one:
-                  if ( (E < 100.0d0) .and. (sigma < used_target%Material(i)%Ph_absorption_valent%Total(m))) then ! replace atomic sigma with valent one:
+                  ! At sufficiently low energy (~100-200 eV), a peak in valence CDF should cross the atomic one:
+                  if ( (E < 200.0d0) .and. (sigma < used_target%Material(i)%Ph_absorption_valent%Total(m))) then ! replace atomic sigma with valent one:
                      exit ! the rest we leave equal to the valence CS precalculated above
                   endif
                   used_target%Material(i)%Ph_absorption_valent%Total(m) = sigma   ! [A^2]

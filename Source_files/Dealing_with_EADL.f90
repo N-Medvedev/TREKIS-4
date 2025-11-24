@@ -397,15 +397,15 @@ subroutine allocate_EADL_data_arrays(Nsiz, Shl_dsgnr, Shell_name, Ip, Ek, Ne_she
    allocate(Auger(Nsiz))
    allocate(f_auger(Nsiz,Nsiz,Nsiz))
    ! set default values:
-   Shl_dsgnr = 0
-   Shell_name = ''
-   Ip = 1.0d23	! [eV]
-   Ek = 0.0d0	! [eV]
-   Ne_shell = 0
-   Radiat = 1.0d24	! [fs]
-   f_rad = 0.0d0
-   Auger = 1.0d23		! [fs]
-   f_auger = 0.0d0
+   Shl_dsgnr = 0        ! no shell defined
+   Shell_name = ''      ! no shell name known
+   Ip = 1.0d23          ! [eV]
+   Ek = 0.0d0           ! [eV]
+   Ne_shell = 0         ! no shells
+   Radiat = 1.0d24      ! [fs]
+   f_rad = 0.0d0        ! no decay probabilities
+   Auger = 1.0d-20      ! [MeV] infinitely thin line -> infinite decay time in [fs]
+   f_auger = 0.0d0      ! no decay probabilities
 end subroutine allocate_EADL_data_arrays
 
 

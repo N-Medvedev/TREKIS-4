@@ -27,11 +27,11 @@ subroutine process_user_gnu_parameters(gnu_extension, gnu_terminal, do_gnuplot)
    case ('EPS', 'Eps', 'EPs', 'eps')
       gnu_terminal = 'postscript enhanced color'
    case ('PNG', 'PNg', 'Png', 'png')
-      gnu_terminal = 'png font arial '
+      gnu_terminal = 'pngcairo font "arial" '
    case ('JPEG', 'Jpeg', 'jpeg', 'JPG', 'Jpg', 'jpg')
-      gnu_terminal = 'jpeg large font arial'
+      gnu_terminal = 'jpeg large font "arial"'
    case ('GIF', 'GIf', 'Gif', 'gif')
-      gnu_terminal = 'gif large font arial'
+      gnu_terminal = 'gif large font "arial"'
    case ('PDF', 'PDf', 'Pdf', 'pdf')
       gnu_terminal = 'pdf color'
    end select
