@@ -66,7 +66,8 @@ subroutine get_CDF(numpar, used_target, Err)
             file_with_cdf = trim(adjustl(folder_with_cdf))//path_sep//trim(adjustl(m_optical_data))//'_'//trim(adjustl(Element%Shell_name(m)))//'.dat'
             inquire(file=trim(adjustl(file_with_cdf)),exist=file_exist) ! check if this file is there
 !            print*, trim(adjustl(file_with_cdf)), file_exist
-            if (file_exist) then	! just read from the file, no need to recalculate:
+            !if (file_exist) then	! just read from the file, no need to recalculate:
+            if ( (file_exist) .and. (.not.numpar%recalculate_MFPs) ) then ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(file_with_cdf)),action='read')
 
                ! Check if the file format is consistent with the arrays used:
