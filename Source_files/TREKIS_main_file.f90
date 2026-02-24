@@ -78,7 +78,7 @@ call process_user_gnu_parameters(g_numpar%gnupl%gnu_extension, g_numpar%gnupl%gn
 call set_OMP_number(g_numpar%NOMP, g_numpar%verbose, 6)    ! module "Output"
 
 ! Set default values:
-call Set_defaults(g_numpar, g_bunch, g_MC)  ! module "Initial_conditions"
+call Set_defaults_MC(g_numpar, g_bunch, g_MC)  ! module "Initial_conditions"
 ! Interprete the target names, and get the material parameters accordingly:
 call Get_targets_parameters(g_target, g_numpar, g_Err)  ! module "Read_input_data"
 if (g_Err%Err) goto 9999    ! if an error occured while reading input files, terminate the program
