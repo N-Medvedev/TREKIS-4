@@ -334,7 +334,7 @@ pure function repeated_type(bunch, i) result(the_same)   ! check if the ion numb
 end function repeated_type
 
  
-subroutine Set_defaults(numpar, bunch, MC)
+subroutine Set_defaults_MC(numpar, bunch, MC)
 !    type(Matter), intent(inout) :: used_target	! parameters of the target
    type(Num_par), intent(inout) :: numpar	! all numerical parameters
    type(Radiation_param), dimension(:), allocatable, intent(inout) :: bunch	! incomming radiation
@@ -407,7 +407,7 @@ subroutine Set_defaults(numpar, bunch, MC)
       endif
 
    enddo
-end subroutine Set_defaults
+end subroutine Set_defaults_MC
 
  
  

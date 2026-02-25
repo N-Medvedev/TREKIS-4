@@ -66,7 +66,8 @@ subroutine get_CDF(numpar, used_target, Err)
             file_with_cdf = trim(adjustl(folder_with_cdf))//path_sep//trim(adjustl(m_optical_data))//'_'//trim(adjustl(Element%Shell_name(m)))//'.dat'
             inquire(file=trim(adjustl(file_with_cdf)),exist=file_exist) ! check if this file is there
 !            print*, trim(adjustl(file_with_cdf)), file_exist
-            if (file_exist) then	! just read from the file, no need to recalculate:
+            !if (file_exist) then	! just read from the file, no need to recalculate:
+            if ( (file_exist) .and. (.not.numpar%recalculate_MFPs) ) then ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(file_with_cdf)),action='read')
 
                ! Check if the file format is consistent with the arrays used:
@@ -220,9 +221,18 @@ subroutine get_CDF(numpar, used_target, Err)
           
          used_target%Material(i)%CDF_valence%E0(1) = sqrt((g_h/g_e)*(g_h/g_e) * Omega * used_target%Material(i)%N_VB_el)  ! [eV]
          ! Gamma set equal to E0 without effective mass (empirical approximation):
-         used_target%Material(i)%CDF_valence%Gamma(1) = used_target%Material(i)%CDF_valence%E0(1)
+         if (used_target%Material(i)%CDF_valence%E0(1) > 20.0d0) then ! empirical adjustment to ensure the oscillator is not too wide:
+            used_target%Material(i)%CDF_valence%Gamma(1) = used_target%Material(i)%CDF_valence%E0(1) * 0.5d0 ! typical for wide-gap materials
+         else ! regular oscillator:
+            used_target%Material(i)%CDF_valence%Gamma(1) = used_target%Material(i)%CDF_valence%E0(1)
+         endif
          ! A is set vie normalization (sum rule):
          used_target%Material(i)%CDF_valence%A(1) = 1.0d0   ! just to get sum rule to renormalize below
+
+         ! test:
+         !print*, used_target%Material(i)%CDF_valence%E0(1), used_target%Material(i)%CDF_valence%Gamma(1), used_target%Material(i)%CDF_valence%A(1)
+         !pause 'diamond test'
+
          ! Get plasmon omega for free-electrons:
          Omega = w_plasma( 1d6*used_target%Material(i)%At_Dens/dble(SUM(used_target%Material(i)%Elements(:)%percentage)) )  ! module "CDF_Ritchi"
          
