@@ -86,7 +86,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 25.02.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 03.03.2026)'
 
 
 ! All output file names:
@@ -4869,6 +4869,13 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
 
       write(text1,'(i0)') numpar%CDF_int_n_elastQ
       write(print_to,'(a)') ' Effective number of grid points for elastic CS (momentum): '//trim(adjustl(text1))
+
+      select case(used_target%Material(1)%Surface_barrier%barr_type)
+      case (1) ! Eckart-type barrier
+         write(print_to,'(a)') ' Barrier for electron emission used (target #1): Eckart-type'
+      case default ! step barrier
+         write(print_to,'(a)') ' Barrier for electron emission used (target #1): step-function'
+      end select
 
       write(print_to,'(a)') trim(adjustl(m_dashline))
    !endif
