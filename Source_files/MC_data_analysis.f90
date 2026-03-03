@@ -2492,10 +2492,10 @@ subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
                over_sin_theta = over_sin_theta * m_one_over_halfPi  ! normalization accounting for sin(x)
                
                ! Find where to put in on the given theta grid:
-               if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
+               if (theta < numpar%vel_theta_grid(1)) then   ! theta below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max theta grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2503,7 +2503,7 @@ subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
                   i_arr = i_arr + 1 ! assign particle to the end of the interval
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                endif
-                ! add a photon into this array, per energy interval to make distribution:
+                ! add a photon into this array, per theta interval to make distribution:
                Vel_theta_ph(i_arr) = Vel_theta_ph(i_arr) + one_over_N/d_theta * over_sin_theta
 !                write(*,'(a,i4,i4,f,f,f)') '(get_photon_velotheta)', i, i_arr, numpar%vel_theta_grid(i_arr), theta, Spectrum_e(i_arr)
             endif
@@ -2620,7 +2620,7 @@ subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
 !                print*, MC%N_e, i, MC%MC_Positrons(i)%Ekin
                ! Find velosity theta [deg]:
                theta = get_v_theta(MC%MC_Positrons(i)%V)   ! module "Geometris"
-               ! The distribution by theta needs to be converted into pherical coordiante
+               ! The distribution by theta needs to be converted into spherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
@@ -2630,11 +2630,11 @@ subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
                endif
                over_sin_theta = over_sin_theta * m_one_over_halfPi  ! normalization accounting for sin(x)
                
-               ! Find where to put in on the given energy grid:
+               ! Find where to put in on the given theta grid:
                if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max theta grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2642,7 +2642,7 @@ subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
                   i_arr = i_arr + 1 ! assign particle to the end of the interval
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                endif
-                ! add a photon into this array, per energy interval to make distribution:
+                ! add a particle into this array, per theta interval to make distribution:
                Vel_theta_p(i_arr) = Vel_theta_p(i_arr) + one_over_N/d_theta * over_sin_theta
 !              write(*,'(a,i4,i4,f,f,f)') '(get_positron_velotheta)', i, i_arr, numpar%vel_theta_grid(i_arr), theta, Spectrum_e(i_arr)
             endif
@@ -2700,11 +2700,11 @@ subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
                endif
                over_sin_theta = over_sin_theta * m_one_over_halfPi  ! normalization accounting for sin(x)
                
-               ! Find where to put in on the given energy grid:
-               if (theta < numpar%vel_theta_grid(1)) then   ! energies below lower limit
+               ! Find where to put in on the given theta grid:
+               if (theta < numpar%vel_theta_grid(1)) then   ! theta below lower limit
                   i_arr = 1
                   d_theta = numpar%vel_theta_grid(1)
-               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%vel_theta_grid(size(numpar%vel_theta_grid))) then  ! above the max theta grid point
                   i_arr = size(numpar%vel_theta_grid)
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                else ! inside the grid
@@ -2712,7 +2712,7 @@ subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
                   i_arr = i_arr + 1 ! assign particle to the end of the interval
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                endif
-                ! add a photon into this array, per energy interval to make distribution:
+                ! add a particle into this array, per theta interval to make distribution:
                Vel_theta_h(i_arr) = Vel_theta_h(i_arr) + one_over_N/d_theta * over_sin_theta
 !              write(*,'(a,i4,i4,f,f,f)') '(get_hole_velotheta)', i, i_arr, numpar%vel_theta_grid(i_arr), theta, Spectrum_e(i_arr)
             endif
@@ -2763,11 +2763,11 @@ subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
                endif
                over_sin_theta = over_sin_theta * m_one_over_halfPi  ! normalization accounting for sin(x)
                
-               ! Find where to put in on the given energy grid:
+               ! Find where to put in on the given theta grid:
                if (theta < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
                   d_theta = numpar%NRG_grid(1)
-               else if (theta >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
+               else if (theta >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max theta grid point
                   i_arr = size(numpar%NRG_grid)
                   d_theta = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                else ! inside the grid
@@ -2775,7 +2775,7 @@ subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
                   i_arr = i_arr + 1 ! assign particle to the end of the interval
                   d_theta = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
                endif
-               ! add a hole into this array, per energy interval to make distribution:
+               ! add a particle into this array, per theta interval to make distribution:
                Vel_theta_SHI(i_arr) = Vel_theta_SHI(i_arr) + one_over_N/d_theta * over_sin_theta
 !                write(*,'(a,i4,i4,f,f,f)') '(get_SHI_velotheta)', i, i_arr, numpar%NRG_grid(i_arr), theta, Spectrum_e(i_arr)
             endif

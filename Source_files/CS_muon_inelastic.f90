@@ -49,7 +49,7 @@ subroutine get_muon_IMFP(Material, numpar, Err)
    
    path_sep => numpar%path_sep
    Path = trim(adjustl(m_input_folder))//path_sep//trim(adjustl(m_muon_CS))	! Muon CSs are storred in this folder
-   inquire(DIRECTORY=trim(adjustl(Folder_with_CS)),exist=file_exist)    ! check if input file excists
+   inquire(DIRECTORY=trim(adjustl(Path)),exist=file_exist)    ! check if input file excists
    if (.not.file_exist) then	! to make sure that such a folder is present (even if empty)
       ! Create a new directory for output files:
       command='mkdir '//trim(adjustl(Path))	! to create a folder use this command

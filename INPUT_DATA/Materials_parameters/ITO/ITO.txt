@@ -1,0 +1,5 @@
+In1.3647Sn0.6353O3
+4.82e0	! density of the material in [g/cm^3]
+4.09e0	! [eV] Pair Creation Energy (or band gap) of the solid
+3.64e0	! fermi level [eV]
+1750.0	! Speed of sound [m/s]

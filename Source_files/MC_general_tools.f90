@@ -352,21 +352,32 @@ end subroutine set_all_barriers_parameters
 pure subroutine get_barrier_parameters(Surface_barrier)
    type(Emission_barrier), intent(inout) :: Surface_barrier    ! Parameters of the surface barier for a particle emission from the surface of the material
    real(8) :: work_function, bar_height, Em_L, Em_B, Em_ksi, Em_bb, Em_delta
-   real(8) :: Em_E1, Em_gam1, Em_gam2, Em_gamma
+   real(8) :: Em_E1, Em_gam1, Em_gam2, Em_gamma, arg
    real(8) :: eps
    !eps = 1.0d-10
    eps = 1.0d-3*m_tollerance_eps   ! module "Geometries"
    
    work_function = Surface_barrier%Work_func
    bar_height = Surface_barrier%Bar_height
+   ! Consistency enforced:
+   if (bar_height < work_function) bar_height = work_function
     
    Em_L = Surface_barrier%Surf_bar*1.0d-10     ! Barrier length     [m]
    Em_B = 2.0d0*bar_height - work_function + 2.0d0*sqrt(bar_height*(bar_height - work_function))   ! Eq.(5) [2]
-    
-   Em_ksi = 0.5d0*sqrt(8.0d0*g_me*Em_L*Em_L*Em_B*g_e/(g_2Pih*g_2Pih)-1.0d0)     ! Eq.(5) [2]
+
+   arg = 8.0d0*g_me*Em_L*Em_L*Em_B*g_e/(g_2Pih*g_2Pih)-1.0d0
+   if (arg < 0.0d0) then      ! barrier too low
+      arg = 0.0d0
+   endif
+   !Em_ksi = 0.5d0*sqrt(8.0d0*g_me*Em_L*Em_L*Em_B*g_e/(g_2Pih*g_2Pih)-1.0d0)     ! Eq.(5) [2]
+   Em_ksi = 0.5d0*sqrt(arg)     ! Eq.(5) [2]
+
    Em_bb = cosh(g_2Pi*Em_ksi)
    !Em_delta = g_2Pi*Em_L*sqrt(2.0d0*g_me*g_e)/(g_2Pih)
    Em_delta = Em_L*sqrt(2.0d0*g_me*g_e)/g_h     ! under Eq.(7) [2]
+   if (abs(Em_delta) < 1.0d-23)then  ! consistency check
+      Em_delta = 1.0d-15 * sqrt(2.0d0*g_me*g_e)/g_h
+   endif
     
    ! Coefficients E1 and gamma from Eqs.(7) in [2]:
    Em_E1 = bar_height + 2.0d0*sqrt(bar_height*(bar_height - work_function))*(acosh(Em_bb)/(Em_delta*(sqrt(bar_height) + sqrt(bar_height - work_function)))-1.0d0)
