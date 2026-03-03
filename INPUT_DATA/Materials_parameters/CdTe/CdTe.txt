@@ -1,5 +1,9 @@
 CdTe
+5.86e0	! density of the material in [g/cm^3]
+1.44e0	! [eV] Pair Creation Energy (or band gap) of the solid
+1.88e0	! fermi level [eV]
+2000.0	! Speed of sound [m/s]
 
-5.85	! density of the material in [g/cm^3]
-
--3.0	! Pair creation energy
+!Phonons
+1   ! number of phonon peaks
+0.000183	0.025469	0.012734   ! A, E0, G

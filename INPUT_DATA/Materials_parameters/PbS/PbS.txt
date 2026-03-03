@@ -1,0 +1,5 @@
+PbS
+7.60e0	! density of the material in [g/cm^3]
+0.37e0	! [eV] Pair Creation Energy (or band gap) of the solid
+0.18e0	! fermi level [eV]
+2040.0	! Speed of sound [m/s]

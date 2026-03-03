@@ -1,5 +1,18 @@
 Y2O3
-
 5.01	! density of the material in [g/cm^3]
+6.3e0	! Bandgap [eV]
+3.15	! Fermi energy [eV]
+6120.0	! Speed of sound [m/s]
 
-5.6	! Pair creation energy
+
+Valence			! Valence band
+4				! Number of CDF functions
+15	14.7	2	! A, E0, Gamma coefficients
+205	23	18		
+138	31.3	7	
+84	36	6		
+
+Phonons			! Phonons
+2				! Number of phonon peaks
+0.002	0.067	0.00015	! A, E0, Gamma coefficients
+0.002	0.077	0.0013

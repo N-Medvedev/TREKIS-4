@@ -1,0 +1,8 @@
+HfO2
+9.68	! density of the material in [g/cm^3]
+5.6e0	! [eV] band gap
+0.0e0	! [eV] Fermi energy
+900.0	! Speed of sound [m/s]
+
+BARRIER
+5.0	10.0d0	5.1d0

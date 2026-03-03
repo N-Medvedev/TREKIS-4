@@ -1,5 +1,11 @@
 B4C
-
 2.37	! density of the material in [g/cm^3]
-
 2.09	! [eV] Pair Creation Energy (or band gap) of the solid
+0.0e0       ! fermi level [eV]
+8000.0      ! Speed of sound [m/s]
+
+!VALENCE     ! valence band CDF
+
+!PHONONS     ! phonon CDF
+
+!DOS
