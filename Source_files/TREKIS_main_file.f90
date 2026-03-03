@@ -81,6 +81,7 @@ call set_OMP_number(g_numpar%NOMP, g_numpar%verbose, 6)    ! module "Output"
 call Set_defaults_MC(g_numpar, g_bunch, g_MC)  ! module "Initial_conditions"
 ! Interprete the target names, and get the material parameters accordingly:
 call Get_targets_parameters(g_target, g_numpar, g_Err)  ! module "Read_input_data"
+
 if (g_Err%Err) goto 9999    ! if an error occured while reading input files, terminate the program
 ! Read DOS for the target material:
 call read_DOS_files(g_target, g_numpar, g_Err)    ! module "Dealing_with_DOS"
@@ -210,7 +211,6 @@ if (g_numpar%do_cohesive) then
    goto 9999
 endif
 
-
 ! Reset starting time of simulation, if needed:
 g_numpar%t_start = set_starting_time(g_bunch, g_numpar%t_start)   ! module "Initial_conditions"
 g_numpar%i_dt_printout = 1  ! to start with
@@ -220,21 +220,14 @@ g_time = g_numpar%t_start         ! just to start
 call reset_dt_out(g_numpar, g_dt_out)   ! below
 call print_time_step('Simulation time start:', g_time, msec=.true.)   ! module "Little_subroutines"
 
-! print*, 'TEST -1'
-
 ! Collect printable output data from raw MC and MD data:
 call analyze_MC_output_data(g_target, g_numpar, g_MC, g_output, g_time)    ! module "MC_data_analysis"
 
-! print*, 'TEST -0.5'
-
 call analyze_MD_output_data(g_numpar, g_MD_supce, g_MD_pots, g_MD_atoms, g_output)       ! module "MD_data_analysis"
 
-! print*, 'TEST 0'
 
 ! Save the first output data:
 call write_output_files(g_target, g_numpar, g_output, g_MD_atoms, g_MD_supce, g_MD_pots, g_time)    ! module "Output"
-
-! print*, 'TEST 1'
 
 !SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
 ! Start time propagation:

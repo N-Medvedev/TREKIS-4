@@ -404,7 +404,7 @@ subroutine allocate_EADL_data_arrays(Nsiz, Shl_dsgnr, Shell_name, Ip, Ek, Ne_she
    Ne_shell = 0         ! no shells
    Radiat = 1.0d24      ! [fs]
    f_rad = 0.0d0        ! no decay probabilities
-   Auger = 1.0d-20      ! [MeV] infinitely thin line -> infinite decay time in [fs]
+   Auger = 1.0d23       ! initiate infinite decay time in [fs]
    f_auger = 0.0d0      ! no decay probabilities
 end subroutine allocate_EADL_data_arrays
 
