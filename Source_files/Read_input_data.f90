@@ -311,7 +311,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
                allocate(used_target%Material(i)%Elements(j)%Compton(size(Auger)))
                used_target%Material(i)%Elements(j)%Compton = 0.0d0	! just to start
             endif
-            
+
             ! Mark all shells as valent or core:
             call tick_valence(used_target%Material(i)%Elements(j)%Ne_shell, dble(used_target%Material(i)%Elements(j)%NVB), used_target%Material(i)%Elements(j)%valent)	! module "Little_subroutines"
              
@@ -435,8 +435,8 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
                   close (FN4)
                   
                enddo ! m = 1, used_target%Material(i)%Elements(j)%N_shl		! for all shells in this element
-               if (allocated(Phot_abs_CS_tot)) deallocate(Phot_abs_CS_tot)	! probability of Auger decay for each pairs of shells
-               if (allocated(Phot_abs_CS_shl)) deallocate(Phot_abs_CS_shl)	! probability of Auger decay for each pairs of shells
+               if (allocated(Phot_abs_CS_tot)) deallocate(Phot_abs_CS_tot)	! photoabsorption
+               if (allocated(Phot_abs_CS_shl)) deallocate(Phot_abs_CS_shl)	! photoabsorption for each shell
             else	! read directly from EPDL
                ! Read cross sections for photons from EPDL database:
 9991           call Read_EPDL_rata(path_sep, FN2, File_name, INFO, used_target%Material(i)%Elements(j)%Zat, &
