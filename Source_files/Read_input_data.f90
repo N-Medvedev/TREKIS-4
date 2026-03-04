@@ -1150,7 +1150,10 @@ subroutine Read_input(used_target, numpar, bunch, Err)
    integer :: FN, FN2, FN3
    character(200) :: Error_descript, read_line, Folder_name, File_name, File_name_2, File_name_new
    logical :: file_exists, file_opened
+   !---------------------------
+   ! To start with:
    Error_descript = ''	! start with no error
+
    !---------------------------
    ! Read path separator from environment (setting your OS at the same time):
     call Path_separator(numpar%path_sep)	! module "Dealing_with_files"
@@ -1158,7 +1161,6 @@ subroutine Read_input(used_target, numpar, bunch, Err)
    ! Define initial files:
    Folder_name = trim(adjustl(m_input_folder))//numpar%path_sep	! folder with all input files
    numpar%input_path = Folder_name	! save the address with input files
-
 
    !---------------------------
    ! Reading new format of input file using Fortran Namelists (still in the testing mode!):
@@ -1377,7 +1379,7 @@ subroutine Read_single_file_input(FN, File_name, used_target, bunch, numpar, Err
    if (Err%Err) return    ! if an error occured while reading input file, terminate the program
 
    !----------------------
-   ! II) Optional optput section:
+   ! II) Optional output section:
    !----------------------
    ! Optional output
    call read_output_grid_coord(FN, File_name, numpar, Err, count_lines) ! module "Read_numerical_parameters"
@@ -2451,6 +2453,8 @@ subroutine set_defaults(used_target, bunch, numpar)
    bunch(1)%FWHM = 0.0d0 ! [fs] FWHM-duration of the pulse (ignorred for single particles)
 
    ! NUMERICAL PARAMETERS:
+   numpar%output_name = ''    ! output folder name defined by the user
+   numpar%output_add = ''     ! addition of the output folder name defined by the user
    numpar%verbose = .false.   ! not verbose, no need to printout extra info
    numpar%NMC = 1       ! number of MC iterations
    numpar%NOMP = 1      ! number of threads for parallel calculations with OpenMP (1 if nonparrelelized)
@@ -2623,6 +2627,7 @@ subroutine read_input_parameters(FN, File_name, used_target, bunch, Err)
    character(200) :: Error_descript
    logical :: read_well
    
+   ! to start with:
    count_lines = 0	! to start counting lines in the file
 
    ! Skip the first line: it is only an indicator. May be used for comments.

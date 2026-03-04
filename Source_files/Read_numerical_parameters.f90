@@ -894,7 +894,7 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
    real(8) :: max_grid_size
    integer :: Reason, i, N_rp, temp, i_ax, grid_ind
    character(200) :: Error_descript
-   character(30) :: temp_ch, temp_ch2
+   character(300) :: temp_ch, temp_ch2
 
    ! to start with:
    temp_ch = ''
@@ -920,6 +920,20 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
          ! Verbose option:
          case ('Verbose', 'verbose', 'VERBOSE')
             numpar%verbose = .true. ! set TREKIS verbose, prints out extra info
+
+         !============================================
+         ! Output folder name:
+         case ('Output', 'OUTPUT', 'output')
+            backspace ( FN ) ! to read the line again together with the output name:
+            read(FN,*,IOSTAT=Reason) temp_ch2, numpar%output_name   ! output folder name to replace default
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+
+         !============================================
+         ! Addition to the output folder name:
+         case ('Output_add', 'OUTPUT_ADD', 'output_add')
+            backspace ( FN ) ! to read the line again together with the additional marker to the output name:
+            read(FN,*,IOSTAT=Reason) temp_ch2, numpar%output_add   ! text to add to the output folder name
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
 
          !============================================
          ! Printout atomic displacements:

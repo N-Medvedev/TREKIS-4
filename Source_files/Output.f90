@@ -86,7 +86,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 03.03.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 04.03.2026)'
 
 
 ! All output file names:
@@ -4554,49 +4554,59 @@ subroutine make_output_folder(used_target, numpar, bunch)
    real(8) :: E_reduced
    logical :: file_exist
    type(atomic_data), dimension(:), allocatable :: Periodic_table ! this is an internal module variable
+   !-------------------------------
+   ! 1) Check if user specified the name:
+   if (LEN(trim(adjustl(numpar%output_name)))) then   ! user-defined name
+      File_name = numpar%output_name
+   else ! use default name:
+      ! Output directory name will contain the target name:
+      File_name = 'OUTPUT_'//trim(adjustl(used_target%Name))
    
-   ! Output directory name will contain the target name:
-   File_name = 'OUTPUT_'//trim(adjustl(used_target%Name))
+      ! Output name will contain the details of radiation source:
+      select case(bunch(1)%KOP)	! use the first radiation bunch to define the name
+      case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
+         bunch_name = 'photon'
+      case (1)
+         bunch_name = 'electron'
+      case (2)
+         bunch_name = 'positron'
+      case (3)
+         ! Read the periodic table, in case we need it:
+         Path = trim(adjustl(m_input_folder))//numpar%path_sep//trim(adjustl(m_databases)) ! where to find the periodic table
+         call Read_from_periodic_table(Path, numpar%path_sep, INFO, error_message, 1, Periodic_table_out=Periodic_table) ! module "Periodic_table"
+         ! Get the name of the ion from its ztomic number:
+         bunch(1)%Name = Periodic_table(bunch(1)%Z)%Name  ! name of the ion
+         !print*, bunch(1)%Z
+         !print*, 'Name: ', bunch(1)%Name
+         bunch_name = trim(adjustl(bunch(1)%Name))//'_ion'
+         !pause 'OUTPUT'
+         deallocate(Periodic_table)    ! done with the periodic table, clean up
+      case (4)
+         bunch_name = 'hole'
+      case (5)
+         bunch_name = 'muon'
+      endselect
+      File_name = trim(adjustl(File_name))//'_'//trim(adjustl(bunch_name))
    
-   ! Output name will contain the details of radiation source:
-   select case(bunch(1)%KOP)	! use the first radiation bunch to define the name
-   case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
-      bunch_name = 'photon'
-   case (1)
-      bunch_name = 'electron'
-   case (2)
-      bunch_name = 'positron'
-   case (3)
-      ! Read the periodic table, in case we need it:
-      Path = trim(adjustl(m_input_folder))//numpar%path_sep//trim(adjustl(m_databases)) ! where to find the periodic table
-      call Read_from_periodic_table(Path, numpar%path_sep, INFO, error_message, 1, Periodic_table_out=Periodic_table) ! module "Periodic_table"
-      ! Get the name of the ion from its ztomic number:
-      bunch(1)%Name = Periodic_table(bunch(1)%Z)%Name  ! name of the ion
-      !print*, bunch(1)%Z
-      !print*, 'Name: ', bunch(1)%Name
-      bunch_name = trim(adjustl(bunch(1)%Name))//'_ion'
-      !pause 'OUTPUT'
-      deallocate(Periodic_table)    ! done with the periodic table, clean up
-   case (4)
-      bunch_name = 'hole'
-   case (5)
-      bunch_name = 'muon'
-   endselect
-   File_name = trim(adjustl(File_name))//'_'//trim(adjustl(bunch_name))
-   
-   ! Output will also contain the energy of incomming radiation particle:
-   !write(NRG, '(f16.2)') bunch(1)%E
-   call order_of_energy(bunch(1)%E, temp, E_reduced=E_reduced)   ! module "Little_subroutines"
-   write(NRG, '(f16.2)') E_reduced
-   NRG = trim(adjustl(NRG))//'_'//trim(adjustl(temp))
+      ! Output will also contain the energy of incomming radiation particle:
+      !write(NRG, '(f16.2)') bunch(1)%E
+      call order_of_energy(bunch(1)%E, temp, E_reduced=E_reduced)   ! module "Little_subroutines"
+      write(NRG, '(f16.2)') E_reduced
+      NRG = trim(adjustl(NRG))//'_'//trim(adjustl(temp))
 
-   File_name = trim(adjustl(File_name))//'_'//trim(adjustl(NRG))
+      File_name = trim(adjustl(File_name))//'_'//trim(adjustl(NRG))
    
-   ! Output will also contain the number of bunches:
-   Nsiz = size(bunch(:))
-   if (Nsiz > 1) then
-      write(temp, '(i8)') Nsiz
-      File_name = trim(adjustl(File_name))//'_'//trim(adjustl(temp))//'_bunches'
+      ! Output will also contain the number of bunches:
+      Nsiz = size(bunch(:))
+      if (Nsiz > 1) then
+         write(temp, '(i8)') Nsiz
+         File_name = trim(adjustl(File_name))//'_'//trim(adjustl(temp))//'_bunches'
+      endif
+   endif ! (LEN(trim(adjustl(numpar%output_name))))
+
+   ! 2) Check if user wants to add anything to the name:
+   if (LEN(trim(adjustl(numpar%output_add)))) then   ! user-defined marker
+      File_name = trim(adjustl(File_name))//'_'//numpar%output_add
    endif
    
    ! Check if directory with the same name already exists. If yes, add a number at the end:

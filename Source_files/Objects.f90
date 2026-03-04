@@ -495,8 +495,10 @@ type Num_par
    logical :: new_input_format  ! flag if new input format was used
 
    ! OUTPUT FILE NAMES AND NUMBERS:
-   character(200) :: input_path	! path to the folder with all input data
+   character(200) :: input_path	    ! path to the folder with all input data
    character(200) :: output_path	! path to the folder with all output data
+   character(200) :: output_name, output_add    ! output names defined by the user
+
    character(200) :: FILE_parameters	! name of the file with output parameters
    integer :: FN_parameters		! file number of the file with output parameters
    character(200) :: FILE_communication	! name of the file thru which user can communicate with the program
