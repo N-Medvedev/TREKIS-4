@@ -2,7 +2,7 @@
 ! This file is part of TREKIS-4
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
-! This module is written by F. Akhmetov
+! This module is written by F. Akhmetov and N. Medvedev
 ! in 2021
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to deal with Mermin-type CDF
@@ -84,7 +84,7 @@ pure function Single_Mermin_func(A, E, Gamm, W, Q) result(Imepsilon) ! (we use a
       denom1 = Wat*eps1 - eps2*Gat*Qat2q_TF2_1
       denom2 = Gateps11*Qat2q_TF2_1 + Wat*eps2
       denom = denom1*denom1 + denom2*denom2
-      Imepsilon = numer/denom*A/E**2.0d0
+      Imepsilon = numer/denom*A/E**2
     end if
 end function Single_Mermin_func
 

@@ -2457,13 +2457,13 @@ end subroutine add_RL_particle
 subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:), intent(inout) :: Vel_theta_ph     ! photon spectrum
+   real(8), dimension(:), intent(inout) :: Vel_theta_ph     ! photon angular distribution
    !------------------------------
    real(8) :: d_theta, theta, one_over_N, over_sin_theta
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
-   ! Construct spectrum only if user requested it:
+   ! Construct angular distribution only if user requested it:
    SPEC:if (numpar%vel_theta_grid_par%along_axis) then ! velosity theta data
       ! Check if there is any active particle:
       anything_to_do = any(MC%MC_Photons(:)%active)
@@ -2520,13 +2520,13 @@ end subroutine get_photon_velotheta
 subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:), intent(inout) :: Vel_theta_e     ! electron spectrum
+   real(8), dimension(:), intent(inout) :: Vel_theta_e     ! electron angular distribution
    !------------------------------
    real(8) :: d_theta, theta, one_over_N, over_sin_theta
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
-   ! Construct spectrum only if user requested it:
+   ! Construct angular distribution only if user requested it:
    SPEC:if (numpar%vel_theta_grid_par%along_axis) then ! velosity theta data
       ! Check if there is any active particle:
       anything_to_do = any(MC%MC_Electrons(:)%active)
@@ -2596,13 +2596,13 @@ end subroutine get_electron_velotheta
 subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:), intent(inout) :: Vel_theta_p     ! positron spectrum
+   real(8), dimension(:), intent(inout) :: Vel_theta_p     ! positron angular distribution
    !------------------------------
    real(8) :: d_theta, theta, one_over_N, over_sin_theta
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
-   ! Construct spectrum only if user requested it:
+   ! Construct angular distribution only if user requested it:
    SPEC:if (numpar%vel_theta_grid_par%along_axis) then ! velosity theta data
       
       ! Check if there is any active particle:
@@ -2660,13 +2660,13 @@ end subroutine get_positron_velotheta
 subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:), intent(inout) :: Vel_theta_h     ! positron spectrum
+   real(8), dimension(:), intent(inout) :: Vel_theta_h     ! positron angular distribution
    !------------------------------
    real(8) :: d_theta, theta, one_over_N, over_sin_theta
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
-   ! Construct spectrum only if user requested it:
+   ! Construct angular distribution only if user requested it:
    SPEC:if (numpar%vel_theta_grid_par%along_axis) then ! velosity theta data
       
       ! Check if there is any active particle:
@@ -2730,13 +2730,13 @@ end subroutine get_hole_velotheta
 subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:), intent(inout) :: Vel_theta_SHI ! SHI spectrum
+   real(8), dimension(:), intent(inout) :: Vel_theta_SHI ! SHI angular distribution
    !------------------------------
    real(8) :: d_theta, theta, one_over_N, over_sin_theta
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
-   ! Construct spectrum only if user requested it:
+   ! Construct angular distribution only if user requested it:
    SPEC:if (numpar%NRG_grid_par%along_axis) then ! energy data
       
       ! Check if there is any active particle:
@@ -2872,7 +2872,12 @@ subroutine get_electron_spectrum(MC, numpar, Spectrum_e)
                ! Find where to put in on the given energy grid:
                if (MC%MC_Electrons(i)%Ekin < numpar%NRG_grid(1)) then   ! energies below lower limit
                   i_arr = 1
-                  dE = numpar%NRG_grid(1)
+                  if (numpar%NRG_grid(1) > 1.0d-10) then ! nonzero
+                     dE = numpar%NRG_grid(1)
+                  else ! ensure it's not zero
+                     dE = numpar%NRG_grid(i_arr+1) - numpar%NRG_grid(i_arr)
+                  endif
+
                else if (MC%MC_Electrons(i)%Ekin >= numpar%NRG_grid(size(numpar%NRG_grid))) then  ! above the max energy grid point
                   i_arr = size(numpar%NRG_grid)
                   dE = numpar%NRG_grid(i_arr) - numpar%NRG_grid(i_arr-1)
@@ -2899,7 +2904,7 @@ end subroutine get_electron_spectrum
 subroutine get_hole_spectrum(MC, numpar, Spectrum_h)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:,:), intent(inout) :: Spectrum_h     ! electron spectrum
+   real(8), dimension(:,:), intent(inout) :: Spectrum_h     ! hole spectrum
    !------------------------------
    real(8) :: dE, one_over_N
    integer :: i, Nsiz, i_targ
@@ -2956,7 +2961,7 @@ end subroutine get_hole_spectrum
 subroutine get_positron_spectrum(MC, numpar, Spectrum_p)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
-   real(8), dimension(:), intent(inout) :: Spectrum_p     ! electron spectrum
+   real(8), dimension(:), intent(inout) :: Spectrum_p     ! positron spectrum
    !------------------------------
    real(8) :: dE, one_over_N
    integer :: i, Nsiz, i_arr

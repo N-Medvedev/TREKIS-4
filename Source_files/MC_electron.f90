@@ -336,11 +336,11 @@ subroutine event_electron_Bremsstrahlung(used_target, numpar, MC, NOP, MD_supce,
    endif
    
    if ( (KOA > size(matter%Elements(:))) .or. (KOA < 1) ) then
-      print*, "Error 1 in event_electron_Bremsstrahlung:", CS_sampled, RN*CS_tot, CS_tot
+      print*, "Error #1 in event_electron_Bremsstrahlung:", CS_sampled, RN*CS_tot, CS_tot
    endif
    
    if (isnan(CS_elem) .or. (CS_elem <= 0.0d0)) then
-      print*, "Error 2 in event_electron_Bremsstrahlung:", Prtcl%Ekin, CS_elem
+      print*, "Error #2 in event_electron_Bremsstrahlung:", Prtcl%Ekin, CS_elem
    endif
    
    ! Now we know which element the electron scatters on:
@@ -362,6 +362,16 @@ subroutine event_electron_Bremsstrahlung(used_target, numpar, MC, NOP, MD_supce,
    call  deflect_velosity(a0(1), a0(2), a0(3), theta, phi, a(1), a(2), a(3))  ! module "MC_general_tools"
    ! 5b) Change electron energy accordingly:
    Prtcl%Ekin = Prtcl%Ekin - dE ! [eV]
+
+   ! Test:
+   if (Prtcl%Ekin < 0.0d0) then
+      print*, 'Error #3 in event_electron_Bremsstrahlung: negative electron energy:', Prtcl%Ekin, dE
+   endif
+
+   if (dE < 0.0d0) then
+      print*, 'Error #4 in event_electron_Bremsstrahlung: negative photon energy:', Prtcl%Ekin, dE
+   endif
+
    ! 5c) Change the velosity accordingly:
    Vtot = velosity_from_kinetic_energy(Prtcl%Ekin, g_me)  ! [A/fs] module "Relativity"
    Prtcl%V(:) = Vtot * a(:)  ! components of the electron velosity

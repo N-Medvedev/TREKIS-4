@@ -733,6 +733,16 @@ subroutine event_photoabsorption(used_target, numpar, MC, NOP, MD_supce, E_e, E_
    ! Pointers for easier access to scattering particle and target properties:
    Prtcl => MC%MC_Photons(NOP)
    !matter => used_target%Material(Prtcl%in_target)
+
+   ! 0) Check if photoabsorption is even possible:
+   if (Prtcl%Ekin <= used_target%Material(Prtcl%in_target)%DOS%Egap) then ! impossible
+      !test print:
+      !print*, 'Problem #1 in event_photoabsorption: too small photon energy:', Prtcl%Ekin, used_target%Material(Prtcl%in_target)%DOS%Egap
+      ! let the photon ust continue its jorney (it may reach a boundary eventually, or something):
+      ! 0a) Define the next photon scattering event:
+      call get_photon_flight_time(used_target, numpar, Prtcl)  ! module "MC_general_tools"
+      return ! nothing else to do here
+   endif
    
    ! 1) Photoabsorption by which shell of which element:
    call select_shell_photoabsorption(used_target, MC, NOP, KOA, NSH)  ! below
@@ -750,7 +760,12 @@ subroutine event_photoabsorption(used_target, numpar, MC, NOP, MD_supce, E_e, E_
       valent = .false.
       Ekin = Prtcl%Ekin - used_target%Material(Prtcl%in_target)%Elements(KOA)%Ip(NSH)
    endif
-   
+
+   ! Test:
+   if (Ekin < 0.0d0) then
+      print*, 'Error #1 in event_photoabsorption: negative electron energy:', Ekin, Prtcl%Ekin
+   endif
+
    ! 3) Sample electron emission angles:
    !call get_photoelectron_emission_angles(Ekin, polar_angle, azimuth_angle)  ! below
    call get_photoelectron_emission_angles(Ekin, azimuth_angle, polar_angle)  ! below
