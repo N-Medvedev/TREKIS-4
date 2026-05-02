@@ -34,6 +34,9 @@ subroutine get_CDF(numpar, used_target, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file    ! no such file => create it
+   !--------------------------
+
    path_sep => numpar%path_sep
    folder = trim(adjustl(m_input_folder))//path_sep//trim(adjustl(m_folder_normalized_CDF))
    
@@ -67,6 +70,9 @@ subroutine get_CDF(numpar, used_target, Err)
             inquire(file=trim(adjustl(file_with_cdf)),exist=file_exist) ! check if this file is there
 !            print*, trim(adjustl(file_with_cdf)), file_exist
             !if (file_exist) then	! just read from the file, no need to recalculate:
+
+            create_file =.false.    ! assume for start, there is no need to create a file
+
             if ( (file_exist) .and. (.not.numpar%recalculate_MFPs) ) then ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(file_with_cdf)),action='read')
 
@@ -75,7 +81,8 @@ subroutine get_CDF(numpar, used_target, Err)
                call Count_lines_in_file(FN, N_temp)  ! module "Dealing_with_files"
                if (N_temp /= Nsiz) then ! mismatch in the formats
                   close(FN) ! redo the file
-                  goto 8392
+                  !goto 8392
+                  create_file = .true. ! no such file => create it
                endif
 
                ! Get the MFP and CDF points:
@@ -86,7 +93,9 @@ subroutine get_CDF(numpar, used_target, Err)
                   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                   if ((.not.read_well) .or. (Reason /= 0)) then
                      close(FN)	! redo the file
-                     goto 8392
+                     !goto 8392
+                     create_file = .true. ! no such file => create it
+                     exit ! the do-cicle
                   endif
                   ! Save read variables:
                   E = temp(1)
@@ -96,7 +105,12 @@ subroutine get_CDF(numpar, used_target, Err)
                enddo
                close(FN)
             else	! no such file => create it
-8392           open(newunit = FN, FILE = trim(adjustl(file_with_cdf)))
+               create_file = .true.
+            endif
+
+!8392        continue
+            if (create_file) then
+               open(newunit = FN, FILE = trim(adjustl(file_with_cdf)))
                ! Get the MFP and CDF points:
                GRD:do k = 1, Nsiz
                   E => Element%Phot_absorption%E(k)	! photon energy [eV]
@@ -123,6 +137,8 @@ subroutine get_CDF(numpar, used_target, Err)
             ! Check if the files with fitted CDF coefficients already exist:
             file_with_coefs = trim(adjustl(folder_with_cdf))//path_sep//trim(adjustl(m_fitted_coeffs))//'_'//trim(adjustl(Element%Shell_name(m)))//'.dat'
             inquire(file=trim(adjustl(file_with_coefs)),exist=file_exist) ! check if this file is there
+            create_file =.false.    ! assume for start, there is no need to create a file
+
             if (file_exist) then	! just read from the file, no need to recalculate:
                if (.not.Element%valent(m)) then
                   if (numpar%verbose) then
@@ -144,10 +160,17 @@ subroutine get_CDF(numpar, used_target, Err)
                if (.not.read_well) then
                   print*, ' Could not read CDF coefficients from file '//trim(adjustl(file_with_coefs))
                   close(FN2)	! redo the file
-                  goto 8393
+                  !goto 8393
+                  create_file = .true. ! no such file => create it
                endif
             else	! Fit the oscillator CDF to those data:
-8393           print*, 'Coefficients of CDF are going to be fitted - they need CHECKING before use!'
+               create_file = .true. ! no such file => create it
+            endif
+
+!8393        continue
+            if (create_file) then ! no such file => create it)
+
+               print*, 'Coefficients of CDF are going to be fitted - they need CHECKING before use!'
                print*, 'Fitting '//trim(adjustl(Element%Name))//' shell '//trim(adjustl(Element%Shell_name(m)))
                call fit_oscillators_CDF(Element%Phot_absorption%E, CDF_data, Element%CDF(m), Element%Ne_shell(m))		! see below
                ! And save them in the output files:
@@ -260,6 +283,8 @@ subroutine get_CDF(numpar, used_target, Err)
             allocate(used_target%Material(i)%Ph_absorption_valent%Total_MFP(Nsiz))
             ! Check file with CSs:
             inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+            create_file = .false. ! assume for start that there is no need create it
+
             !if (file_exist) then	! just read from the file, no need to recalculate:
             if ( (file_exist) .and. (.not.numpar%recalculate_MFPs) ) then ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -270,12 +295,19 @@ subroutine get_CDF(numpar, used_target, Err)
                   read(FN,'(es,es,es)', IOSTAT=Reason) E, used_target%Material(i)%Ph_absorption_valent%Total(m), used_target%Material(i)%Ph_absorption_valent%Total_MFP(m) !, used_target%Material(i)%Ph_absorption_valent%Total_Se(m)
                   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                   if (.not.read_well) then
-                  close(FN)	! redo the file
-                  goto 8391
+                     close(FN)	! redo the file
+                     !goto 8391
+                     create_file = .true. ! no such file => create it
+                     exit ! the do-cicle
                   endif
                enddo
             else	! no such file => create it
-8391           open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+               create_file = .true. ! no such file => create it
+            endif
+
+!8391        continue
+            if (create_file) then
+               open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                if (.not.allocated(lambda)) allocate(lambda(Nsiz))
                lambda = 1.0d30  ! to start with
                do m = 1, Nsiz	! for all energy grid points:

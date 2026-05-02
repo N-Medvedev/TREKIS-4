@@ -55,10 +55,6 @@ parameter(m_input_minimal = 'INPUT.txt')		! file frim INPUT parameters
 ! Old format (complete) input:
 parameter(m_input_data = 'INPUT_DATA.txt')		! file frim INPUT_DATA parameters
 parameter(m_numerical_parameters = 'NUMERICAL_PARAMETERS.txt')	! file with all numerical parameters
-!parameter(m_EADL = 'EADL2017.all')				! file with EADL database OLD
-!parameter(m_EPDL = 'EPDL2017.all')				! file with EPDL database OLD
-!parameter(m_EADL = 'EADL2023.ALL')				! file with EADL database OLD
-!parameter(m_EPDL = 'EPDL2023.ALL')				! file with EPDL database OLD
 parameter(m_EADL = 'EADL2025.ALL')				! file with EADL database
 parameter(m_EPDL = 'EPDL2025.ALL')				! file with EPDL database
 parameter(m_file_Compton_profiles = 'Compton_profiles.dat')	! database of Compton profiles to be used for calculations of Compton cross sections
@@ -118,6 +114,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
    character(1200) :: Error_descript_extended
    character, pointer :: path_sep
    logical :: file_exist, file_opened, read_well
+   logical :: use_EPDL  ! read from the file, no need to use EPDL
    integer, pointer :: Ntargets
    path_sep => numpar%path_sep
    
@@ -372,6 +369,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
             ! Files with raw data:
             file_photons = trim(adjustl(folder_photons))//path_sep//trim(adjustl(m_raw_EPDL))//'_total.dat'
             inquire(file=trim(adjustl(file_photons)),exist=file_exist) ! check if input file is there
+
+            use_EPDL = .false.      ! for start, assume there is no need to do it (check below)
+
             if (file_exist) then	! read from the file, no need to use EPDL
                open(newunit = FN3, FILE = trim(adjustl(file_photons)))
                ! Find out how many data points we have, to allocate the arrays:
@@ -415,7 +415,9 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
                   if (.not.file_exist) then ! in an extremely unprobable case that some file is missing, just recreate that file (and all the other files) from EPDL
                      deallocate(Phot_abs_CS_tot)
                      deallocate(Phot_abs_CS_shl)
-                     goto 9991
+                     use_EPDL = .true.    ! we have to read from the database
+                     !goto 9991
+                     exit     ! the do-cycle
                   endif
                   open(newunit = FN3, FILE = trim(adjustl(file_photons)))
                   do k = 1, size(Phot_abs_CS_shl,3)
@@ -437,9 +439,14 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
                enddo ! m = 1, used_target%Material(i)%Elements(j)%N_shl		! for all shells in this element
                if (allocated(Phot_abs_CS_tot)) deallocate(Phot_abs_CS_tot)	! photoabsorption
                if (allocated(Phot_abs_CS_shl)) deallocate(Phot_abs_CS_shl)	! photoabsorption for each shell
-            else	! read directly from EPDL
-               ! Read cross sections for photons from EPDL database:
-9991           call Read_EPDL_rata(path_sep, FN2, File_name, INFO, used_target%Material(i)%Elements(j)%Zat, &
+            else  ! there was no file, read from the database
+               use_EPDL = .true.    ! we have to read from the database
+            endif	! read directly from EPDL
+
+!9991        continue
+
+            if (use_EPDL) then ! Read cross sections for photons from EPDL database, if needed
+               call Read_EPDL_rata(path_sep, FN2, File_name, INFO, used_target%Material(i)%Elements(j)%Zat, &
                     used_target%Material(i)%Elements(j)%Shl_dsgnr, Phot_abs_CS_tot, Phot_abs_CS_shl)	! module "Dealing_with_EADL"
                Phot_abs_CS_tot(1,:) = Phot_abs_CS_tot(1,:)*1.0d6	! Convert [MeV] -> [eV]
                Phot_abs_CS_tot(2,:) = Phot_abs_CS_tot(2,:)*1.0d-8	! Convert [b] -> [A^2]
@@ -501,7 +508,7 @@ subroutine Get_targets_parameters(used_target, numpar, Err)
                if (allocated(Phot_abs_CS_tot)) deallocate(Phot_abs_CS_tot)	! probability of Auger decay for each pairs of shells
                if (allocated(Phot_abs_CS_shl)) deallocate(Phot_abs_CS_shl)	! probability of Auger decay for each pairs of shells
                rewind(FN2)	! after we read everything for this element, start over for the new element
-            endif
+            endif ! use_EPDL
          enddo ! j = 1, used_target%Material(i)%N_Elements	! for all elements from this target consituent
       else ! could not open EPDL
          INFO = 2
@@ -2580,6 +2587,16 @@ subroutine set_defaults(used_target, bunch, numpar)
    numpar%Theta_grid_par(:)%gridstart(1) = 0.0d0    ! just a default value
    numpar%Theta_grid_par(:)%gridend(1) = 10.0d0     ! just a default value
    numpar%Theta_grid_par(:)%gridstep(1) = 1.0d0     ! just a default value
+   ! Surface-emission spatially resolved:
+   numpar%Surface_grid_par(:)%along_axis = .false.     ! printout theta along various axes
+   numpar%Surface_grid_par(:)%log_scale(1) = .false.   ! no logscale along first axis (e.g., X)
+   numpar%Surface_grid_par(:)%gridstart(1) = -10.0d0    ! just a default value
+   numpar%Surface_grid_par(:)%gridend(1) = 10.0d0     ! just a default value
+   numpar%Surface_grid_par(:)%gridstep(1) = 1.0d0     ! just a default value
+   numpar%Surface_grid_par(:)%log_scale(2) = .false.    ! no logscale along second axis (e.g., Y)
+   numpar%Surface_grid_par(:)%gridstart(2) = -10.0d0    ! just a default value
+   numpar%Surface_grid_par(:)%gridend(2) = 10.0d0     ! just a default value
+   numpar%Surface_grid_par(:)%gridstep(2) = 1.0d0     ! just a default value
 end subroutine set_defaults
 
 

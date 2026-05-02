@@ -889,12 +889,13 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
    type(Error_handling), intent(inout) :: Err	! error log
    integer, intent(inout) :: count_lines    ! where are we reading file right now
    !----------------------
-   type(grid_params), pointer:: grid_par     ! grid parameters
+   type(grid_params), pointer :: grid_par     ! grid parameters
+   type(grids_sets), pointer :: grid_set      ! grid itself to be constructed
    logical :: read_well , grid_created     ! was there an error reading file?
    real(8) :: max_grid_size
-   integer :: Reason, i, N_rp, temp, i_ax, grid_ind
+   integer :: Reason, i, N_rp, temp, i_ax, grid_ind, i_ax2, grid_ind2
    character(200) :: Error_descript
-   character(300) :: temp_ch, temp_ch2
+   character(300) :: temp_ch, temp_ch2, temp_ch3
 
    ! to start with:
    temp_ch = ''
@@ -1153,6 +1154,54 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
 
          case ('Theta_R', 'theta_R', 'Theta_r', 'theta_r', 'THETA_R')   ! printout R-resolved (cylindric) particles theta-distribution
             ! [NOT READY!!!]
+
+         !============================================
+         ! Surface emission data:
+         case ('Surface', 'SURFACE', 'surface')
+            backspace ( FN ) ! to read the line again together with the output name:
+            read(FN,*,IOSTAT=Reason) temp_ch2, temp_ch3     ! marker; along which axis
+            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+
+            if (.not. read_well) then   ! user did not provide correct parameters
+               write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+               write(6,'(a)') trim(adjustl(Error_descript))
+               write(6,'(a)') ' Surface emission analysis cannot be performed'
+            else ! Marker read well
+               select case (trim(adjustl(temp_ch3))) ! axis
+               case ('X', 'x')  ! surfaces perpendicular to X, so set grid along Y and Z:
+                  i_ax = 2      ! Y
+                  i_ax2 = 3     ! Z
+               case ('Y', 'y')  ! surfaces perpendicular to Y, so set grid along X and Z:
+                  i_ax = 1      ! X
+                  i_ax2 = 3     ! Z
+               case ('Z', 'z')  ! surfaces perpendicular to Z, so set grid along X and Y:
+                  i_ax = 1      ! X
+                  i_ax2 = 2     ! Y
+               case default ! no other axes
+                  write(6,'(a)') ' Surface emission analysis cannot be performed, incorrect axis specified: '//trim(adjustl(temp_ch3))
+                  cycle ! that's all, skip this iteration
+               end select
+               ! Read the grids for these two axes:
+
+               ! a) First grid:
+               grid_ind = 1  ! 1d
+               grid_par => numpar%Surface_grid_par(i_ax)   ! just to access easier
+               grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
+               grid_set => numpar%Surface_grid(i_ax)    ! just to access easier
+
+               call Read_and_set_grid(FN, File_name, count_lines, grid_par, grid_set, 0, 1, grid_ind, numpar, &
+                        'Surface spatial grid instead, perpendicular to '//trim(adjustl(temp_ch3)) )   ! below
+
+               ! b) Second grid:
+               grid_ind = 1  ! 1d
+               grid_par => numpar%Surface_grid_par(i_ax2)   ! just to access easier
+               grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
+               grid_set => numpar%Surface_grid(i_ax2)   ! just to access easier
+
+               call Read_and_set_grid(FN, File_name, count_lines, grid_par, grid_set, 0, 1, grid_ind, numpar, &
+                        'Surface spatial grid instead, perpendicular to '//trim(adjustl(temp_ch3)) )   ! below
+
+            endif   ! (.not. read_well)
 
          !============================================
          ! Printout each timestep:
@@ -1705,8 +1754,70 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
 !     enddo
 !     pause 'read_output_grid_coord'
 
-   nullify(grid_par)
+   nullify(grid_par, grid_set)
 end subroutine read_output_grid_coord
+
+
+
+subroutine Read_and_set_grid(FN, File_name, count_lines, grid_par, grid_set, grid_type, grid_dim, grid_ind, numpar, axis_text)
+    integer, intent(in) :: FN    ! file number (must be already opened)
+    integer, intent(in) :: grid_type  ! grid type: 0=cartesian, 1=cylindrical,  2=spherical
+    integer, intent(in) :: grid_dim   ! dimension: 1=1d, 2=2d, 3=3d
+    integer, intent(in) :: grid_ind   ! axis: 1=x, R or R;   2=y, L or Theta;  3=z, Theta or Phi (Cartesian, Cyllindrical or Spherical)
+    character(*), intent(in) :: File_name   ! file name
+    type(Num_par), intent(in) :: numpar     ! all numerical parameters
+    integer, intent(inout) :: count_lines   ! where are we reading file right now
+    type(grid_params), intent(inout) :: grid_par     ! grid parameters
+    type(grids_sets), intent(inout) :: grid_set      ! grid itself to be constructed
+    character(*), intent(in) :: axis_text   ! info about exis to print out if needed
+    !============
+    logical :: read_well, grid_created
+    character(300) :: Error_descript, temp_ch2
+    integer :: Reason
+
+    read(FN,*,IOSTAT=Reason) temp_ch2   ! Read the grid parameter: either file name with the grid, or its type
+    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+    if (.not. read_well) then   ! user did not provide correct parameters
+        write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
+        write(6,'(a)') trim(adjustl(Error_descript))
+        write(6,'(a)') ' Using default '//trim(adjustl(axis_text))
+
+        backspace ( FN ) ! to read the line again from the file into a proper variable
+        ! Read the parameters of the grid:
+        call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, grid_type, grid_dim, grid_ind)  ! below
+
+        ! Create grid:
+        if (grid_par%log_scale(1)) then   ! log-scale grid along X (or other axis, 1d)
+            call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), &
+                        grid_set%spatial_grid1, 1)  ! module "Little_subroutines"
+        else    ! linear scale along X
+            call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), &
+                        grid_set%spatial_grid1, 0)  ! module "Little_subroutines"
+        endif
+    else ! (.not. read_well)   ! if user provided grid parameters
+        call read_grid_from_file(temp_ch2, numpar, grid_set%spatial_grid1, grid_created)    ! below
+        ! Check the grid was not read from the file:
+        if (.not.grid_created) then   ! create a default grid
+            backspace ( FN ) ! to read the line again from the file into a proper variable
+            ! Read the parameters of the grid:
+            call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, grid_type, grid_dim, grid_ind)  ! below
+            !Last three parameters are:   grid_type, grid_dim, grid_ind
+            !  grid_type     ! grid type: 0=cartesian, 1=cylindrical,  2=spherical
+            !  grid_dim      ! dimension: 1=1d, 2=2d, 3=3d
+            !  grid_ind      ! which axis: 1=x or R or R;   2=y or L or Theta;  3=z or Theta or Phi  (for Cartesian or Cyllindrical or Spherical)
+
+            ! Create grid:
+            if (grid_par%log_scale(1)) then   ! log-scale grid along X (1d)
+                call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), &
+                            grid_set%spatial_grid1, 1)  ! module "Little_subroutines"
+            else    ! linear scale along R
+                call create_grid(grid_par%gridstart(1), grid_par%gridend(1), grid_par%gridstep(1), &
+                            grid_set%spatial_grid1, 0)  ! module "Little_subroutines"
+            endif
+        endif    ! (.not.grid_created)
+    endif   ! (.not. read_well)
+end subroutine Read_and_set_grid
+
 
 
 subroutine read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, grid_type, grid_dim, grid_ind)

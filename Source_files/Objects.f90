@@ -147,7 +147,7 @@ type Atom_kind
    type(Cross_section) :: Muon_brems	! cross sections of muon Bremsstrahlung
 end type Atom_kind
 
-   
+
 !============================================== 
 ! Barrier of electron emission from the surface of the material:
 type :: Emission_barrier
@@ -365,6 +365,12 @@ type output_data
    real(8), dimension(:,:,:), allocatable :: E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic ! Atom
    real(8), dimension(:,:,:), allocatable :: E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic ! muon
+
+   ! Specific detectors:
+   real(8), dimension(:,:), allocatable :: Spectrum_e_Surface_X, Spectrum_e_Surface_Y, Spectrum_e_Surface_Z  ! surface-emission energy spectra
+   real(8), dimension(:,:), allocatable :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z  ! surface-emission electron density
+   real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z  ! surface-emission energy density
+
 end type output_data
 
 
@@ -554,9 +560,9 @@ type Num_par
    integer :: FN_car_1d_X_ph, FN_car_1d_X_e, FN_car_1d_X_p, FN_car_1d_X_SHI, FN_car_1d_X_a, FN_car_1d_X_mu   ! densities along X
    integer :: FN_car_1d_Y_ph, FN_car_1d_Y_e, FN_car_1d_Y_p, FN_car_1d_Y_SHI, FN_car_1d_Y_a, FN_car_1d_Y_mu   ! densities along Y
    integer :: FN_car_1d_Z_ph, FN_car_1d_Z_e, FN_car_1d_Z_p, FN_car_1d_Z_SHI, FN_car_1d_Z_a, FN_car_1d_Z_mu   ! densities along Z
-   integer :: FN_car_1d_X_E_ph, FN_car_1d_X_E_e, FN_car_1d_X_E_p, FN_car_1d_X_E_SHI, FN_car_1d_X_E_a, FN_car_1d_X_E_mu   ! energy densities along X
-   integer :: FN_car_1d_Y_E_ph, FN_car_1d_Y_E_e, FN_car_1d_Y_E_p, FN_car_1d_Y_E_SHI, FN_car_1d_Y_E_a, FN_car_1d_Y_E_mu   ! energy densities along Y
-   integer :: FN_car_1d_Z_E_ph, FN_car_1d_Z_E_e, FN_car_1d_Z_E_p, FN_car_1d_Z_E_SHI, FN_car_1d_Z_E_a, FN_car_1d_Z_E_mu   ! energy densities along Z
+   integer :: FN_car_1d_X_E_ph, FN_car_1d_X_E_e, FN_car_1d_X_E_p, FN_car_1d_X_E_SHI, FN_car_1d_X_E_a, FN_car_1d_X_E_mu  ! energy densities along X
+   integer :: FN_car_1d_Y_E_ph, FN_car_1d_Y_E_e, FN_car_1d_Y_E_p, FN_car_1d_Y_E_SHI, FN_car_1d_Y_E_a, FN_car_1d_Y_E_mu  ! energy densities along Y
+   integer :: FN_car_1d_Z_E_ph, FN_car_1d_Z_E_e, FN_car_1d_Z_E_p, FN_car_1d_Z_E_SHI, FN_car_1d_Z_E_a, FN_car_1d_Z_E_mu  ! energy densities along Z
    integer, dimension(:), allocatable :: FN_car_1d_X_h, FN_car_1d_X_E_h   ! densities and doses of holes in all shells of all elements along X
    integer, dimension(:), allocatable :: FN_car_1d_Y_h, FN_car_1d_Y_E_h   ! densities and doses of holes in all shells of all elements along Y
    integer, dimension(:), allocatable :: FN_car_1d_Z_h, FN_car_1d_Z_E_h   ! densities and doses of holes in all shells of all elements along Z
@@ -569,6 +575,7 @@ type Num_par
    integer :: FN_cyl_2d_RL_ph, FN_cyl_2d_RL_e, FN_cyl_2d_RL_p, FN_cyl_2d_RL_SHI, FN_cyl_2d_RL_a, FN_cyl_2d_RL_mu   ! densities
    integer :: FN_cyl_2d_RL_E_ph, FN_cyl_2d_RL_E_e, FN_cyl_2d_RL_E_p, FN_cyl_2d_RL_E_SHI, FN_cyl_2d_RL_E_a, FN_cyl_2d_RL_E_mu   ! energy densities
    integer, dimension(:), allocatable :: FN_cyl_2d_RL_h, FN_cyl_2d_RL_E_h   ! densities and energy densities of holes in all shells of all elements
+
    ! OUTPUT PRINTOUT:
    type(gnu_par) :: gnupl       ! parameters for gnuplotting
    logical :: printout_DOS      ! user defines to printout analyzed DOS and related parameters or not
@@ -590,6 +597,8 @@ type Num_par
    real(8), dimension(:), allocatable :: vel_theta_grid  ! particles velosity distribution by theta: Vz/V
    type(grid_params), dimension(19) :: Theta_grid_par   ! all the parameters of printout Theta vs spatial grids
    type(grids_sets), dimension(19) :: Theta_grid  ! Space grid in 1d for theta calculations
+   type(grid_params), dimension(19) :: Surface_grid_par   ! Surface emission analysis
+   type(grids_sets), dimension(19) :: Surface_grid  ! Space grid for Surface emission analysis
 
    ! NUMERICS OF THE TARGET PARAMETERS:
    integer :: N_sh_tot  ! total number of core shells in the target material

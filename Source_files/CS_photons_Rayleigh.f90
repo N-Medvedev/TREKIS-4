@@ -44,6 +44,7 @@ subroutine get_photon_Rayleigh(Material, numpar, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    
    write(*, '(a)', advance='no') ' Obtaining photon Rayleigh scattering cross sections...'
    
@@ -87,6 +88,8 @@ subroutine get_photon_Rayleigh(Material, numpar, Err)
          
          inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
 !          if (file_exist) then	! read from the file
+         create_file = .false. ! assume there is no need to create it
+
          if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
             open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
             do m = 1, Ngrid	! for all energy grid points:
@@ -95,11 +98,18 @@ subroutine get_photon_Rayleigh(Material, numpar, Err)
                call read_file(Reason, count_lines, read_well)	! module "Dealing_wil_files"
                if (.not.read_well) then
                   close(FN)	! redo the file
-                  goto 8391
+                  !goto 8391
+                  create_file = .true. ! no such file => create it
+                  exit ! the do-cicle
                endif
             enddo ! m = 1, Ngrid
-         else	! only create it if file does not exist 
-8391     open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+         else	! only create it if file does not exist
+            create_file = .true. ! no such file => create it
+         endif
+!8391     continue
+
+         if (create_file) then ! no such file => create it)
+            open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
             do m = 1, Ngrid	! for all energy grid points:
                E => Element%Phot_coherent%E(m)
                call get_Rayleigh_CS(E, Element, numpar, sigma)	! below

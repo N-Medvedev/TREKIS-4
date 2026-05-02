@@ -86,7 +86,7 @@ character(200) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 07.04.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 02.05.2026)'
 
 
 ! All output file names:
@@ -4739,7 +4739,7 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
          write(text1,'(i3)') used_target%Material(i)%Elements(j)%Zat
          write(print_to,'(a,a,a,a,a)') ' '//trim(adjustl(text)), ' of ', trim(adjustl(used_target%Material(i)%Elements(j)%Name)), ' (element #', trim(adjustl(text1))//')'
       enddo
-      write(text,'(e12.6)') used_target%Material(i)%At_Dens
+      write(text,'(e13.6)') used_target%Material(i)%At_Dens
       write(print_to, '(a,a,a)') ' With the atomic density: ', trim(adjustl(text)), ' [1/cm^3]'
    enddo
 

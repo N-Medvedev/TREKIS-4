@@ -45,6 +45,7 @@ subroutine get_photon_pair_creation(Material, numpar, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    
    write(*, '(a)', advance='no') ' Obtaining photon pair creation scattering cross sections...'
    !write(*, '(a)') ' Obtaining photon pair creation scattering cross sections...'
@@ -86,6 +87,8 @@ subroutine get_photon_pair_creation(Material, numpar, Err)
          
          File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_photon_pair))//'_total_'//trim(adjustl(Model_name))//'.dat'
          inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+         create_file = .false. ! assume there is no need to create it
+
 !          if (file_exist) then	! read from the file
          if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
             open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -94,12 +97,19 @@ subroutine get_photon_pair_creation(Material, numpar, Err)
                call read_file(Reason, count_lines, read_well)	! module "Dealing_wil_files"
                if (.not.read_well) then
                   close(FN)	! redo the file
-                  goto 8391
+                  !goto 8391
+                  create_file = .true. ! no such file => create it
+                  exit ! the do-cicle
                endif
 !                write(*,'(i5,es,es,es)')  m, Element%Phot_pair%E(m), Element%Phot_pair%Total(m), Element%Phot_pair%Total_MFP(m)
             enddo ! m = 1, Ngrid
          else	! only create it if file does not exist 
-8391     open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+            create_file = .true. ! no such file => create it
+         endif
+
+!8391     continue
+         if (create_file) then      ! no such file => create it
+            open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
             do m = 1, Ngrid	! for all energy grid points:
                E => Element%Phot_pair%E(m)
                call get_pair_CS(E, Element, numpar, sigma)	! below

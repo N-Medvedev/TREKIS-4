@@ -47,6 +47,7 @@ subroutine get_photon_Compton(Material, numpar, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    
    write(*, '(a)', advance='no') ' Obtaining photon Compton scattering cross sections...'
    
@@ -95,6 +96,8 @@ subroutine get_photon_Compton(Material, numpar, Err)
             File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_photon_Compton))//'_'//trim(adjustl(Element%Shell_name(k)))//'_'//trim(adjustl(Model_name))//'.dat'
             inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
 !             if (file_exist) then	! just read from the file, no need to recalculate:
+            create_file = .false. ! assume there is no need to create it
+
             if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
                ! Get the Compton total cross section:
@@ -104,12 +107,19 @@ subroutine get_photon_Compton(Material, numpar, Err)
                   call read_file(Reason, count_lines, read_well)	! module "Dealing_wil_files"
                   if (.not.read_well) then
                      close(FN)	! redo the file
-                     goto 8390
+                     !goto 8390
+                     create_file = .true. ! no such file => create it
+                     exit ! the do-cicle
                   endif
 !                   print*, k, m, Element%Phot_compton%E(m), Element%Phot_compton%Per_shell(k,m)
                enddo
             else	! no such file => create it
-8390        open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+               create_file = .true. ! no such file => create it
+            endif
+!8390        continue
+
+            if (create_file) then ! no such file => create it)
+               open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                do m = 1, Ngrid	! for all energy grid points:
                   E => Element%Phot_compton%E(m)	! photon energy [eV]
                   call get_Compton_CS(E, Element, numpar, k, sigma)	! see below
@@ -118,7 +128,7 @@ subroutine get_photon_Compton(Material, numpar, Err)
                   Element%Phot_compton%MFP(k,m) = MFP_from_sigma(sigma,  1.0d24)    ! module "CS_general_tools"
                   write(FN,'(es,es,es)') E, sigma, Element%Phot_compton%MFP(k,m)
                enddo ! m = 1, Ngrid
-            endif ! (file_exist)
+            endif ! (create_file)
             close(FN)
             ! Normalize MFPs to material density:
             ! Take into account the density of atoms of this particular kind:

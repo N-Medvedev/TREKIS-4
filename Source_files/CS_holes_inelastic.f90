@@ -50,6 +50,7 @@ subroutine get_hole_IMFP(Material, numpar, Err)
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
    character(10) :: temp_c
+   logical :: create_file
 
    !write(*, '(a)') ' Obtaining valence hole inelastic scattering cross sections...'
    write(*, '(a)', advance='no') ' Obtaining velence hole inelastic scattering cross sections...'
@@ -105,6 +106,8 @@ subroutine get_hole_IMFP(Material, numpar, Err)
          ! Check file with CSs:
          File_name = trim(adjustl(Path_valent))//path_sep//trim(adjustl(m_holes_inelast_CS))//'_total_'//trim(adjustl(Model_name))//trim(adjustl(mass_model))//'.dat'
          inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+         create_file = .false. ! assume there is no need to create it
+
 !          if (file_exist) then	! just read from the file, no need to recalculate:
          if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
             open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -117,13 +120,20 @@ subroutine get_hole_IMFP(Material, numpar, Err)
               call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
               if (.not.read_well) then
                  close(FN)	! redo the file
-                 goto 8391
+                 !goto 8391
+                 create_file = .true. ! no such file => create it
+                 exit ! the do-cycle
               endif
               ! Recalculate the MFP since material density might be different from the one saved in the file:
               Material(i)%H_inelastic_total%Total_MFP(m) = MFP_from_sigma(Material(i)%H_inelastic_total%Total(m),  Material(i)%At_Dens) ! [A] module "CS_general_tools"
             enddo
          else	! no such file => create it
-8391        open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+            create_file = .true. ! no such file => create it
+         endif
+
+!8391     continue
+         if (create_file) then ! no such file => create it
+            open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
             do m = 1, Ngrid	! for all energy grid points:
                E => Material(i)%H_inelastic_total%E(m)	! electron energy [eV]
                call get_h_inelastic_CS(E, Material(i), Material(i)%DOS, numpar, j, k, Material(i)%DOS%Egap, sigma, CDF_dispers=numpar%CDF_dispers, Se=Se)	! see below
