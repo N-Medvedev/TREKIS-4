@@ -1201,6 +1201,12 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                call Read_and_set_grid(FN, File_name, count_lines, grid_par, grid_set, 0, 1, grid_ind, numpar, &
                         'Surface spatial grid instead, perpendicular to '//trim(adjustl(temp_ch3)) )   ! below
 
+               ! Test: correct
+               !do i = 1, size( grid_set%spatial_grid1)
+               !   print*, i, numpar%Surface_grid(i_ax)%spatial_grid1(i), numpar%Surface_grid(i_ax2)%spatial_grid1(i)
+               !enddo
+               !pause 'test Surface'
+
             endif   ! (.not. read_well)
 
          !============================================

@@ -4,7 +4,7 @@
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev 
 ! and R. Rymzhanov
-! in 2020-2021
+! in 2020-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! References:
 ! [1] https://www.cs.cornell.edu/courses/cs6630/2015fa/notes/pdf-transform.pdf
@@ -14,7 +14,7 @@ module MC_data_analysis
 use Universal_constants
 use Objects
 use Little_subroutines, only: Find_in_array_monoton
-use MC_general_tools, only: renew_atomic_arrays, place_particles_back_into_box, put_back_into_box
+use MC_general_tools, only: renew_atomic_arrays, place_particles_back_into_box, put_back_into_box, renew_surface_emission_arrays
 use Geometries, only: get_v_theta, m_tollerance_eps
 
 implicit none
@@ -54,6 +54,13 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! theta distribution in space along Y
    real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! theta distribution in space along Z
    real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! theta distribution in space along R
+
+   ! Surface emission data:
+   real(8), dimension(:,:), allocatable :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z ! emittred electron density
+   real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z ! emitted electron energy
+   real(8), dimension(:,:), allocatable :: Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb ! emittred electron density
+   real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb ! emitted electron energy
+
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic ! photon
    real(8), dimension(:), allocatable :: Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic ! electron
@@ -125,7 +132,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    real(8), dimension(:,:,:), allocatable :: E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic ! muon
    ! And regular variables:
    integer :: iter, Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10), &
-                  Ntheta_siz0(10), Ntheta_siz1(10), Ntheta_siz2(10), Ntheta_siz3(10)
+                  Ntheta_siz0(10), Ntheta_siz1(10), Ntheta_siz2(10), Ntheta_siz3(10), Nsiz_surf(3), Nsiz_surf2(3)
    integer, dimension(:), allocatable :: Nsiz_VB
    real(8) :: rNMC
    
@@ -147,7 +154,7 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    
    ! Set sizes of the arrays:
    call set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
-                              Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3) ! below
+                              Ntheta_siz0, Ntheta_siz1, Ntheta_siz2, Ntheta_siz3, Nsiz_surf, Nsiz_surf2) ! below
    ! Special grid for valence band holes according to DOS:
    call get_size_VB_output(used_target, Nsiz_VB)    ! below
 
@@ -173,8 +180,15 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
             Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
             Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ) ! below
    endif
-   
-!    print*, 'analyze_MC_output_data 5'
+
+   ! Allocate Surface emission arrays:
+   if (.not.allocated(Dens_e_Surface_X)) then   ! all surface emission data
+      call allocate_surface_data_arrays(Nsiz_surf, Nsiz_surf2, &
+            Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+            E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+            Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+            E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb)    ! below
+   endif
 
    ! Spatial distributions:
    if (.not.allocated(Distr_ph_X)) then
@@ -257,6 +271,10 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
     Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
     Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R, &
+    Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+    E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+    Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+    E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
     Distr_p_X, Distr_p_Y, Distr_p_Z, Distr_p_R, Distr_p_L, Distr_p_Theta, Distr_p_Rc, Distr_p_Thetac, Distr_p_Phic, &
@@ -336,6 +354,19 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     out_data%Vel_theta_p = Vel_theta_p * rNMC
     out_data%Vel_theta_h = Vel_theta_h * rNMC
     out_data%Vel_theta_SHI = Vel_theta_SHI * rNMC
+    ! For surface emission data, we have to add, because the data are nullified at each time step:
+    out_data%Dens_e_Surface_X = out_data%Dens_e_Surface_X + Dens_e_Surface_X * rNMC
+    out_data%Dens_e_Surface_Y = out_data%Dens_e_Surface_Y + Dens_e_Surface_Y * rNMC
+    out_data%Dens_e_Surface_Z = out_data%Dens_e_Surface_Z + Dens_e_Surface_Z * rNMC
+    out_data%E_Dens_e_Surface_X = out_data%E_Dens_e_Surface_X + E_Dens_e_Surface_X * rNMC
+    out_data%E_Dens_e_Surface_Y = out_data%E_Dens_e_Surface_Y + E_Dens_e_Surface_Y * rNMC
+    out_data%E_Dens_e_Surface_Z = out_data%E_Dens_e_Surface_Z + E_Dens_e_Surface_Z * rNMC
+    out_data%Dens_e_Surface_Xb = out_data%Dens_e_Surface_Xb + Dens_e_Surface_Xb * rNMC
+    out_data%Dens_e_Surface_Yb = out_data%Dens_e_Surface_Yb + Dens_e_Surface_Yb * rNMC
+    out_data%Dens_e_Surface_Zb = out_data%Dens_e_Surface_Zb + Dens_e_Surface_Zb * rNMC
+    out_data%E_Dens_e_Surface_Xb = out_data%E_Dens_e_Surface_Xb + E_Dens_e_Surface_Xb * rNMC
+    out_data%E_Dens_e_Surface_Yb = out_data%E_Dens_e_Surface_Yb + E_Dens_e_Surface_Yb * rNMC
+    out_data%E_Dens_e_Surface_Zb = out_data%E_Dens_e_Surface_Zb + E_Dens_e_Surface_Zb * rNMC
     ! Spectra vs space in 1d:
     out_data%Spectra_ph_X = Spectra_ph_X * rNMC
     out_data%Spectra_e_X = Spectra_e_X * rNMC
@@ -644,6 +675,8 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    ! Deactivate all atomic scattering events as objects, to start over in the next timestep:
    call renew_atomic_arrays(MC) ! module "MC_general_tools"
 
+   ! Deactivate all surface emission events as objects, to start over in the next timestep:
+   call renew_surface_emission_arrays(MC) ! module "MC_general_tools"
 
 ! print*, 'analyze_MC_output_data END'
 end subroutine analyze_MC_output_data
@@ -779,6 +812,10 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
     Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
     Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z, &
     Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R, &
+    Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+    E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+    Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+    E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
     Distr_p_X, Distr_p_Y, Distr_p_Z, Distr_p_R, Distr_p_L, Distr_p_Theta, Distr_p_Rc, Distr_p_Thetac, Distr_p_Phic, &
@@ -855,7 +892,11 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:,:), intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y ! theta distr in space along Y
    real(8), dimension(:,:), intent(inout) :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z ! theta distr in space along Z
    real(8), dimension(:,:), intent(inout) :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R ! theta distr in space along R
-
+   ! Surface emission data for electrons:
+   real(8), dimension(:,:), intent(inout) :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z
+   real(8), dimension(:,:), intent(inout) :: E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z
+   real(8), dimension(:,:), intent(inout) :: Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb
+   real(8), dimension(:,:), intent(inout) :: E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb
    ! Spatial distributions in 1d:
    real(8), dimension(:), intent(inout) :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, &
                                                         Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic ! photon
@@ -1027,6 +1068,24 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
                                                     Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, &
                                                     Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R) ! below
 !        print*, 'sort_theta 1.5', iter
+   enddo
+   !$omp enddo
+   !$OMP BARRIER
+
+
+   !--------------------------------
+   ! Get surface emission data (for electrons):
+   !$omp do schedule(dynamic) reduction( + : Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+   !$omp                                     E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+   !$omp                                     Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+   !$omp                                     E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb)
+   do iter = 1, numpar%NMC  ! analyze data in all iterations
+      call get_surface_data(used_target, MC(iter), numpar, tim, &
+                              Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+                              E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+                              Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+                              E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb) ! below
+!        print*, 'sort_theta 1.6', iter
    enddo
    !$omp enddo
    !$OMP BARRIER
@@ -1396,6 +1455,186 @@ subroutine get_distribution_2d_Cartesian(used_target, MC, numpar, tim, Distr_ph_
    endif
 
 end subroutine get_distribution_2d_Cartesian
+
+
+
+
+!--------------------------------------------
+! Surface emission data (special case of 2d):
+subroutine get_surface_data(used_target, MC, numpar, tim, &
+                              Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+                              E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+                              Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+                              E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb) ! below
+   type(Matter), intent(in) :: used_target   ! parameters of the target
+   type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   real(8), intent(in) :: tim   ! [fs] current time step
+   ! Density distributions:
+   real(8), dimension(:,:), intent(inout) :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z       ! electrons
+   ! Energy density distributions:
+   real(8), dimension(:,:), intent(inout) :: E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z     ! electrons
+   ! Density distributions (back surface):
+   real(8), dimension(:,:), intent(inout) :: Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb       ! electrons
+   ! Energy density distributions (back surface):
+   real(8), dimension(:,:), intent(inout) :: E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb     ! electrons
+   !----------------------------------------
+
+   ! Check all the surfaces:
+   ! Perpendicular to X:
+   if (numpar%Surface_grid_par(2)%along_axis .and. numpar%Surface_grid_par(3)%along_axis) then
+      call get_surface_data_2d_Cartesian(used_target, MC, numpar, tim, &
+            Dens_e_Surface_X, E_Dens_e_Surface_X, Dens_e_Surface_Xb, E_Dens_e_Surface_Xb, 1) ! below
+   endif
+
+   ! Perpendicular to Y:
+   if (numpar%Surface_grid_par(1)%along_axis .and. numpar%Surface_grid_par(3)%along_axis) then
+      call get_surface_data_2d_Cartesian(used_target, MC, numpar, tim, &
+            Dens_e_Surface_Y, E_Dens_e_Surface_Y, Dens_e_Surface_Yb, E_Dens_e_Surface_Yb, 2) ! below
+   endif
+
+   ! Perpendicular to Z:
+   if (numpar%Surface_grid_par(1)%along_axis .and. numpar%Surface_grid_par(2)%along_axis) then
+      call get_surface_data_2d_Cartesian(used_target, MC, numpar, tim, &
+            Dens_e_Surface_Z, E_Dens_e_Surface_Z, Dens_e_Surface_Zb, E_Dens_e_Surface_Zb, 3) ! below
+   endif
+
+end subroutine get_surface_data
+
+
+
+
+! Surface emission data (special case of 2d):
+subroutine get_surface_data_2d_Cartesian(used_target, MC, numpar, tim, &
+      Dens_e_Surface, E_Dens_e_Surface, Dens_e_Surface_b, E_Dens_e_Surface_b, axis)
+   type(Matter), intent(in) :: used_target   ! parameters of the target
+   type(MC_arrays), intent(in), target :: MC      ! elements of MC array for all particles in one iteration
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   real(8), intent(in) :: tim   ! [fs] current time step
+   ! Density distributions:
+   real(8), dimension(:,:), intent(inout) :: Dens_e_Surface, Dens_e_Surface_b       ! electrons (front and back surfaces)
+   ! Energy density distributions:
+   real(8), dimension(:,:), intent(inout) :: E_Dens_e_Surface, E_Dens_e_Surface_b        ! electrons (front and back surfaces)
+   integer, intent(in) :: axis      ! 1=X, 2=Y, 3=Z
+   !----------------------------------------
+   real(8) :: Cell_area, d1, d2
+   integer :: i, j, Nsiz_i, Nsiz_j, i_arr, j_arr, i_1, i_2
+   logical :: anything_to_do
+   type(Emission_event), pointer :: MC_Prtcl
+   !----------------------------------------
+
+   ! Check if there is any active particle:
+   anything_to_do = any(MC%MC_Surface_emission_events(:)%active)
+   if (.not. anything_to_do) return ! there are particles to distribute, just exit the subroutine
+
+   !print*, 'Test get_surface_data_2d_Cartesian:', anything_to_do, MC%N_surf_emission
+
+   ! Do for all "particles":
+   do i = 1, MC%N_surf_emission
+      MC_Prtcl => MC%MC_Surface_emission_events(i)    ! data of i-th scattering event
+      ! Include only active "particles":
+      if (MC_Prtcl%active) then
+
+         !print*, 'get_surface_data_2d_Cartesian 1:', i, MC_Prtcl%in_target
+
+         ! Depending on target's geometry, there can be different surfaces:
+         ASSOCIATE (GEOM_ARRAY => used_target%Geom(MC_Prtcl%in_target)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
+            select type (GEOM_ARRAY)	! Depending on the type of used_target%Geom(i)%Set
+            type is (Rectangle)
+
+               ! Find where on the grid this event happened:
+               select case (axis)
+               case (1) ! Perpendicular to X (YZ-axes):
+                  i_1 = 2     ! Y
+                  i_2 = 3     ! Z
+               case (2) ! Perpendicular to Y (XZ-axes):
+                  i_1 = 1     ! X
+                  i_2 = 3     ! Z
+               case (3) ! Perpendicular to Z (XY-axes):
+                  i_1 = 1     ! X
+                  i_2 = 2     ! Y
+               end select ! case (axis)
+
+               !print*, 'get_surface_data_2d_Cartesian 2:', i, axis
+
+               ! Grid sizes:
+               Nsiz_i = size(numpar%Surface_grid(i_1)%spatial_grid1)
+               Nsiz_j = size(numpar%Surface_grid(i_2)%spatial_grid1)
+
+               ! First axis:
+               i_arr = -1     ! to start with
+               j_arr = -1     ! to start with
+               ! If the event is within the grid:
+               if ( ( MC_Prtcl%R(i_1) >= numpar%Surface_grid(i_1)%spatial_grid1(1) ) .and. &
+                    ( MC_Prtcl%R(i_1) <= numpar%Surface_grid(i_1)%spatial_grid1(Nsiz_i) ) ) then
+
+                  ! Second axis:
+                  ! If the event is within the grid:
+                  if ( ( MC_Prtcl%R(i_2) >= numpar%Surface_grid(i_2)%spatial_grid1(1) ) .and. &
+                     ( MC_Prtcl%R(i_2) <= numpar%Surface_grid(i_2)%spatial_grid1(Nsiz_j) ) ) then
+
+                     ! Find in which cell on the grid the event falls:
+                     ! First axis:
+                     call Find_in_array_monoton(numpar%Surface_grid(i_1)%spatial_grid1(:), MC_Prtcl%R(i_1), i_arr)  ! module "Little_subroutines"
+                     i_arr = i_arr + 1 ! assign particle to the end of the interval
+                     ! Second axis:
+                     call Find_in_array_monoton(numpar%Surface_grid(i_2)%spatial_grid1(:), MC_Prtcl%R(i_2), j_arr)  ! module "Little_subroutines"
+                     j_arr = j_arr + 1 ! assign particle to the end of the interval
+
+                     ! Get the size of the cell on the grid along 1st dimension:
+                     if (i_arr < Nsiz_i) then
+                        d1 = numpar%Surface_grid(i_1)%spatial_grid1(i_arr) - numpar%Surface_grid(i_1)%spatial_grid1(i_arr-1)      ! [A]
+                     else
+                        d1 = numpar%Surface_grid(i_1)%spatial_grid1(i_arr-1) - numpar%Surface_grid(i_1)%spatial_grid1(i_arr-2)    ! [A]
+                     endif
+                     ! Get the size of the cell on the grid along 2d dimension:
+                     if (j_arr <= Nsiz_j) then
+                        d2 = numpar%Surface_grid(i_2)%spatial_grid1(j_arr) - numpar%Surface_grid(i_2)%spatial_grid1(j_arr-1)      ! [A]
+                     else
+                        d2 = numpar%Surface_grid(i_2)%spatial_grid1(j_arr-1) - numpar%Surface_grid(i_2)%spatial_grid1(j_arr-2)    ! [A]
+                     endif
+                     ! Get the area of this cell:
+                     Cell_area = d1*d2    ! [A^2]
+                  endif ! Second axis
+               endif ! First axis
+
+               ! Make sure it is not too small:
+               if (Cell_area < 1.0d-10) Cell_area = 1.0d-10 ! [A^2]
+
+               !print*, 'get_surface_data_2d_Cartesian 3:', i, MC_Prtcl%surface, Cell_area
+
+               ! Add the particle and its energy to the output arrays:
+               if ((i_arr > 0) .and. (j_arr > 0)) then ! it is within the grid
+                  if (MC_Prtcl%surface > 0) then ! front surface
+                     Dens_e_Surface(i_arr, j_arr) = Dens_e_Surface(i_arr, j_arr) + 1.0d0/Cell_area    ! [1/A^2]
+                     E_Dens_e_Surface(i_arr, j_arr) = E_Dens_e_Surface(i_arr, j_arr) + MC_Prtcl%Ekin/Cell_area    ! [eV/A^2]
+                  else ! back surface
+                     Dens_e_Surface_b(i_arr, j_arr) = Dens_e_Surface_b(i_arr, j_arr) + 1.0d0/Cell_area    ! [1/A^2]
+                     E_Dens_e_Surface_b(i_arr, j_arr) = E_Dens_e_Surface_b(i_arr, j_arr) + MC_Prtcl%Ekin/Cell_area    ! [eV/A^2]
+                  endif
+                  !print*, 'get_surface_data_2d_Cartesian 3.5:', i, Dens_e_Surface_b(i_arr, j_arr)
+               endif
+
+               !print*, 'get_surface_data_2d_Cartesian 4:', i, i_arr, j_arr
+
+
+            type is (Sphere)
+               ! NOT READY
+            type is (Sphere_segment)
+               ! NOT READY
+            type is (Cylinder)
+                  ! NOT READY
+            type is (Cylinder_segment)
+               ! NOT READY
+            endselect ! type (GEOM_ARRAY)
+         END ASSOCIATE
+      endif ! (MC_Prtcl%active)
+   enddo ! i
+
+   !print*, 'Done get_surface_data_2d_Cartesian.'
+
+   nullify(MC_Prtcl)
+end subroutine get_surface_data_2d_Cartesian
 
 
 
@@ -2791,6 +3030,8 @@ subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
 end subroutine get_SHI_velotheta
 
 
+
+
 !sssssssssssssssssssssssssssssssssssssssssssssssssssssss
 ! Spectra:
 
@@ -3607,6 +3848,41 @@ end subroutine allocate_vel_theta_arrays
 
 
 
+subroutine allocate_surface_data_arrays(Nsiz_surf, Nsiz_surf2, &
+            Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+            E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+            Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+            E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb )    ! below
+   !-----------------------
+   integer, dimension(:), intent(in) :: Nsiz_surf, Nsiz_surf2
+   real(8), dimension(:,:), allocatable, intent(inout) :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z, &
+            E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z, &
+            Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
+            E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb
+   !-----------------------
+   ! Front surface:
+   allocate(Dens_e_Surface_X(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
+   allocate(Dens_e_Surface_Y(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
+   allocate(Dens_e_Surface_Z(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
+   allocate(E_Dens_e_Surface_X(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
+   allocate(E_Dens_e_Surface_Y(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
+   allocate(E_Dens_e_Surface_Z(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
+   ! Back surface:
+   allocate(Dens_e_Surface_Xb(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
+   allocate(Dens_e_Surface_Yb(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
+   allocate(Dens_e_Surface_Zb(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
+   allocate(E_Dens_e_Surface_Xb(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
+   allocate(E_Dens_e_Surface_Yb(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
+   allocate(E_Dens_e_Surface_Zb(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
+
+   !print*, size(Dens_e_Surface_Z,1), size(Dens_e_Surface_Z,2)
+   !print*, Nsiz_surf(:)
+   !print*, Nsiz_surf2(:)
+   !pause 'allocate_surface_data_arrays'
+end subroutine allocate_surface_data_arrays
+
+
+
 subroutine allocate_output_arrays(Nsiz, Nsiz1, Nsiz2, Nsiz3, Nh_siz, &
     Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, Distr_ph_Theta, Distr_ph_Rc, Distr_ph_Thetac, Distr_ph_Phic, &
     Distr_e_X, Distr_e_Y, Distr_e_Z, Distr_e_R, Distr_e_L, Distr_e_Theta, Distr_e_Rc, Distr_e_Thetac, Distr_e_Phic, &
@@ -3888,12 +4164,13 @@ end subroutine get_size_VB_output
 
 
 subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
-                                    Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3)
+                                    Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3, Nsiz_surf, Nsiz_surf2)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    integer, intent(out) :: Nsiz_vel
    integer, dimension(:), intent(out) :: Nsiz, Nsiz1, Nsiz2, Nsiz3
    integer, dimension(:), intent(out) :: Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3
    integer, dimension(:), intent(out) :: Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3
+   integer, dimension(:), intent(out) :: Nsiz_surf, Nsiz_surf2
    !------------------------------
    ! Default values:
    Nsiz = 0
@@ -3909,6 +4186,8 @@ subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Ns
    Nsiz_vel_siz1 = 0
    Nsiz_vel_siz2 = 0
    Nsiz_vel_siz3 = 0
+   Nsiz_surf = 0
+   Nsiz_surf2 = 0
 
    ! Redefine those that are requested by the user:
    ! Velosity theta distribution:
@@ -4062,6 +4341,20 @@ subroutine set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, Nsiz_vel, Ns
       Nsiz_vel_siz2(10) = size(numpar%Theta_grid(19)%spatial_grid2)
       Nsiz_vel_siz3(10) = size(numpar%Theta_grid(19)%spatial_grid3)
    endif
+
+   ! Surface data:
+   if ( (numpar%Surface_grid_par(2)%along_axis) .and. (numpar%Surface_grid_par(3)%along_axis) ) then ! perpendicular to X
+      Nsiz_surf(1) = size(numpar%Surface_grid(2)%spatial_grid1)   ! Y
+      Nsiz_surf2(1) = size(numpar%Surface_grid(3)%spatial_grid1)  ! Z
+   endif
+   if ( (numpar%Surface_grid_par(1)%along_axis) .and. (numpar%Surface_grid_par(3)%along_axis) ) then ! perpendicular to Y
+      Nsiz_surf(2) = size(numpar%Surface_grid(1)%spatial_grid1)   ! X
+      Nsiz_surf2(2) = size(numpar%Surface_grid(3)%spatial_grid1)  ! Z
+   endif
+   if ( (numpar%Surface_grid_par(1)%along_axis) .and. (numpar%Surface_grid_par(2)%along_axis) ) then ! perpendicular to Z
+      Nsiz_surf(3) = size(numpar%Surface_grid(1)%spatial_grid1)   ! X
+      Nsiz_surf2(3) = size(numpar%Surface_grid(2)%spatial_grid1)  ! Y
+   endif
    
    ! Spatial grids:
    if (numpar%grid_par(1)%along_axis) then ! X
@@ -4143,7 +4436,7 @@ subroutine allocate_output(used_target, numpar, out_data)
    type(Num_par), intent(inout), target :: numpar   ! all numerical parameters
    type(output_data), intent(inout) :: out_data  ! all output data (distributions etc.)
    integer :: Nsiz_vel, Nsiz(10), Nsiz1(10), Nsiz2(10), Nsiz3(10), Nspec_siz0(10), Nspec_siz1(10), Nspec_siz2(10), Nspec_siz3(10), &
-                  Nsiz_vel_siz0(10), Nsiz_vel_siz1(10), Nsiz_vel_siz2(10), Nsiz_vel_siz3(10)
+                  Nsiz_vel_siz0(10), Nsiz_vel_siz1(10), Nsiz_vel_siz2(10), Nsiz_vel_siz3(10), Nsiz_surf(3), Nsiz_surf2(3)
    integer, dimension(:), allocatable :: Nsiz_VB    ! VB holes for each target material
    integer :: i_DOS
    real(8) :: dE
@@ -4166,7 +4459,8 @@ subroutine allocate_output(used_target, numpar, out_data)
    ! Set sizes of the arrays:
    call set_sizes_temp_output(numpar, Nsiz, Nsiz1, Nsiz2, Nsiz3, &
                               Nsiz_vel, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3, &
-                              Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3) ! below
+                              Nsiz_vel_siz0, Nsiz_vel_siz1, Nsiz_vel_siz2, Nsiz_vel_siz3, &
+                              Nsiz_surf, Nsiz_surf2 ) ! below
    ! Special grid for valence band holes according to DOS:
    call get_size_VB_output(used_target, Nsiz_VB, numpar%NRG_grid_VB)    ! below
 
@@ -4189,6 +4483,15 @@ subroutine allocate_output(used_target, numpar, out_data)
             out_data%Theta_ph_Y, out_data%Theta_e_Y, out_data%Theta_p_Y, out_data%Theta_h_Y, out_data%Theta_SHI_Y, out_data%Theta_mu_Y, &
             out_data%Theta_ph_Z, out_data%Theta_e_Z, out_data%Theta_p_Z, out_data%Theta_h_Z, out_data%Theta_SHI_Z, out_data%Theta_mu_Z, &
             out_data%Theta_ph_R, out_data%Theta_e_R, out_data%Theta_p_R, out_data%Theta_h_R, out_data%Theta_SHI_R, out_data%Theta_mu_R )    ! below
+   endif
+
+   ! Allocate Surface emission arrays:
+   if (.not.allocated(out_data%Dens_e_Surface_X)) then   ! all surface emission data
+      call allocate_surface_data_arrays(Nsiz_surf, Nsiz_surf2, &
+            out_data%Dens_e_Surface_X, out_data%Dens_e_Surface_Y, out_data%Dens_e_Surface_Z, &
+            out_data%E_Dens_e_Surface_X, out_data%E_Dens_e_Surface_Y, out_data%E_Dens_e_Surface_Z, &
+            out_data%Dens_e_Surface_Xb, out_data%Dens_e_Surface_Yb, out_data%Dens_e_Surface_Zb, &
+            out_data%E_Dens_e_Surface_Xb, out_data%E_Dens_e_Surface_Yb, out_data%E_Dens_e_Surface_Zb)    ! below
    endif
 
    ! Spatial distributions:
@@ -4311,6 +4614,21 @@ subroutine reset_output_arrays(out_data)
     out_data%Vel_theta_p = 0.0d0
     out_data%Vel_theta_h = 0.0d0
     out_data%Vel_theta_SHI = 0.0d0
+
+    ! Surface emission data: => do not reset, add up instead
+    !out_data%Dens_e_Surface_X = 0.0d0
+    !out_data%Dens_e_Surface_Y = 0.0d0
+    !out_data%Dens_e_Surface_Z = 0.0d0
+    !out_data%E_Dens_e_Surface_X = 0.0d0
+    !out_data%E_Dens_e_Surface_Y = 0.0d0
+    !out_data%E_Dens_e_Surface_Z = 0.0d0
+    !out_data%Dens_e_Surface_Xb = 0.0d0
+    !out_data%Dens_e_Surface_Yb = 0.0d0
+    !out_data%Dens_e_Surface_Zb = 0.0d0
+    !out_data%E_Dens_e_Surface_Xb = 0.0d0
+    !out_data%E_Dens_e_Surface_Yb = 0.0d0
+    !out_data%E_Dens_e_Surface_Zb = 0.0d0
+
     ! Spectra vs space 1d:
     out_data%Spectra_ph_X = 0.0d0
     out_data%Spectra_e_X = 0.0d0

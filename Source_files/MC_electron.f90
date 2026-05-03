@@ -74,7 +74,7 @@ subroutine MC_electron_event(used_target, numpar, N_e, Prtcl, NOP, MC, MD_supce,
    ! 3) Perform the event according to the chosen type:
    select case(i_type)
    case (0) ! target boundary crossing
-      call event_electron_target_boundary(used_target, numpar, Prtcl(NOP), NOP, MD_supce, E_e, INFO)   ! below
+      call event_electron_target_boundary(used_target, numpar, MC, Prtcl(NOP), NOP, MD_supce, E_e, INFO)   ! below
       if ( (INFO /= 0) .or. &
            (isnan(Prtcl(NOP)%R(1))) .or. &
            (isnan(Prtcl(NOP)%R(2))) .or. &
@@ -106,10 +106,11 @@ end subroutine MC_electron_event
 
 !ССССССССССССССССССССССССССССССССССССССССССС
 ! Electron reflecting from or crossing target boundary:
-subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_supce, E_e, INFO)
+subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, MD_supce, E_e, INFO)
    type(Matter), intent(in), target :: used_target   ! parameters of the target
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    type(Electron), intent(inout) :: Prtcl        ! electron as an object
+   type(MC_arrays), intent(inout), target :: MC      ! elements of MC array for all particles in one iteration
    integer, intent(in) :: NOP   ! number of electron
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters for connection between MC and MD modules
    real(8), dimension(:,:,:), intent(inout) ::E_e  ! data to pass to MD later
@@ -117,13 +118,14 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    !------------------------------------------------------
    real(8), dimension(3)  :: R_shift, norm_to_surf, V_perp, V
    real(8) :: Vnorm, Ekin_norm, T, RN, Vabs, Z
-   integer :: target_ind, i
+   integer :: target_ind, i, surf_ind
    logical :: transmit
    type(Emission_barrier), pointer :: Em_Barr
    
    ! Find whether an electron crosses the boundary or reflects back:
    ! 1) Kinetic energy towards crossing the boundary:
-   call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, 'event_electron_target_boundary', INFO)    ! module "MC_general_tools"
+   call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, &
+                                 'event_electron_target_boundary', INFO=INFO, surf_ind=surf_ind)    ! module "MC_general_tools"
    if ( (INFO /=0) .or. &
         (isnan(Prtcl%R(1))) .or. &
         (isnan(Prtcl%R(2))) .or. &
@@ -176,6 +178,10 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    ! 6) Model reflection or transmission:
    if (transmit) then   ! transmission into another target:
       ! Find into which target this electron enters:
+
+      ! 6.0) Save the data on surface emission, if required, before changing any particle parameter:
+      call save_surface_emission_data(numpar, MC, Prtcl, surf_ind)   ! below
+
       ! Find which target's boundary the particle is crossing:
       !Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
       !R_shift = m_tollerance_eps * Prtcl%V(:)/Vabs     ! to place particle inside of the material
@@ -216,6 +222,7 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
 
       ! 6.b) Get the next flight inside the new target (transmitted) or old target (reflected):
       call get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e)  ! module "MC_general_tools"
+
    else ! reflection back
       ! Change velosity according to reflection from the surface with given normal:
       call reflection_from_surface(Prtcl%V, norm_to_surf)   ! module "MC_general_tools"
@@ -274,6 +281,32 @@ subroutine event_electron_target_boundary(used_target, numpar, Prtcl, NOP, MD_su
    
    nullify(Em_Barr)
 end subroutine event_electron_target_boundary
+
+
+
+subroutine save_surface_emission_data(numpar, MC, Prtcl, surf_ind)
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   type(MC_arrays), intent(inout), target :: MC      ! elements of MC array for all particles in one iteration
+   type(Electron), intent(in) :: Prtcl        ! electron as an object
+   integer, intent(in) :: surf_ind  ! index of the surface being crossed by an electron
+   !-------------------------------------
+   integer :: i_em
+
+   ! Only do it if the user requested surface emission data:
+   if (ANY(numpar%Surface_grid_par(:)%along_axis)) then
+      ! One more event happened:
+      MC%N_surf_emission = MC%N_surf_emission + 1
+      i_em = MC%N_surf_emission  ! just shorthand notation
+
+      ! in case we have more particles than spaces in the array, extend the array:
+      if (i_em > size(MC%MC_Surface_emission_events)) call extend_MC_array(MC%MC_Surface_emission_events)   ! module "MC_general_tools"
+
+      ! Save the data for the surface emission event:
+      call make_new_particle(MC%MC_Surface_emission_events(i_em), Ekin=Prtcl%Ekin, Mass=Prtcl%Mass, t0=Prtcl%t0, &
+            ti=Prtcl%ti, t_sc=Prtcl%t_sc, generation=Prtcl%generation, in_target=Prtcl%in_target, R=Prtcl%R, R0=Prtcl%R0, &
+            V=Prtcl%V, V0=Prtcl%V0, surface=surf_ind)    ! module "Objects"
+   endif
+end subroutine save_surface_emission_data
 
 
 

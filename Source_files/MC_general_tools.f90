@@ -25,6 +25,7 @@ use Little_subroutines, only: sample_Poisson, interpolate_data_single, Find_in_a
 use Relativity, only: rest_energy, velosity_from_kinetic_energy
 
 implicit none
+!PRIVATE
 
  ! this is a function that set a spatial grid:
 interface extend_MC_array
@@ -35,6 +36,7 @@ interface extend_MC_array
    module procedure extend_MC_array_Atoms
    module procedure extend_MC_array_SHIs
    module procedure extend_MC_array_Muons
+   module procedure extend_MC_array_Surface_emission
 end interface extend_MC_array
 
 interface copy_MC_array
@@ -44,6 +46,7 @@ interface copy_MC_array
    module procedure copy_MC_array_positron
    module procedure copy_MC_array_electron
    module procedure copy_MC_array_muon
+   module procedure copy_MC_array_surface_emission
 end interface copy_MC_array
 
 
@@ -824,12 +827,13 @@ end subroutine flight_time_to_boundary
 
 
 ! Define normal to arbitrary surface at the point of particle impact:
- subroutine define_normal_to_surface(used_target,  Prtcl, n, message_in, INFO)
+ subroutine define_normal_to_surface(used_target,  Prtcl, n, message_in, INFO, surf_ind)
    type(Matter), intent(in) :: used_target   ! parameters of the target
    class(Particle), intent(inout) :: Prtcl      ! undefined particle as an object
    real(8), dimension(3), intent(out) :: n  ! normal vector to the surface at the given point
    character(*), intent(in) :: message_in   ! for checking, message to dysplay
    integer, intent(out), optional :: INFO   ! print out error info
+   integer, intent(out), optional :: surf_ind   ! index of the surface being crossed ("-" back, "+" front: X=1, Y=2, Z=3)
    !----------------------------
    real(8), dimension(3) :: R_shift
    real(8) :: eps, Xc, Yc, Zc, Xcr, Ycr, Zcr, n_abs, PrtclV
@@ -869,18 +873,38 @@ end subroutine flight_time_to_boundary
             n = 0.0d0
             
             ! Check which surface it is crossing:
-            if ( (abs(Xcr - ARRAY%Xstart) < eps) .or. (abs(Xcr - ARRAY%Xend) < eps ) ) then ! crossing X
+            if (abs(Xcr - ARRAY%Xstart) < eps) then ! crossing X
                n(2:3) = 0.0d0
                n(1) = 1.0d0
+               if (present(surf_ind)) surf_ind = 1
             endif
-            if ( (abs(Ycr - ARRAY%Ystart) < eps) .or. (abs(Ycr - ARRAY%Yend) < eps ) ) then ! crossing Y
+            if (abs(Xcr - ARRAY%Xend) < eps ) then ! crossing X
+               n(2:3) = 0.0d0
+               n(1) = 1.0d0
+               if (present(surf_ind)) surf_ind = -1
+            endif
+
+            if (abs(Ycr - ARRAY%Ystart) < eps) then ! crossing Y
                n(1) = 0.0d0
                n(2) = 1.0d0
                n(3) = 0.0d0
+               if (present(surf_ind)) surf_ind = 2
             endif
-            if ( (abs(Zcr - ARRAY%Zstart) < eps) .or. (abs(Zcr - ARRAY%Zend) < eps ) ) then ! crossing Z
+            if (abs(Ycr - ARRAY%Yend) < eps ) then ! crossing Y
+               n(1) = 0.0d0
+               n(2) = 1.0d0
+               n(3) = 0.0d0
+               if (present(surf_ind)) surf_ind = -2
+            endif
+            if (abs(Zcr - ARRAY%Zstart) < eps) then ! crossing Z
                n(1:2) = 0.0d0
                n(3) = 1.0d0
+               if (present(surf_ind)) surf_ind = 3
+            endif
+            if (abs(Zcr - ARRAY%Zend) < eps ) then ! crossing Z
+               n(1:2) = 0.0d0
+               n(3) = 1.0d0
+               if (present(surf_ind)) surf_ind = -3
             endif
             
             ! Check consistency:
@@ -895,7 +919,7 @@ end subroutine flight_time_to_boundary
 !                print*, 'Trying a different way of boundary finding...'
 !                pause 'define_normal_to_surface'
                call find_closest_boundary(Xcr, Ycr, Zcr, &
-                    ARRAY%Xstart, ARRAY%Ystart, ARRAY%Zstart, ARRAY%Xend, ARRAY%Yend, ARRAY%Zend, ind_boundary)  ! below
+                  ARRAY%Xstart, ARRAY%Ystart, ARRAY%Zstart, ARRAY%Xend, ARRAY%Yend, ARRAY%Zend, ind_boundary)  ! below
                select case (ind_boundary)
                case (1,2)   ! closest boundary is along X
                   n(2:3) = 0.0d0
@@ -908,7 +932,25 @@ end subroutine flight_time_to_boundary
                   n(1:2) = 0.0d0
                   n(3) = 1.0d0
                endselect
-            endif
+
+               ! Save the index, if required:
+               if (present(surf_ind)) then
+                  select case (ind_boundary)
+                  case (1)   ! closest boundary is along X, front
+                     surf_ind = 1
+                  case (2)   ! closest boundary is along X, back
+                     surf_ind = -1
+                  case (3)   ! closest boundary is along Y, front
+                     surf_ind = 2
+                  case (4)   ! closest boundary is along Y, back
+                     surf_ind = -2
+                  case (5)   ! closest boundary is along Z, front
+                     surf_ind = 3
+                  case (6)   ! closest boundary is along Z, back
+                     surf_ind = -3
+                  endselect
+               endif ! (present(surf_ind))
+            endif ! (all( abs(n(:)) < m_tollerance_eps))
 
             ! Update INFO:
             if (all( abs(n(:)) < m_tollerance_eps)) then ! after trying another way
@@ -945,6 +987,16 @@ end subroutine flight_time_to_boundary
                ! Cylinder base is perpendicular to Z in the cylinder coordinate system:
                n(1:2) = 0.0d0
                n(3) = 1.0d0
+
+               if (present(surf_ind)) then
+                  if (abs(Zcr - ARRAY%L_start) < eps) then ! front
+                     surf_ind = 2   ! +L
+                  endif
+                  if (abs(Zcr - ARRAY%L_end) < eps )  then ! back
+                     surf_ind = -2  ! -L
+                  endif
+               endif ! (present(surf_ind))
+
             else    ! crossing cyllinder surface:
                ! Vector connecting the point of impact with the center of the cylinder:
                n(1) = Prtcl%R(1) - ARRAY%X
@@ -952,6 +1004,10 @@ end subroutine flight_time_to_boundary
                n(3) = 0.0d0
                ! Normalize to 1:
                n(:) = n(:) / ARRAY%R
+
+               if (present(surf_ind)) then
+                  surf_ind = 1      ! R
+               endif
             endif
             ! Rotate it to the lab.coordinate system:
             call rotate_coordinate_system(n(1), n(2), n(3), n(1), n(2), n(3), ARRAY%angle_x, ARRAY%angle_y, ARRAY%angle_z)  ! module "Geometries"
@@ -1123,6 +1179,18 @@ subroutine Find_starting_targets(used_target, numpar, bunch, MC)
                R_shift(:) = m_tollerance_eps * MC(i)%MC_Atoms_events(j)%V(:)/Vabs     ! to place particle inside of the material
                ! Update particle's material index according to the new material it enters:
                call find_the_target(used_target, MC(i)%MC_Atoms_events(j), R_shift) ! below
+            endif
+         enddo
+      endif
+
+      if (allocated(MC(i)%MC_Surface_emission_events)) then
+         do j = 1, N_size
+            if (MC(i)%MC_Surface_emission_events(j)%active) then   ! only for active particles
+               !R_shift(:) = 1.0d-7 * MC(i)%MC_Surface_emission_events(j)%V(:)     ! to place particle inside of the material
+               Vabs = max( SQRT( SUM(MC(i)%MC_Surface_emission_events(j)%V(:)*MC(i)%MC_Surface_emission_events(j)%V(:)) ), m_tollerance_eps)
+               R_shift(:) = m_tollerance_eps * MC(i)%MC_Surface_emission_events(j)%V(:)/Vabs     ! to place particle inside of the material
+               ! Update particle's material index according to the new material it enters:
+               call find_the_target(used_target, MC(i)%MC_Surface_emission_events(j), R_shift) ! below
             endif
          enddo
       endif
@@ -1882,6 +1950,17 @@ subroutine renew_atomic_arrays(MC)
 end subroutine renew_atomic_arrays
 
 
+subroutine renew_surface_emission_arrays(MC)
+   type(MC_arrays), dimension(:), intent(inout) :: MC   ! all MC arrays for all particles; size = number of iterations
+   integer i, Nsiz
+   Nsiz = size(MC)
+   do i = 1, Nsiz
+      MC(i)%N_surf_emission = 0  ! restart counting the number of active atomic events of energy transfer
+      MC(i)%MC_Surface_emission_events(:)%active = .false.  ! deactivate all "particles"
+      MC(i)%MC_Surface_emission_events(:)%Ekin = 0.0d0      ! deactivate all "particles"
+   enddo
+end subroutine renew_surface_emission_arrays
+
 
 subroutine remove_particle_from_MC_array(N_particles, i_remove, Prtcl)
    integer, intent(inout) :: N_particles    ! that's how many active particles there were
@@ -1945,10 +2024,12 @@ subroutine remove_particle_from_MC_array(N_particles, i_remove, Prtcl)
             Prtcl(i)%Meff = Prtcl(i+1)%Meff
             Prtcl(i)%A(:) = Prtcl(i+1)%A(:)
             Prtcl(i)%Force(:) = Prtcl(i+1)%Force(:) 
+         type is (Emission_event)
+            Prtcl(i)%surface = Prtcl(i+1)%surface
       end select
    enddo
    ! Exclude the last particle:
-   call set_default_particle(Prtcl(N_particles))    ! above
+   call set_default_particle(Prtcl(N_particles))    ! module "Objects"
    ! And remove it from the counter:
    N_particles = N_particles - 1
    
@@ -2046,7 +2127,7 @@ pure subroutine extend_MC_array_Electrons(Prtcl)
  
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
@@ -2139,7 +2220,7 @@ pure subroutine extend_MC_array_Photons(Prtcl)
  
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
@@ -2188,6 +2269,8 @@ pure subroutine extend_MC_array_Holes(Prtcl)
    Prtcl_temp(:)%SV0(2) =Prtcl(:)%SV0(2)
    Prtcl_temp(:)%SV0(3) =Prtcl(:)%SV0(3)
    Prtcl_temp(:)%Mass = Prtcl(:)%Mass
+   Prtcl_temp(:)%KOA = Prtcl(:)%KOA
+   Prtcl_temp(:)%Sh = Prtcl(:)%Sh
 
    call copy_MC_array(Prtcl_temp, Prtcl) ! below
 
@@ -2229,12 +2312,14 @@ pure subroutine extend_MC_array_Holes(Prtcl)
    Prtcl(1:siz)%SV0(2) =Prtcl_temp(1:siz)%SV0(2)
    Prtcl(1:siz)%SV0(3) =Prtcl_temp(1:siz)%SV0(3)
    Prtcl(1:siz)%Mass = Prtcl_temp(1:siz)%Mass
+   Prtcl(1:siz)%KOA = Prtcl_temp(1:siz)%KOA
+   Prtcl(1:siz)%Sh = Prtcl_temp(1:siz)%Sh
 
    call copy_MC_array(Prtcl(1:siz), Prtcl_temp(1:siz)) ! below
  
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
@@ -2327,7 +2412,7 @@ pure subroutine extend_MC_array_Positrons(Prtcl)
  
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
@@ -2420,7 +2505,7 @@ pure subroutine extend_MC_array_Muons(Prtcl)
 
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
@@ -2513,7 +2598,7 @@ pure subroutine extend_MC_array_Atoms(Prtcl)
  
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
@@ -2606,11 +2691,118 @@ pure subroutine extend_MC_array_SHIs(Prtcl)
  
  ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)
 end subroutine extend_MC_array_SHIs
+
+
+
+pure subroutine extend_MC_array_Surface_emission(Prtcl)
+   type(Emission_event), dimension(:), allocatable, intent(inout) :: Prtcl    ! all electrons as objects
+   type(Emission_event), dimension(:), allocatable :: Prtcl_temp     ! temporary aray of electrons
+   integer :: siz, siz2, j
+   siz = size(Prtcl)
+   ! Allocate the temporary array to transiently store data:
+   allocate(Prtcl_temp(siz))
+
+   Prtcl_temp(:)%active = Prtcl(:)%active
+   Prtcl_temp(:)%generation = Prtcl(:)%generation
+   Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin
+   Prtcl_temp(:)%t0 = Prtcl(:)%t0
+   Prtcl_temp(:)%ti = Prtcl(:)%ti
+   Prtcl_temp(:)%t_sc = Prtcl(:)%t_sc
+   Prtcl_temp(:)%R(1) = Prtcl(:)%R(1)
+   Prtcl_temp(:)%R(2) = Prtcl(:)%R(2)
+   Prtcl_temp(:)%R(3) = Prtcl(:)%R(3)
+   Prtcl_temp(:)%S(1) = Prtcl(:)%S(1)
+   Prtcl_temp(:)%S(2) = Prtcl(:)%S(2)
+   Prtcl_temp(:)%S(3) = Prtcl(:)%S(3)
+   Prtcl_temp(:)%V(1) = Prtcl(:)%V(1)
+   Prtcl_temp(:)%V(2) = Prtcl(:)%V(2)
+   Prtcl_temp(:)%V(3) = Prtcl(:)%V(3)
+   Prtcl_temp(:)%SV(1) = Prtcl(:)%SV(1)
+   Prtcl_temp(:)%SV(2) = Prtcl(:)%SV(2)
+   Prtcl_temp(:)%SV(3) = Prtcl(:)%SV(3)
+   Prtcl_temp(:)%R0(1) = Prtcl(:)%R0(1)
+   Prtcl_temp(:)%R0(2) = Prtcl(:)%R0(2)
+   Prtcl_temp(:)%R0(3) = Prtcl(:)%R0(3)
+   Prtcl_temp(:)%S0(1) = Prtcl(:)%S0(1)
+   Prtcl_temp(:)%S0(2) = Prtcl(:)%S0(2)
+   Prtcl_temp(:)%S0(3) = Prtcl(:)%S0(3)
+   Prtcl_temp(:)%V0(1) = Prtcl(:)%V0(1)
+   Prtcl_temp(:)%V0(2) = Prtcl(:)%V0(2)
+   Prtcl_temp(:)%V0(3) = Prtcl(:)%V0(3)
+   Prtcl_temp(:)%SV0(1) =Prtcl(:)%SV0(1)
+   Prtcl_temp(:)%SV0(2) =Prtcl(:)%SV0(2)
+   Prtcl_temp(:)%SV0(3) =Prtcl(:)%SV0(3)
+   Prtcl_temp(:)%Mass = Prtcl(:)%Mass
+
+   call copy_MC_array(Prtcl_temp, Prtcl) ! below
+
+   siz2 = 2*siz
+   deallocate(Prtcl)
+   allocate(Prtcl(siz2))
+
+   ! Copy the data back into the arrays:
+   Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
+   Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
+   Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin
+   Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
+   Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
+   Prtcl(1:siz)%t_sc = Prtcl_temp(1:siz)%t_sc
+   Prtcl(1:siz)%R(1) = Prtcl_temp(1:siz)%R(1)
+   Prtcl(1:siz)%R(2) = Prtcl_temp(1:siz)%R(2)
+   Prtcl(1:siz)%R(3) = Prtcl_temp(1:siz)%R(3)
+   Prtcl(1:siz)%S(1) = Prtcl_temp(1:siz)%S(1)
+   Prtcl(1:siz)%S(2) = Prtcl_temp(1:siz)%S(2)
+   Prtcl(1:siz)%S(3) = Prtcl_temp(1:siz)%S(3)
+   Prtcl(1:siz)%V(1) = Prtcl_temp(1:siz)%V(1)
+   Prtcl(1:siz)%V(2) = Prtcl_temp(1:siz)%V(2)
+   Prtcl(1:siz)%V(3) = Prtcl_temp(1:siz)%V(3)
+   Prtcl(1:siz)%SV(1) = Prtcl_temp(1:siz)%SV(1)
+   Prtcl(1:siz)%SV(2) = Prtcl_temp(1:siz)%SV(2)
+   Prtcl(1:siz)%SV(3) = Prtcl_temp(1:siz)%SV(3)
+   Prtcl(1:siz)%R0(1) = Prtcl_temp(1:siz)%R0(1)
+   Prtcl(1:siz)%R0(2) = Prtcl_temp(1:siz)%R0(2)
+   Prtcl(1:siz)%R0(3) = Prtcl_temp(1:siz)%R0(3)
+   Prtcl(1:siz)%S0(1) = Prtcl_temp(1:siz)%S0(1)
+   Prtcl(1:siz)%S0(2) = Prtcl_temp(1:siz)%S0(2)
+   Prtcl(1:siz)%S0(3) = Prtcl_temp(1:siz)%S0(3)
+   Prtcl(1:siz)%V0(1) = Prtcl_temp(1:siz)%V0(1)
+   Prtcl(1:siz)%V0(2) = Prtcl_temp(1:siz)%V0(2)
+   Prtcl(1:siz)%V0(3) = Prtcl_temp(1:siz)%V0(3)
+   Prtcl(1:siz)%SV0(1) =Prtcl_temp(1:siz)%SV0(1)
+   Prtcl(1:siz)%SV0(2) =Prtcl_temp(1:siz)%SV0(2)
+   Prtcl(1:siz)%SV0(3) =Prtcl_temp(1:siz)%SV0(3)
+   Prtcl(1:siz)%Mass = Prtcl_temp(1:siz)%Mass
+
+   call copy_MC_array(Prtcl(1:siz), Prtcl_temp(1:siz)) ! below
+
+ ! All beyond are default to start with:
+   do j = siz+1, siz2
+      call set_default_particle(Prtcl(j))  ! module "Objects"
+   enddo
+   ! clean up:
+   deallocate(Prtcl_temp)
+end subroutine extend_MC_array_Surface_emission
+
+
+pure subroutine copy_MC_array_surface_emission(array1, array2)
+   type(Emission_event), dimension(:), intent(inout) :: array1
+   type(Emission_event), dimension(:), intent(inout) :: array2
+   array1(:)%A(1) = array2(:)%A(1)
+   array1(:)%A(2) = array2(:)%A(2)
+   array1(:)%A(3) = array2(:)%A(3)
+   array1(:)%Force(1) = array2(:)%Force(1)
+   array1(:)%Force(2) = array2(:)%Force(2)
+   array1(:)%Force(3) = array2(:)%Force(3)
+   array1(:)%surface = array2(:)%surface
+end subroutine copy_MC_array_surface_emission
+
 
 
 pure subroutine copy_MC_array_SHI(array1, array2)
@@ -2825,7 +3017,7 @@ subroutine extend_MC_array_poly(Prtcl)
    end select
    ! All beyond are default to start with:
    do j = siz+1, siz2
-      call set_default_particle(Prtcl(j))  ! above
+      call set_default_particle(Prtcl(j))  ! module "Objects"
    enddo
    ! clean up:
    deallocate(Prtcl_temp)

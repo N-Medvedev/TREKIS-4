@@ -368,8 +368,13 @@ type output_data
 
    ! Specific detectors:
    real(8), dimension(:,:), allocatable :: Spectrum_e_Surface_X, Spectrum_e_Surface_Y, Spectrum_e_Surface_Z  ! surface-emission energy spectra
+   ! Front surface:
    real(8), dimension(:,:), allocatable :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z  ! surface-emission electron density
    real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z  ! surface-emission energy density
+   ! Back surface:
+   real(8), dimension(:,:), allocatable :: Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb  ! surface-emission electron density
+   real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb  ! surface-emission energy density
+
 
 end type output_data
 
@@ -551,10 +556,12 @@ type Num_par
    integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X
    integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y
    integer :: FN_spectrum_ph_Z, FN_spectrum_e_Z, FN_spectrum_p_Z, FN_spectrum_SHI_Z, FN_spectrum_h_Z
-
    integer :: FN_theta_ph_X, FN_theta_e_X, FN_theta_p_X, FN_theta_SHI_X, FN_theta_h_X
    integer :: FN_theta_ph_Y, FN_theta_e_Y, FN_theta_p_Y, FN_theta_SHI_Y, FN_theta_h_Y
    integer :: FN_theta_ph_Z, FN_theta_e_Z, FN_theta_p_Z, FN_theta_SHI_Z, FN_theta_h_Z
+   ! name of the file with surface emission data:
+   character(200) :: FILE_Surface_e_dens, FILE_Surface_e_NRG
+   integer :: FN_Surface_e_dens, FN_Surface_e_NRG
    ! File numbers with spatial distributions:
    ! Cartesian:
    integer :: FN_car_1d_X_ph, FN_car_1d_X_e, FN_car_1d_X_p, FN_car_1d_X_SHI, FN_car_1d_X_a, FN_car_1d_X_mu   ! densities along X
@@ -761,6 +768,10 @@ end type MacroAtom
 type, EXTENDS (Electron) :: Muon    ! muon as an object
 end type Muon
 
+type, EXTENDS (Electron) :: Emission_event    ! emission event as an object
+   integer :: surface   ! index of the surface: "+" front or "-" back (X=1,Y=2,Z=3)
+end type Emission_event
+
 !==============================================
 ! Parameters for exchange energy between MC and MD:
 type :: MCMD_grid
@@ -818,6 +829,7 @@ type :: MC_arrays
    integer :: N_SHI   ! number of active SHIs
    integer :: N_at_nrg  ! number of elastic scattering events transfering energy to atoms
    integer :: N_mu     ! number of active muons
+   integer :: N_surf_emission   ! number of electron surface emission events
    ! Arrays for all MC particles:
    type(Photon), dimension(:), allocatable :: MC_Photons        ! all photons as objects
    type(Electron), dimension(:), allocatable :: MC_Electrons    ! all electrons as objects
@@ -826,6 +838,7 @@ type :: MC_arrays
    type(SHI), dimension(:), allocatable :: MC_SHIs      ! all SHIs as objects
    type(Atom), dimension(:), allocatable :: MC_Atoms_events     ! all elastic energy transfer events as objects
    type(Muon), dimension(:), allocatable :: MC_Muons    ! all muons as objects
+   type(Emission_event), dimension(:), allocatable :: MC_Surface_emission_events     ! all surface emission events as objects (for electrons)
 end type MC_arrays
 
 
@@ -897,13 +910,15 @@ pure subroutine set_default_particle_array(Prtcl, typ, siz)
          allocate(Atom::Prtcl(siz)) ! make it an array of Atoms, size SYZ
       case ('SHI', 'ION', 'Ion', 'ion', 'shi')
          allocate(SHI::Prtcl(siz)) ! make it an array of SHIs, size SYZ
+      case ('Emission', 'EMISSION', 'emission')
+         allocate(Emission_event::Prtcl(siz)) ! make it an array of Emission-events (for electrons), size SYZ
       end select
    endif
 end subroutine set_default_particle_array
 
 
 pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, in_target, R, S, V, SV, R0, S0, V0, SV0, &
-                                    Force, KOA, Sh, valent, Z, Name, Zeff, Meff)
+                                    Force, KOA, Sh, valent, Z, Name, Zeff, Meff, surface)
    class(Particle), intent(inout) :: Prtcl	! undefined particle as an object
    real(8), intent(in), optional :: Ekin      ! [eV] kinetic energy
    real(8), intent(in), optional :: Mass     ! [kg] (effective) mass of this particle
@@ -928,6 +943,7 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
    character(3), intent(in), optional :: Name	! abbreviation of the atom according to periodic table
    real(8), intent(in), optional :: Zeff	! effective charge [electron charge]
    real(8), intent(in), optional :: Meff	! user-defined mass [amu]
+   integer, intent(in), optional :: surface ! surface index for emission event
    !--------------------------------------------------
    ! To start with, make a default one:
    call set_default_particle(Prtcl) ! below
@@ -982,6 +998,9 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
          if (present(Name)) Prtcl%Name = Name
          if (present(Zeff)) Prtcl%Zeff = Zeff
          if (present(Meff)) Prtcl%Meff = Meff
+      type is (Emission_event)
+         if (present(Force)) Prtcl%Force = Force
+         if (present(surface)) Prtcl%surface = surface
    end select
 end subroutine make_new_particle
 
@@ -1043,6 +1062,11 @@ pure subroutine set_default_particle(Prtcl)
          Prtcl%Meff = 1             ! user-defined mass [a.m.u.]
          Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
          Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
+      type is (Emission_event)
+         Prtcl%Mass = g_me          ! [kg] free electron rest mass
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
+         Prtcl%surface = 0         ! no emission - no surface index to start with
    end select
 end subroutine set_default_particle
 
