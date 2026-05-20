@@ -353,7 +353,7 @@ subroutine set_free_flights(used_target, numpar, MC, MD_supce, E_e, E_h)
          ! Find inside of which target this particle enters:
          call find_the_target(used_target, MC%MC_Electrons(i))  ! module "MC_general_tools"
          ! Get its flight time within this target:
-         call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(i), MD_supce, E_e)  ! module "MC_electron"
+         call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(i), MD_supce, E_e)  ! module "MC_general_tools"
       enddo
    endif
    ! Do for all positrons:

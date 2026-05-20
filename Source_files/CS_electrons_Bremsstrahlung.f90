@@ -48,6 +48,7 @@ subroutine get_electron_Brems(Material, numpar, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    
    write(*, '(a)', advance='no') ' Obtaining electron Bremsstrahlung cross sections...'
    
@@ -89,6 +90,8 @@ subroutine get_electron_Brems(Material, numpar, Err)
          ! Calculate total elastic cross sections for this element:
          File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_electron_Brems_CS))//'_total_'//trim(adjustl(Model_name))//'.dat'
          inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+         create_file = .false. ! assume there is no need to create it
+
          if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! only create it if file does not exist
             open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
             count_lines = 0
@@ -97,11 +100,18 @@ subroutine get_electron_Brems(Material, numpar, Err)
                call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                if (.not.read_well) then
                   close(FN)	! redo the file
-                  goto 8392
+                  !goto 8392
+                  create_file = .true. ! no such file => create it
+                  exit ! the do-cicle
                endif
             enddo ! m = 1, Ngrid
          else 
-8392     open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+            create_file = .true. ! no such file => create it
+         endif
+
+!8392     continue
+         if (create_file) then ! no such file => create it
+            open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
             do m = 1, Ngrid	! for all energy grid points:
                call get_el_Brems_CS(Element%El_brems%E(m), Element, numpar, Element%El_brems%Total(m))	! below
                Element%El_brems%Total_MFP(m) = MFP_from_sigma(Element%El_brems%Total(m),  1.0d24)    ! module "CS_general_tools"

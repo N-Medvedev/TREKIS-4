@@ -54,6 +54,7 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    !-------------------------------- 
 
    ph_to_ion = 1.0d3    ! rescaling factor to set the grid [eV -> keV]
@@ -62,7 +63,8 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
    N_types_SHI = count_types_of_SHIs(bunch) ! module "Initial_conditions"
    
    ! Only if there are some ions, calculate MFPs for them
-   if (N_types_SHI < 1) goto 9999   ! if there are none, skip the whole routine
+   !if (N_types_SHI < 1) goto 9999   ! if there are none, skip the whole routine
+   if (N_types_SHI < 1) return   ! if there are none, skip the whole routine
 
    ! Find how many sources of radiation are used:
    N_bunch = size (bunch)
@@ -171,6 +173,8 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
                         ! Check file with CSs:
                         File_name = trim(adjustl(Path_valent))//path_sep//trim(adjustl(Ion_name))//'_in_'//trim(adjustl(Material(i)%Name))//trim(adjustl(m_ion_inelast_CS))//'_valence_'//trim(adjustl(Model_name))//'.dat'
                         inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+                        create_file = .false. ! assume there is no need to create it
+
 !                         if (file_exist) then	! just read from the file, no need to recalculate:
                         if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
                            open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -182,13 +186,21 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
                               call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                               if (.not.read_well) then
                                  close(FN)	! redo the file
-                                 goto 8391
+                                 !goto 8391
+                                 create_file = .true. ! no such file => create it
+                                 exit ! the do-cicle
                               endif
                               ! Recalculate the MFP since material density might be different from the one saved in the file:
                               Material(i)%SHI_inelastic_valent(ipart)%Total_MFP(m) = MFP_from_sigma(Material(i)%SHI_inelastic_valent(ipart)%Total(m),  Material(i)%At_Dens) ! [A] module "CS_general_tools"
                            enddo
                         else	! no such file => create it
-8391                    open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+                           create_file = .true. ! no such file => create it
+                        endif
+
+!8391                    continue
+
+                        if (create_file) then ! no such file => create it
+                           open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                            do m = 1, Nsiz	! for all energy grid points:
                               E => Material(i)%SHI_inelastic_valent(ipart)%E(m)	! electron energy [eV]
                               sigma = 0.0d0
@@ -208,6 +220,7 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
                      File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(Ion_name))//'_in_'//trim(adjustl(Element%Name))//trim(adjustl(m_ion_inelast_CS))//'_'//trim(adjustl(Element%Shell_name(k)))//'_'//trim(adjustl(Model_name))//'.dat'
                      !File_name = trim(adjustl(Path_valent))//path_sep//trim(adjustl(Ion_name))//'_in_'//trim(adjustl(Element%Name))//trim(adjustl(m_ion_inelast_CS))//'_valence_'//trim(adjustl(Model_name))//'.dat'
                      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+                     create_file = .false. ! assume there is no need to create it
 !                      if (file_exist) then	! just read from the file, no need to recalculate:
                      if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
                         open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -219,11 +232,18 @@ subroutine get_ion_IMFP(Material, numpar, bunch, MC, Err)
                            call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                            if (.not.read_well) then
                               close(FN)	! redo the file
-                              goto 8390
+                              !goto 8390
+                              create_file = .true. ! no such file => create it
+                              exit ! the do-cicle
                            endif
                         enddo
                      else	! no such file => create it
-8390                 open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+                        create_file = .true. ! no such file => create it
+                     endif
+
+!8390                 continue
+                     if (create_file) then ! no such file => create it
+                        open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                         do m = 1, Ngrid	! for all energy grid points:
                            E => Element%SHI_inelastic(ipart)%E(m)	! electron energy [eV]
                            sigma = 0.0d0

@@ -147,16 +147,17 @@ type Atom_kind
    type(Cross_section) :: Muon_brems	! cross sections of muon Bremsstrahlung
 end type Atom_kind
 
-   
+
 !============================================== 
 ! Barrier of electron emission from the surface of the material:
 type :: Emission_barrier
-   integer :: barr_type ! type of potential barrier at the surface: 0=step, 1=Eckart
-   real(8) :: Work_func		! [eV] Work function
-   real(8) :: Surf_bar		! [A] surface barrier length
-   real(8) :: Bar_height	! [eV] barrier height for electron emission
-   real(8) :: gamma         ! a parameter entering electron transmission probability
-   real(8) :: E1            ! a parameter entering electron transmission probability
+   ! Default values are for vacuum:
+   integer :: barr_type = 0         ! type of potential barrier at the surface: 0=step, 1=Eckart
+   real(8) :: Work_func = 0.0d0     ! [eV] Work function
+   real(8) :: Surf_bar = 0.0d0      ! [A] surface barrier length
+   real(8) :: Bar_height = 0.0d0    ! [eV] barrier height for electron emission
+   real(8) :: gamma = 0.0d0         ! a parameter entering electron transmission probability
+   real(8) :: E1 = 0.0d0            ! a parameter entering electron transmission probability
 end type Emission_barrier
 
 
@@ -278,16 +279,21 @@ type output_data
    real(8), dimension(:,:), allocatable :: Spectrum_h ! VB spectra for each target material
    ! Velosity theta disributions:
    real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu
-   ! Spectra in 1d space:
-   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
+   ! Energy spectra in 1d space:
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! along R
+   ! Energy spectra in 1d space, excluding incident particles (for those that can be different from target particles):
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic ! along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic ! along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic ! along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic ! along R
    ! Theta distribution in 1d space:
-   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! Theta distribution in space along X
-   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! Theta distribution in space along Y
-   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! Theta distribution in space along Z
-   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! Theta distribution in space along R
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! along R
 
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, &
@@ -365,6 +371,17 @@ type output_data
    real(8), dimension(:,:,:), allocatable :: E_Distr_SHI_XYZ, E_Distr_SHI_RLTheta, E_Distr_SHI_RcThcPhic ! SHI
    real(8), dimension(:,:,:), allocatable :: E_Distr_a_XYZ, E_Distr_a_RLTheta, E_Distr_a_RcThcPhic ! Atom
    real(8), dimension(:,:,:), allocatable :: E_Distr_mu_XYZ, E_Distr_mu_RLTheta, E_Distr_mu_RcThcPhic ! muon
+
+   ! Specific detectors:
+   real(8), dimension(:,:), allocatable :: Spectrum_e_Surface_X, Spectrum_e_Surface_Y, Spectrum_e_Surface_Z  ! surface-emission energy spectra
+   ! Front surface:
+   real(8), dimension(:,:), allocatable :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z  ! surface-emission electron density
+   real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_X, E_Dens_e_Surface_Y, E_Dens_e_Surface_Z  ! surface-emission energy density
+   ! Back surface:
+   real(8), dimension(:,:), allocatable :: Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb  ! surface-emission electron density
+   real(8), dimension(:,:), allocatable :: E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb  ! surface-emission energy density
+
+
 end type output_data
 
 
@@ -495,8 +512,10 @@ type Num_par
    logical :: new_input_format  ! flag if new input format was used
 
    ! OUTPUT FILE NAMES AND NUMBERS:
-   character(200) :: input_path	! path to the folder with all input data
+   character(200) :: input_path	    ! path to the folder with all input data
    character(200) :: output_path	! path to the folder with all output data
+   character(200) :: output_name, output_add    ! output names defined by the user
+
    character(200) :: FILE_parameters	! name of the file with output parameters
    integer :: FN_parameters		! file number of the file with output parameters
    character(200) :: FILE_communication	! name of the file thru which user can communicate with the program
@@ -540,21 +559,27 @@ type Num_par
    character(200) :: FILE_vel_theta_ph, FILE_vel_theta_e, FILE_vel_theta_h, FILE_vel_theta_p, FILE_vel_theta_SHI, FILE_vel_theta_mu
    integer :: FN_vel_theta_ph, FN_vel_theta_e, FN_vel_theta_h, FN_vel_theta_p, FN_vel_theta_SHI, FN_vel_theta_mu
    ! Files with spectra vs space:
-   integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X
-   integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y
-   integer :: FN_spectrum_ph_Z, FN_spectrum_e_Z, FN_spectrum_p_Z, FN_spectrum_SHI_Z, FN_spectrum_h_Z
-
+   integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X, FN_spectrum_mu_X
+   integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y, FN_spectrum_mu_Y
+   integer :: FN_spectrum_ph_Z, FN_spectrum_e_Z, FN_spectrum_p_Z, FN_spectrum_SHI_Z, FN_spectrum_h_Z, FN_spectrum_mu_Z
    integer :: FN_theta_ph_X, FN_theta_e_X, FN_theta_p_X, FN_theta_SHI_X, FN_theta_h_X
    integer :: FN_theta_ph_Y, FN_theta_e_Y, FN_theta_p_Y, FN_theta_SHI_Y, FN_theta_h_Y
    integer :: FN_theta_ph_Z, FN_theta_e_Z, FN_theta_p_Z, FN_theta_SHI_Z, FN_theta_h_Z
+   ! Files with spectra vs space, excluding incident particles:
+   integer :: FN_spectrum_ph_X_intrinsic, FN_spectrum_e_X_intrinsic
+   integer :: FN_spectrum_ph_Y_intrinsic, FN_spectrum_e_Y_intrinsic
+   integer :: FN_spectrum_ph_Z_intrinsic, FN_spectrum_e_Z_intrinsic
+   ! name of the file with surface emission data:
+   character(200) :: FILE_Surface_e_dens, FILE_Surface_e_NRG
+   integer :: FN_Surface_e_dens, FN_Surface_e_NRG
    ! File numbers with spatial distributions:
    ! Cartesian:
    integer :: FN_car_1d_X_ph, FN_car_1d_X_e, FN_car_1d_X_p, FN_car_1d_X_SHI, FN_car_1d_X_a, FN_car_1d_X_mu   ! densities along X
    integer :: FN_car_1d_Y_ph, FN_car_1d_Y_e, FN_car_1d_Y_p, FN_car_1d_Y_SHI, FN_car_1d_Y_a, FN_car_1d_Y_mu   ! densities along Y
    integer :: FN_car_1d_Z_ph, FN_car_1d_Z_e, FN_car_1d_Z_p, FN_car_1d_Z_SHI, FN_car_1d_Z_a, FN_car_1d_Z_mu   ! densities along Z
-   integer :: FN_car_1d_X_E_ph, FN_car_1d_X_E_e, FN_car_1d_X_E_p, FN_car_1d_X_E_SHI, FN_car_1d_X_E_a, FN_car_1d_X_E_mu   ! energy densities along X
-   integer :: FN_car_1d_Y_E_ph, FN_car_1d_Y_E_e, FN_car_1d_Y_E_p, FN_car_1d_Y_E_SHI, FN_car_1d_Y_E_a, FN_car_1d_Y_E_mu   ! energy densities along Y
-   integer :: FN_car_1d_Z_E_ph, FN_car_1d_Z_E_e, FN_car_1d_Z_E_p, FN_car_1d_Z_E_SHI, FN_car_1d_Z_E_a, FN_car_1d_Z_E_mu   ! energy densities along Z
+   integer :: FN_car_1d_X_E_ph, FN_car_1d_X_E_e, FN_car_1d_X_E_p, FN_car_1d_X_E_SHI, FN_car_1d_X_E_a, FN_car_1d_X_E_mu  ! energy densities along X
+   integer :: FN_car_1d_Y_E_ph, FN_car_1d_Y_E_e, FN_car_1d_Y_E_p, FN_car_1d_Y_E_SHI, FN_car_1d_Y_E_a, FN_car_1d_Y_E_mu  ! energy densities along Y
+   integer :: FN_car_1d_Z_E_ph, FN_car_1d_Z_E_e, FN_car_1d_Z_E_p, FN_car_1d_Z_E_SHI, FN_car_1d_Z_E_a, FN_car_1d_Z_E_mu  ! energy densities along Z
    integer, dimension(:), allocatable :: FN_car_1d_X_h, FN_car_1d_X_E_h   ! densities and doses of holes in all shells of all elements along X
    integer, dimension(:), allocatable :: FN_car_1d_Y_h, FN_car_1d_Y_E_h   ! densities and doses of holes in all shells of all elements along Y
    integer, dimension(:), allocatable :: FN_car_1d_Z_h, FN_car_1d_Z_E_h   ! densities and doses of holes in all shells of all elements along Z
@@ -567,6 +592,7 @@ type Num_par
    integer :: FN_cyl_2d_RL_ph, FN_cyl_2d_RL_e, FN_cyl_2d_RL_p, FN_cyl_2d_RL_SHI, FN_cyl_2d_RL_a, FN_cyl_2d_RL_mu   ! densities
    integer :: FN_cyl_2d_RL_E_ph, FN_cyl_2d_RL_E_e, FN_cyl_2d_RL_E_p, FN_cyl_2d_RL_E_SHI, FN_cyl_2d_RL_E_a, FN_cyl_2d_RL_E_mu   ! energy densities
    integer, dimension(:), allocatable :: FN_cyl_2d_RL_h, FN_cyl_2d_RL_E_h   ! densities and energy densities of holes in all shells of all elements
+
    ! OUTPUT PRINTOUT:
    type(gnu_par) :: gnupl       ! parameters for gnuplotting
    logical :: printout_DOS      ! user defines to printout analyzed DOS and related parameters or not
@@ -588,6 +614,8 @@ type Num_par
    real(8), dimension(:), allocatable :: vel_theta_grid  ! particles velosity distribution by theta: Vz/V
    type(grid_params), dimension(19) :: Theta_grid_par   ! all the parameters of printout Theta vs spatial grids
    type(grids_sets), dimension(19) :: Theta_grid  ! Space grid in 1d for theta calculations
+   type(grid_params), dimension(19) :: Surface_grid_par   ! Surface emission analysis
+   type(grids_sets), dimension(19) :: Surface_grid  ! Space grid for Surface emission analysis
 
    ! NUMERICS OF THE TARGET PARAMETERS:
    integer :: N_sh_tot  ! total number of core shells in the target material
@@ -750,6 +778,10 @@ end type MacroAtom
 type, EXTENDS (Electron) :: Muon    ! muon as an object
 end type Muon
 
+type, EXTENDS (Electron) :: Emission_event    ! emission event as an object
+   integer :: surface   ! index of the surface: "+" front or "-" back (X=1,Y=2,Z=3)
+end type Emission_event
+
 !==============================================
 ! Parameters for exchange energy between MC and MD:
 type :: MCMD_grid
@@ -807,6 +839,7 @@ type :: MC_arrays
    integer :: N_SHI   ! number of active SHIs
    integer :: N_at_nrg  ! number of elastic scattering events transfering energy to atoms
    integer :: N_mu     ! number of active muons
+   integer :: N_surf_emission   ! number of electron surface emission events
    ! Arrays for all MC particles:
    type(Photon), dimension(:), allocatable :: MC_Photons        ! all photons as objects
    type(Electron), dimension(:), allocatable :: MC_Electrons    ! all electrons as objects
@@ -815,6 +848,7 @@ type :: MC_arrays
    type(SHI), dimension(:), allocatable :: MC_SHIs      ! all SHIs as objects
    type(Atom), dimension(:), allocatable :: MC_Atoms_events     ! all elastic energy transfer events as objects
    type(Muon), dimension(:), allocatable :: MC_Muons    ! all muons as objects
+   type(Emission_event), dimension(:), allocatable :: MC_Surface_emission_events     ! all surface emission events as objects (for electrons)
 end type MC_arrays
 
 
@@ -886,13 +920,15 @@ pure subroutine set_default_particle_array(Prtcl, typ, siz)
          allocate(Atom::Prtcl(siz)) ! make it an array of Atoms, size SYZ
       case ('SHI', 'ION', 'Ion', 'ion', 'shi')
          allocate(SHI::Prtcl(siz)) ! make it an array of SHIs, size SYZ
+      case ('Emission', 'EMISSION', 'emission')
+         allocate(Emission_event::Prtcl(siz)) ! make it an array of Emission-events (for electrons), size SYZ
       end select
    endif
 end subroutine set_default_particle_array
 
 
 pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, in_target, R, S, V, SV, R0, S0, V0, SV0, &
-                                    Force, KOA, Sh, valent, Z, Name, Zeff, Meff)
+                                    Force, KOA, Sh, valent, Z, Name, Zeff, Meff, surface)
    class(Particle), intent(inout) :: Prtcl	! undefined particle as an object
    real(8), intent(in), optional :: Ekin      ! [eV] kinetic energy
    real(8), intent(in), optional :: Mass     ! [kg] (effective) mass of this particle
@@ -917,6 +953,7 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
    character(3), intent(in), optional :: Name	! abbreviation of the atom according to periodic table
    real(8), intent(in), optional :: Zeff	! effective charge [electron charge]
    real(8), intent(in), optional :: Meff	! user-defined mass [amu]
+   integer, intent(in), optional :: surface ! surface index for emission event
    !--------------------------------------------------
    ! To start with, make a default one:
    call set_default_particle(Prtcl) ! below
@@ -971,6 +1008,9 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
          if (present(Name)) Prtcl%Name = Name
          if (present(Zeff)) Prtcl%Zeff = Zeff
          if (present(Meff)) Prtcl%Meff = Meff
+      type is (Emission_event)
+         if (present(Force)) Prtcl%Force = Force
+         if (present(surface)) Prtcl%surface = surface
    end select
 end subroutine make_new_particle
 
@@ -980,7 +1020,7 @@ pure subroutine set_default_particle(Prtcl)
    ! Default values to start with:
    Prtcl%active = .false.   ! by default, a particle is excluded from simulations
    Prtcl%generation = -1    ! has not been generated yet
-   Prtcl%in_target = 1      ! by default, let it be in the first target
+   Prtcl%in_target = 0      ! by default, let it be in vacuum
    Prtcl%Ekin = 0.0d0     ! [eV] kinetic energy
    Prtcl%t0 = 0.0d0         ! [fs] starting time
    Prtcl%ti = 1.0d22        ! [fs] time of next event (scattering, decay, etc.)
@@ -1032,6 +1072,11 @@ pure subroutine set_default_particle(Prtcl)
          Prtcl%Meff = 1             ! user-defined mass [a.m.u.]
          Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
          Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
+      type is (Emission_event)
+         Prtcl%Mass = g_me          ! [kg] free electron rest mass
+         Prtcl%A(:) = 0.0d0         ! [A^2/fs] accelerations
+         Prtcl%Force(:) = 0.0d0     ! [eV/fs] forces
+         Prtcl%surface = 0         ! no emission - no surface index to start with
    end select
 end subroutine set_default_particle
 

@@ -56,6 +56,7 @@ subroutine get_electron_IMFP(Material, numpar, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    
    write(*, '(a)', advance='no') ' Obtaining electron inelastic scattering cross sections...'
    
@@ -137,6 +138,7 @@ subroutine get_electron_IMFP(Material, numpar, Err)
                   File_name_part = trim(adjustl(Path_valent))//path_sep//trim(adjustl(m_electron_inelast_CS))//'_valence_'//trim(adjustl(Model_name))
                   File_name = trim(adjustl(File_name_part))//'.dat'
                   inquire(file=trim(adjustl(File_name)), exist=file_exist) ! check if this file is there
+                  create_file = .false. ! assume there is no need to create it
 
                   ! And files with diff.CS, if used:
                   select case (numpar%CDF_CS_method)
@@ -161,11 +163,18 @@ subroutine get_electron_IMFP(Material, numpar, Err)
                         call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                         if (.not.read_well) then
                            close(FN)	! redo the file
-                           goto 8391
+                           !goto 8391
+                           create_file = .true. ! no such file => create it
+                           exit ! the do-cicle
                         endif
                      enddo
                   else	! no such file (or user wants to recalculate it) => create it
-8391                 open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+                     create_file = .true. ! no such file => create it
+                  endif
+
+!8391              continue
+                  if (create_file) then ! no such file => create it)
+                     open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                      do m = 1, Nsiz	! for all energy grid points:
                         E => Material(i)%El_inelastic_valent%E(m)	! electron energy [eV]
                         !call get_el_inelastic_CS(E, Material(i), Material(i)%DOS, numpar, j, k, Material(i)%DOS%Egap, sigma, CDF_dispers=0, CDF_m_eff=1, Se=Se)	! see below
@@ -185,6 +194,7 @@ subroutine get_electron_IMFP(Material, numpar, Err)
                ! Check file with CSs:
                File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_electron_inelast_CS))//'_'//trim(adjustl(Element%Shell_name(k)))//'_'//trim(adjustl(Model_name))//'.dat'
                inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+               create_file = .false. ! assume there is no need to create it
                if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then  ! just read from the file, no need to recalculate:
                   open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
                   ! Get the MFP and CDF points:
@@ -195,12 +205,19 @@ subroutine get_electron_IMFP(Material, numpar, Err)
                      call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                      if (.not.read_well) then
                         close(FN)	! redo the file
-                        goto 8390
+                        !goto 8390
+                        create_file = .true. ! no such file => create it
+                        exit ! the do-cicle
                      endif
 !                       print*, k, m, Element%El_inelastic%E(m), Element%El_inelastic%Per_shell(k,m)
                   enddo
                else	! no such file => create it
-8390           open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+                  create_file = .true. ! no such file => create it
+               endif
+
+!8390           continue
+               if (create_file) then ! no such file => create it)
+                  open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                   do m = 1, Ngrid	! for all energy grid points:
                      E => Element%El_inelastic%E(m)	! electron energy [eV]
                      call get_el_inelastic_CS(E, Material(i), Material(i)%DOS, numpar, j, k, Material(i)%Elements(j)%Ip(k), sigma, &

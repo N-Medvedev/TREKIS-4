@@ -35,6 +35,7 @@ subroutine get_positron_annihilation(Material, numpar, Err)
    logical :: file_exist, read_well
    !--------------------------------
    character, pointer :: path_sep
+   logical :: create_file
 
    write(*, '(a)', advance='no') ' Obtaining positron annihilation cross sections...'
 
@@ -71,6 +72,8 @@ subroutine get_positron_annihilation(Material, numpar, Err)
       ! Get annihilation cross sections per electron:
       File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_positron_annihilation))//'_per_electron_'//trim(adjustl(Model_name))//'.dat'
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+      create_file = .false. ! assume there is no need to create it
+
 !       if (file_exist) then	! only create it if file does not exist
       if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
          open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -80,11 +83,18 @@ subroutine get_positron_annihilation(Material, numpar, Err)
             call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
             if (.not.read_well) then
                close(FN)	! redo the file
-               goto 8391
+               !goto 8391
+               create_file = .true. ! no such file => create it
+               exit ! the do-cicle
             endif
          enddo ! m = 1, Nsiz
       else
-8391     open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+         create_file = .true. ! no such file => create it
+      endif
+!8391  continue
+
+      if (create_file) then ! no such file => create it
+         open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
          do m = 1, Nsiz	! for all energy grid points:
             call get_pos_annihilation_CS(Material(i)%Pos_annihil_total%E(m), numpar, Material(i)%Pos_annihil_total%Total(m))   ! below
             write(FN,'(es,es)') Material(i)%Pos_annihil_total%E(m), Material(i)%Pos_annihil_total%Total(m)

@@ -4,7 +4,7 @@
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
 ! and R. Rymzhanov
-! in 2018-2025
+! in 2018-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to create output files:
 
@@ -32,61 +32,63 @@ use CS_general_tools, only: get_ranges_from_Se
 implicit none
 
 ! In this module, all output file names are collected:
-character(200) :: m_output_parameters, m_communication, m_output_DOS, m_output_DOS_k, m_output_DOS_effm
-character(200) :: m_folder_MFP, m_output_MFP, m_output_IMFP, m_output_EMFP, m_output_Brems, m_output_annihil
-character(200) :: m_output_Compton, m_output_Rayleigh, m_output_pair, m_output_absorb
-character(200) :: m_output_Se, m_output_Range, m_output_Se_vs_range
+character(100) :: m_output_parameters, m_communication, m_output_DOS, m_output_DOS_k, m_output_DOS_effm
+character(100) :: m_folder_MFP, m_output_MFP, m_output_IMFP, m_output_EMFP, m_output_Brems, m_output_annihil
+character(100) :: m_output_Compton, m_output_Rayleigh, m_output_pair, m_output_absorb
+character(100) :: m_output_Se, m_output_Range, m_output_Se_vs_range
 
-character(200) :: m_output_total, m_output_N_gnu, m_output_E_gnu, m_output_total_cutoff
-character(200) :: m_output_MD, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_MD_E_gnu
-character(200) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI, m_output_spectrum_mu
-character(200) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d, &
+character(100) :: m_output_total, m_output_N_gnu, m_output_E_gnu, m_output_total_cutoff
+character(100) :: m_output_MD, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_MD_E_gnu
+character(100) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI, m_output_spectrum_mu
+character(100) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d, &
                   m_output_spectrum_mu_1d
-character(200) :: m_output_theta_ph_1d, m_output_theta_e_1d, m_output_theta_h_1d, m_output_theta_p_1d, m_output_theta_SHI_1d, m_output_theta_mu_1d
+character(100) :: m_output_theta_ph_1d, m_output_theta_e_1d, m_output_theta_h_1d, m_output_theta_p_1d, m_output_theta_SHI_1d, m_output_theta_mu_1d
 
-character(200) :: m_output_cartesian_1d_X_ph, m_output_cartesian_1d_Y_ph, m_output_cartesian_1d_Z_ph
-character(200) :: m_output_cartesian_1d_X_e, m_output_cartesian_1d_Y_e, m_output_cartesian_1d_Z_e
-character(200) :: m_output_cartesian_1d_X_p, m_output_cartesian_1d_Y_p, m_output_cartesian_1d_Z_p
-character(200) :: m_output_cartesian_1d_X_h, m_output_cartesian_1d_Y_h, m_output_cartesian_1d_Z_h
-character(200) :: m_output_cartesian_1d_X_SHI, m_output_cartesian_1d_Y_SHI, m_output_cartesian_1d_Z_SHI
-character(200) :: m_output_cartesian_1d_X_a, m_output_cartesian_1d_Y_a, m_output_cartesian_1d_Z_a
-character(200) :: m_output_cartesian_1d_X_mu, m_output_cartesian_1d_Y_mu, m_output_cartesian_1d_Z_mu
-character(200) :: m_output_cartesian_1d_X_E_ph, m_output_cartesian_1d_Y_E_ph, m_output_cartesian_1d_Z_E_ph
-character(200) :: m_output_cartesian_1d_X_E_e, m_output_cartesian_1d_Y_E_e, m_output_cartesian_1d_Z_E_e
-character(200) :: m_output_cartesian_1d_X_E_p, m_output_cartesian_1d_Y_E_p, m_output_cartesian_1d_Z_E_p
-character(200) :: m_output_cartesian_1d_X_E_h, m_output_cartesian_1d_Y_E_h, m_output_cartesian_1d_Z_E_h
-character(200) :: m_output_cartesian_1d_X_E_SHI, m_output_cartesian_1d_Y_E_SHI, m_output_cartesian_1d_Z_E_SHI
-character(200) :: m_output_cartesian_1d_X_E_a, m_output_cartesian_1d_Y_E_a, m_output_cartesian_1d_Z_E_a
-character(200) :: m_output_cartesian_1d_X_E_mu, m_output_cartesian_1d_Y_E_mu, m_output_cartesian_1d_Z_E_mu
+character(100) :: m_output_cartesian_1d_X_ph, m_output_cartesian_1d_Y_ph, m_output_cartesian_1d_Z_ph
+character(100) :: m_output_cartesian_1d_X_e, m_output_cartesian_1d_Y_e, m_output_cartesian_1d_Z_e
+character(100) :: m_output_cartesian_1d_X_p, m_output_cartesian_1d_Y_p, m_output_cartesian_1d_Z_p
+character(100) :: m_output_cartesian_1d_X_h, m_output_cartesian_1d_Y_h, m_output_cartesian_1d_Z_h
+character(100) :: m_output_cartesian_1d_X_SHI, m_output_cartesian_1d_Y_SHI, m_output_cartesian_1d_Z_SHI
+character(100) :: m_output_cartesian_1d_X_a, m_output_cartesian_1d_Y_a, m_output_cartesian_1d_Z_a
+character(100) :: m_output_cartesian_1d_X_mu, m_output_cartesian_1d_Y_mu, m_output_cartesian_1d_Z_mu
+character(100) :: m_output_cartesian_1d_X_E_ph, m_output_cartesian_1d_Y_E_ph, m_output_cartesian_1d_Z_E_ph
+character(100) :: m_output_cartesian_1d_X_E_e, m_output_cartesian_1d_Y_E_e, m_output_cartesian_1d_Z_E_e
+character(100) :: m_output_cartesian_1d_X_E_p, m_output_cartesian_1d_Y_E_p, m_output_cartesian_1d_Z_E_p
+character(100) :: m_output_cartesian_1d_X_E_h, m_output_cartesian_1d_Y_E_h, m_output_cartesian_1d_Z_E_h
+character(100) :: m_output_cartesian_1d_X_E_SHI, m_output_cartesian_1d_Y_E_SHI, m_output_cartesian_1d_Z_E_SHI
+character(100) :: m_output_cartesian_1d_X_E_a, m_output_cartesian_1d_Y_E_a, m_output_cartesian_1d_Z_E_a
+character(100) :: m_output_cartesian_1d_X_E_mu, m_output_cartesian_1d_Y_E_mu, m_output_cartesian_1d_Z_E_mu
 ! Velosity theta distribution:
-character(200) :: m_output_velocity_theta_distr_ph, m_output_velocity_theta_distr_e, &
+character(100) :: m_output_velocity_theta_distr_ph, m_output_velocity_theta_distr_e, &
             m_output_velocity_theta_distr_h, m_output_velocity_theta_distr_p, m_output_velocity_theta_distr_SHI, &
             m_output_velocity_theta_distr_mu
+! Surface emission data:
+character(100) :: m_output_Surface_e_dens, m_output_Surface_e_NRG
 
 !Cylindrical
 !1d
-character(200) :: m_output_cylindric_1d_R_ph, m_output_cylindric_1d_R_e, m_output_cylindric_1d_R_p
-character(200) :: m_output_cylindric_1d_R_h, m_output_cylindric_1d_R_SHI, m_output_cylindric_1d_R_a, m_output_cylindric_1d_R_mu
-character(200) :: m_output_cylindric_1d_R_E_ph, m_output_cylindric_1d_R_E_e, m_output_cylindric_1d_R_E_p
-character(200) :: m_output_cylindric_1d_R_E_h, m_output_cylindric_1d_R_E_SHI, m_output_cylindric_1d_R_E_a, m_output_cylindric_1d_R_E_mu
+character(100) :: m_output_cylindric_1d_R_ph, m_output_cylindric_1d_R_e, m_output_cylindric_1d_R_p
+character(100) :: m_output_cylindric_1d_R_h, m_output_cylindric_1d_R_SHI, m_output_cylindric_1d_R_a, m_output_cylindric_1d_R_mu
+character(100) :: m_output_cylindric_1d_R_E_ph, m_output_cylindric_1d_R_E_e, m_output_cylindric_1d_R_E_p
+character(100) :: m_output_cylindric_1d_R_E_h, m_output_cylindric_1d_R_E_SHI, m_output_cylindric_1d_R_E_a, m_output_cylindric_1d_R_E_mu
 !2d
-character(200) :: m_output_cylindric_2d_RL_ph, m_output_cylindric_2d_RL_e, m_output_cylindric_2d_RL_p, m_output_cylindric_2d_RL_mu
-character(200) :: m_output_cylindric_2d_RL_h, m_output_cylindric_2d_RL_SHI, m_output_cylindric_2d_RL_a
-character(200) :: m_output_cylindric_2d_RL_E_ph, m_output_cylindric_2d_RL_E_e, m_output_cylindric_2d_RL_E_p, m_output_cylindric_2d_RL_E_mu
-character(200) :: m_output_cylindric_2d_RL_E_h, m_output_cylindric_2d_RL_E_SHI, m_output_cylindric_2d_RL_E_a
+character(100) :: m_output_cylindric_2d_RL_ph, m_output_cylindric_2d_RL_e, m_output_cylindric_2d_RL_p, m_output_cylindric_2d_RL_mu
+character(100) :: m_output_cylindric_2d_RL_h, m_output_cylindric_2d_RL_SHI, m_output_cylindric_2d_RL_a
+character(100) :: m_output_cylindric_2d_RL_E_ph, m_output_cylindric_2d_RL_E_e, m_output_cylindric_2d_RL_E_p, m_output_cylindric_2d_RL_E_mu
+character(100) :: m_output_cylindric_2d_RL_E_h, m_output_cylindric_2d_RL_E_SHI, m_output_cylindric_2d_RL_E_a
 
 ! MD output
-character(200) :: m_output_MD_energies
-character(200) :: m_output_MD_cell_params
-character(200) :: m_output_MD_coordinates
-character(200) :: m_output_MD_velocities
-character(200) :: m_output_MCMD
-character(200) :: m_output_MD_LAMMPS
-character(200) :: m_output_MD_displacements
+character(100) :: m_output_MD_energies
+character(100) :: m_output_MD_cell_params
+character(100) :: m_output_MD_coordinates
+character(100) :: m_output_MD_velocities
+character(100) :: m_output_MCMD
+character(100) :: m_output_MD_LAMMPS
+character(100) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 03.03.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 20.05.2026)'
 
 
 ! All output file names:
@@ -118,6 +120,9 @@ parameter (m_output_velocity_theta_distr_h = 'OUTPUT_hole_velocity_theta_')
 parameter (m_output_velocity_theta_distr_p = 'OUTPUT_positron_velocity_theta_')
 parameter (m_output_velocity_theta_distr_SHI = 'OUTPUT_SHI_velocity_theta_')
 parameter (m_output_velocity_theta_distr_mu = 'OUTPUT_muon_velocity_theta_')
+!ssssssssssssssssssssssssssssssssssssssssssss
+parameter (m_output_Surface_e_dens = 'OUTPUT_Surface_emission_e_density_')
+parameter (m_output_Surface_e_NRG = 'OUTPUT_Surface_emission_e_energy_')
 !ssssssssssssssssssssssssssssssssssssssssssss
 parameter (m_output_spectrum_ph_1d = 'OUTPUT_photon_spectrum_1d_')
 parameter (m_output_spectrum_e_1d = 'OUTPUT_electron_spectrum_1d_')
@@ -266,6 +271,9 @@ subroutine write_output_files(used_target, numpar, out_data, MD_atoms, MD_supce,
     
     ! Printout velocity distributions by theta:
     call velocity_theta_distributions(used_target, numpar, out_data, tim)   ! below
+
+    ! Printout surface emission data (for electrons):
+    call Surface_emission_data(used_target, numpar, out_data, tim)      ! below
     
     ! Printout MD data:
     call MD_data_printout(used_target, numpar, out_data, MD_atoms, MD_supce, MD_pots, tim, last_step)  ! below
@@ -537,6 +545,35 @@ end subroutine MD_total_values
 
 
 
+subroutine Surface_emission_data(used_target, numpar, out_data, tim)
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout) :: numpar    ! all numerical parameters
+   type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   !---------------------------------
+   ! printout electron surface emission data:
+   ! Perpendicular to X:
+   if (numpar%Surface_grid_par(2)%along_axis .and. numpar%Surface_grid_par(3)%along_axis) then
+      !write(*,'(a)') '  Surface emission of electrons perpendicular to X'
+      call Surface_emission_printout(used_target, numpar, out_data, tim, 1)   ! below
+   endif
+
+   ! Perpendicular to Y:
+   if (numpar%Surface_grid_par(1)%along_axis .and. numpar%Surface_grid_par(3)%along_axis) then
+      !write(*,'(a)') '  Surface emission of electrons perpendicular to Y'
+      call Surface_emission_printout(used_target, numpar, out_data, tim, 2)   ! below
+   endif
+
+   ! Perpendicular to Z:
+   if (numpar%Surface_grid_par(1)%along_axis .and. numpar%Surface_grid_par(2)%along_axis) then
+      !write(*,'(a)') '  Surface emission of electrons perpendicular to Z'
+      call Surface_emission_printout(used_target, numpar, out_data, tim, 3)   ! below
+   endif
+end subroutine Surface_emission_data
+
+
+
+
 subroutine velocity_theta_distributions(used_target, numpar, out_data, tim) 
    type(Matter), intent(in) :: used_target      ! parameters of the target
    type(Num_par), intent(inout) :: numpar    ! all numerical parameters
@@ -614,7 +651,7 @@ subroutine printout_cartesian_1d(used_target, numpar, out_data, tim)
    type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
    real(8), intent(in) :: tim  ! simulation time step [fs]
    !----------------------------------------
-    ! Along radius X:
+   ! Along radius X:
    if (numpar%grid_par(1)%along_axis) then
 
       call printout_cartesian_1d_particle(numpar%FN_car_1d_X_ph, numpar%FN_car_1d_X_E_ph, m_output_cartesian_1d_X_ph, m_output_cartesian_1d_X_E_ph, &
@@ -2270,6 +2307,7 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
    ! Create a directory:
    if (numpar%Spectr_grid_par(1)%along_axis) then  ! Along X
       axis_name = 'X'
+      ! Full spectrum:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'.dat'                 
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
@@ -2292,10 +2330,35 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
           write(FN,'(a)')   ! start a new line
        enddo
        write(FN,'(a)') ! skip line between timesteps
+
+      ! Spectrum excluding incident particles:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'_intrinsic.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_e_X_intrinsic, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)') '#Time    E Distribution_vs_space_X'
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)') '#fs    eV 1/eV    etc.'
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)', advance='no') '#   '
+         write(numpar%FN_spectrum_e_X_intrinsic,'(es15.3,$)') numpar%Spectr_grid(1)%spatial_grid1(:)
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_spectrum_e_X_intrinsic ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(numpar%NRG_grid)
+       do i = 1, Nsiz
+          Spectrum_cur => out_data%Spectra_e_X_intrinsic(i,:)
+          Nsiz2 = size(Spectrum_cur)
+          write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_X(i,:)
+          write(FN,'(a)')   ! start a new line
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
    endif    ! X
    
    if (numpar%Spectr_grid_par(2)%along_axis) then  ! Along Y
       axis_name = 'Y'
+      ! Full spectrum:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'.dat'                 
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
@@ -2310,11 +2373,35 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
       FN = numpar%FN_spectrum_e_Y ! just set a number
       ! Size of the array for output spectrum:
       Nsiz = size(numpar%NRG_grid)
-       do i = 1, Nsiz
+      do i = 1, Nsiz
           Spectrum_cur => out_data%Spectra_e_Y(i,:)
           Nsiz2 = size(Spectrum_cur)
           write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
           !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_Y(i,:)
+          write(FN,'(a)')   ! start a new line
+      enddo
+      write(FN,'(a)') ! skip line between timesteps
+
+      ! Spectrum excluding incident particles:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'_intrinsic.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_e_Y_intrinsic, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)') '#Time    E Distribution_vs_space_X'
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)') '#fs    eV 1/eV    etc.'
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)', advance='no') '#   '
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(es15.3,$)') numpar%Spectr_grid(2)%spatial_grid1(:)
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_spectrum_e_Y_intrinsic ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(numpar%NRG_grid)
+       do i = 1, Nsiz
+          Spectrum_cur => out_data%Spectra_e_Y_intrinsic(i,:)
+          Nsiz2 = size(Spectrum_cur)
+          write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_X(i,:)
           write(FN,'(a)')   ! start a new line
        enddo
        write(FN,'(a)') ! skip line between timesteps
@@ -2322,6 +2409,7 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
    
    if (numpar%Spectr_grid_par(3)%along_axis) then  ! Along Z
       axis_name = 'Z'
+      ! Full spectrum:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'.dat'                 
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
@@ -2336,17 +2424,38 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
       FN = numpar%FN_spectrum_e_Z ! just set a number
       ! Size of the array for output spectrum:
       Nsiz = size(numpar%NRG_grid)
-!        print*, 'SIZES:', size(numpar%NRG_grid), size(out_data%Spectra_e_Z, 1)
-       do i = 1, Nsiz
+      do i = 1, Nsiz
           Spectrum_cur => out_data%Spectra_e_Z(i,:)
           Nsiz2 = size(Spectrum_cur)
           write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
           !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_Z(i,:)
           write(FN,'(a)')   ! start a new line
+      enddo
+      write(FN,'(a)') ! skip line between timesteps
+       
+      ! Spectrum excluding incident particles:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'_intrinsic.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_e_Z_intrinsic, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)') '#Time    E Distribution_vs_space_X'
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)') '#fs    eV 1/eV    etc.'
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)', advance='no') '#   '
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(es15.3,$)') numpar%Spectr_grid(3)%spatial_grid1(:)
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_spectrum_e_Z_intrinsic ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(numpar%NRG_grid)
+       do i = 1, Nsiz
+          Spectrum_cur => out_data%Spectra_e_Z_intrinsic(i,:)
+          Nsiz2 = size(Spectrum_cur)
+          write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_X(i,:)
+          write(FN,'(a)')   ! start a new line
        enddo
        write(FN,'(a)') ! skip line between timesteps
-       
-!        print*, 'electron_spectra_1d'
        
    endif    ! Z
    
@@ -2623,6 +2732,177 @@ subroutine muon_spectrum(used_target, numpar, out_data, tim)
        write(FN,'(a)') ! skip line between timesteps
    enddo TRGT
 end subroutine muon_spectrum
+
+
+
+
+
+!===================================================
+! Printing surface emission data:
+subroutine Surface_emission_printout(used_target, numpar, out_data, tim, axis)
+   type(Matter), intent(in) :: used_target      ! parameters of the target
+   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
+   type(output_data), intent(in) :: out_data  ! all output data (distributions etc.)
+   real(8), intent(in) :: tim  ! simulation time step [fs]
+   integer, intent(in) :: axis      ! index of the axis: 1=X, 2=Y, 3=Z
+   !----------------------------------------
+   character(200) :: File_name, temp_ch, temp_ch2
+   integer :: FN, i_tar, i, Nsiz, j, Nsiz2
+   logical :: file_opened, file_exist
+
+   ! Printout electron density on each surface of each target:
+   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+
+      ! Depending on target's geometry, there can be different surfaces:
+      ASSOCIATE (GEOM_ARRAY => used_target%Geom(i_tar)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
+         select type (GEOM_ARRAY)	! Depending on the type of used_target%Geom(i)%Set
+            type is (Rectangle)
+
+               ! Create file for electron densities:
+               numpar%FILE_Surface_e_dens = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_Surface_e_dens))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+               inquire(file=trim(adjustl(numpar%FILE_Surface_e_dens)),exist=file_exist) ! check if input file is there
+               if (.not. file_exist) then   ! it's the first time, create file and write the header
+                  open(newunit = numpar%FN_Surface_e_dens, FILE = trim(adjustl(numpar%FILE_Surface_e_dens)))
+                  FN = numpar%FN_Surface_e_dens ! just set a number
+
+                  ! Assuming Cartesian coordinates, there are 2 plane surfaces:
+                  select case (axis)
+                  case (1)  ! X
+                     write(temp_ch, '(es24.3)')    GEOM_ARRAY%Xstart
+                     write(temp_ch2, '(es24.3)')   GEOM_ARRAY%Xend
+                     write(FN,'(a)') '# Y Z    Density(X='//trim(adjustl(temp_ch))//')   Density(X='//trim(adjustl(temp_ch2))//')'
+                  case (2)  ! Y
+                     write(temp_ch, '(es24.3)')    GEOM_ARRAY%Ystart
+                     write(temp_ch2, '(es24.3)')   GEOM_ARRAY%Yend
+                     write(FN,'(a)') '# X Z    Density(Y='//trim(adjustl(temp_ch))//')   Density(Y='//trim(adjustl(temp_ch2))//')'
+                  case (3)  ! Z
+                     write(temp_ch, '(es24.3)')    GEOM_ARRAY%Zstart
+                     write(temp_ch2, '(es24.3)')   GEOM_ARRAY%Zend
+                     write(FN,'(a)') '# X Y    Density(Z='//trim(adjustl(temp_ch))//')   Density(Z='//trim(adjustl(temp_ch2))//')'
+                  end select
+                  write(FN,'(a)') '# A    A    1/A^2   1/A^2'
+               endif
+               FN = numpar%FN_Surface_e_dens ! just set a number
+
+               ! Save the data into the file:
+               write(FN, '(a,f20.5)') '# Time ', tim
+               select case (axis)
+               case (1)  ! X
+                  Nsiz = size(out_data%Dens_e_Surface_X,1)
+                  Nsiz2= size(out_data%Dens_e_Surface_X,2)
+                  do i = 1, Nsiz    ! along first axis: Y
+                     do j = 1, Nsiz2      ! along the second axis: Z
+                     write(FN, '(8es16.3, 8es16.3, 8es16.3, 8es16.3)') numpar%Surface_grid(2)%spatial_grid1(i), &
+                                           numpar%Surface_grid(3)%spatial_grid1(j), &
+                                           out_data%Dens_e_Surface_X(i,j), out_data%Dens_e_Surface_Xb(i,j)
+                     enddo
+                  enddo
+               case (2)  ! Y
+                  Nsiz = size(out_data%Dens_e_Surface_Y,1)
+                  Nsiz2= size(out_data%Dens_e_Surface_Y,2)
+                  do i = 1, Nsiz    ! along first axis: X
+                     do j = 1, Nsiz2      ! along the second axis: Z
+                     write(FN, '(8es16.3, 8es16.3, 8es16.3, 8es16.3)') numpar%Surface_grid(1)%spatial_grid1(i), &
+                                           numpar%Surface_grid(3)%spatial_grid1(j), &
+                                           out_data%Dens_e_Surface_Y(i,j), out_data%Dens_e_Surface_Yb(i,j)
+                     enddo
+                  enddo
+               case (3)  ! Z
+                  Nsiz = size(out_data%Dens_e_Surface_Z,1)
+                  Nsiz2= size(out_data%Dens_e_Surface_Z,2)
+                  do i = 1, Nsiz    ! along first axis: X
+                     do j = 1, Nsiz2      ! along the second axis: Y
+                     write(FN, '(8es16.3, 8es16.3, 8es16.3, 8es16.3)') numpar%Surface_grid(1)%spatial_grid1(i), &
+                                           numpar%Surface_grid(2)%spatial_grid1(j), &
+                                           out_data%Dens_e_Surface_Z(i,j), out_data%Dens_e_Surface_Zb(i,j)
+                     enddo
+                  enddo
+
+                  !print*, 'Surface_emission_printout', Nsiz, Nsiz2
+               end select
+               write(FN,'(a)') ! skip 1st line between timesteps
+               write(FN,'(a)') ! skip 2d line between timesteps
+
+
+               !EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+               ! Create file for electron energies:
+               numpar%FILE_Surface_e_NRG = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_Surface_e_NRG))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+               inquire(file=trim(adjustl(numpar%FILE_Surface_e_NRG)),exist=file_exist) ! check if input file is there
+               if (.not. file_exist) then   ! it's the first time, create file and write the header
+                  open(newunit = numpar%FN_Surface_e_NRG, FILE = trim(adjustl(numpar%FILE_Surface_e_NRG)))
+                  FN = numpar%FN_Surface_e_NRG ! just set a number
+
+                  ! Assuming Cartesian coordinates, there are 2 plane surfaces:
+                  select case (axis)
+                  case (1)  ! X
+                     write(temp_ch, '(es24.3)')    GEOM_ARRAY%Xstart
+                     write(temp_ch2, '(es24.3)')   GEOM_ARRAY%Xend
+                     write(FN,'(a)') '# Y Z    Energy(X='//trim(adjustl(temp_ch))//')   Energy(X='//trim(adjustl(temp_ch2))//')'
+                  case (2)  ! Y
+                     write(temp_ch, '(es24.3)')    GEOM_ARRAY%Ystart
+                     write(temp_ch2, '(es24.3)')   GEOM_ARRAY%Yend
+                     write(FN,'(a)') '# X Z    Energy(Y='//trim(adjustl(temp_ch))//')   Energy(Y='//trim(adjustl(temp_ch2))//')'
+                  case (3)  ! Z
+                     write(temp_ch, '(es24.3)')    GEOM_ARRAY%Zstart
+                     write(temp_ch2, '(es24.3)')   GEOM_ARRAY%Zend
+                     write(FN,'(a)') '# X Y    Energy(Z='//trim(adjustl(temp_ch))//')   Energy(Z='//trim(adjustl(temp_ch2))//')'
+                  end select
+                  write(FN,'(a)') '# A    A    eV/A^2   eV/A^2'
+               endif
+               FN = numpar%FN_Surface_e_NRG ! just set a number
+
+               ! Save the data into the file:
+               write(FN, '(a,f20.5)') '# Time ', tim
+               select case (axis)
+               case (1)  ! X
+                  Nsiz = size(out_data%E_Dens_e_Surface_X,1)
+                  Nsiz2= size(out_data%E_Dens_e_Surface_X,2)
+                  do i = 1, Nsiz    ! along first axis: Y
+                     do j = 1, Nsiz2      ! along the second axis: Z
+                     write(FN, '(8es16.3, 8es16.3, 8es16.3, 8es16.3)') numpar%Surface_grid(2)%spatial_grid1(i), &
+                                           numpar%Surface_grid(3)%spatial_grid1(j), &
+                                           out_data%E_Dens_e_Surface_X(i,j), out_data%E_Dens_e_Surface_Xb(i,j)
+                     enddo
+                  enddo
+               case (2)  ! Y
+                  Nsiz = size(out_data%E_Dens_e_Surface_Y,1)
+                  Nsiz2= size(out_data%E_Dens_e_Surface_Y,2)
+                  do i = 1, Nsiz    ! along first axis: X
+                     do j = 1, Nsiz2      ! along the second axis: Z
+                     write(FN, '(8es16.3, 8es16.3, 8es16.3, 8es16.3)') numpar%Surface_grid(1)%spatial_grid1(i), &
+                                           numpar%Surface_grid(3)%spatial_grid1(j), &
+                                           out_data%E_Dens_e_Surface_Y(i,j), out_data%E_Dens_e_Surface_Yb(i,j)
+                     enddo
+                  enddo
+               case (3)  ! Z
+                  Nsiz = size(out_data%E_Dens_e_Surface_Z,1)
+                  Nsiz2= size(out_data%E_Dens_e_Surface_Z,2)
+                  do i = 1, Nsiz    ! along first axis: X
+                     do j = 1, Nsiz2      ! along the second axis: Y
+                     write(FN, '(8es16.3, 8es16.3, 8es16.3, 8es16.3)') numpar%Surface_grid(1)%spatial_grid1(i), &
+                                           numpar%Surface_grid(2)%spatial_grid1(j), &
+                                           out_data%E_Dens_e_Surface_Z(i,j), out_data%E_Dens_e_Surface_Zb(i,j)
+                     enddo
+                  enddo
+               end select
+               write(FN,'(a)') ! skip 1st line between timesteps
+               write(FN,'(a)') ! skip 2d line between timesteps
+
+
+            type is (Sphere)
+               ! NOT READY
+            type is (Sphere_segment)
+               ! NOT READY
+            type is (Cylinder)
+               ! NOT READY
+            type is (Cylinder_segment)
+               ! NOT READY
+          endselect
+      END ASSOCIATE
+   enddo TRGT
+end subroutine Surface_emission_printout
 
 
 
@@ -4554,49 +4834,59 @@ subroutine make_output_folder(used_target, numpar, bunch)
    real(8) :: E_reduced
    logical :: file_exist
    type(atomic_data), dimension(:), allocatable :: Periodic_table ! this is an internal module variable
+   !-------------------------------
+   ! 1) Check if user specified the name:
+   if (LEN(trim(adjustl(numpar%output_name)))) then   ! user-defined name
+      File_name = numpar%output_name
+   else ! use default name:
+      ! Output directory name will contain the target name:
+      File_name = 'OUTPUT_'//trim(adjustl(used_target%Name))
    
-   ! Output directory name will contain the target name:
-   File_name = 'OUTPUT_'//trim(adjustl(used_target%Name))
+      ! Output name will contain the details of radiation source:
+      select case(bunch(1)%KOP)	! use the first radiation bunch to define the name
+      case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
+         bunch_name = 'photon'
+      case (1)
+         bunch_name = 'electron'
+      case (2)
+         bunch_name = 'positron'
+      case (3)
+         ! Read the periodic table, in case we need it:
+         Path = trim(adjustl(m_input_folder))//numpar%path_sep//trim(adjustl(m_databases)) ! where to find the periodic table
+         call Read_from_periodic_table(Path, numpar%path_sep, INFO, error_message, 1, Periodic_table_out=Periodic_table) ! module "Periodic_table"
+         ! Get the name of the ion from its ztomic number:
+         bunch(1)%Name = Periodic_table(bunch(1)%Z)%Name  ! name of the ion
+         !print*, bunch(1)%Z
+         !print*, 'Name: ', bunch(1)%Name
+         bunch_name = trim(adjustl(bunch(1)%Name))//'_ion'
+         !pause 'OUTPUT'
+         deallocate(Periodic_table)    ! done with the periodic table, clean up
+      case (4)
+         bunch_name = 'hole'
+      case (5)
+         bunch_name = 'muon'
+      endselect
+      File_name = trim(adjustl(File_name))//'_'//trim(adjustl(bunch_name))
    
-   ! Output name will contain the details of radiation source:
-   select case(bunch(1)%KOP)	! use the first radiation bunch to define the name
-   case (0)  ! Kind of particle: 0=photon, 1=electron, 2=positron, 3=SHI, 4=hole, 5=muon
-      bunch_name = 'photon'
-   case (1)
-      bunch_name = 'electron'
-   case (2)
-      bunch_name = 'positron'
-   case (3)
-      ! Read the periodic table, in case we need it:
-      Path = trim(adjustl(m_input_folder))//numpar%path_sep//trim(adjustl(m_databases)) ! where to find the periodic table
-      call Read_from_periodic_table(Path, numpar%path_sep, INFO, error_message, 1, Periodic_table_out=Periodic_table) ! module "Periodic_table"
-      ! Get the name of the ion from its ztomic number:
-      bunch(1)%Name = Periodic_table(bunch(1)%Z)%Name  ! name of the ion
-      !print*, bunch(1)%Z
-      !print*, 'Name: ', bunch(1)%Name
-      bunch_name = trim(adjustl(bunch(1)%Name))//'_ion'
-      !pause 'OUTPUT'
-      deallocate(Periodic_table)    ! done with the periodic table, clean up
-   case (4)
-      bunch_name = 'hole'
-   case (5)
-      bunch_name = 'muon'
-   endselect
-   File_name = trim(adjustl(File_name))//'_'//trim(adjustl(bunch_name))
-   
-   ! Output will also contain the energy of incomming radiation particle:
-   !write(NRG, '(f16.2)') bunch(1)%E
-   call order_of_energy(bunch(1)%E, temp, E_reduced=E_reduced)   ! module "Little_subroutines"
-   write(NRG, '(f16.2)') E_reduced
-   NRG = trim(adjustl(NRG))//'_'//trim(adjustl(temp))
+      ! Output will also contain the energy of incomming radiation particle:
+      !write(NRG, '(f16.2)') bunch(1)%E
+      call order_of_energy(bunch(1)%E, temp, E_reduced=E_reduced)   ! module "Little_subroutines"
+      write(NRG, '(f16.2)') E_reduced
+      NRG = trim(adjustl(NRG))//'_'//trim(adjustl(temp))
 
-   File_name = trim(adjustl(File_name))//'_'//trim(adjustl(NRG))
+      File_name = trim(adjustl(File_name))//'_'//trim(adjustl(NRG))
    
-   ! Output will also contain the number of bunches:
-   Nsiz = size(bunch(:))
-   if (Nsiz > 1) then
-      write(temp, '(i8)') Nsiz
-      File_name = trim(adjustl(File_name))//'_'//trim(adjustl(temp))//'_bunches'
+      ! Output will also contain the number of bunches:
+      Nsiz = size(bunch(:))
+      if (Nsiz > 1) then
+         write(temp, '(i8)') Nsiz
+         File_name = trim(adjustl(File_name))//'_'//trim(adjustl(temp))//'_bunches'
+      endif
+   endif ! (LEN(trim(adjustl(numpar%output_name))))
+
+   ! 2) Check if user wants to add anything to the name:
+   if (LEN(trim(adjustl(numpar%output_add)))) then   ! user-defined marker
+      File_name = trim(adjustl(File_name))//'_'//numpar%output_add
    endif
    
    ! Check if directory with the same name already exists. If yes, add a number at the end:
@@ -4729,7 +5019,7 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
          write(text1,'(i3)') used_target%Material(i)%Elements(j)%Zat
          write(print_to,'(a,a,a,a,a)') ' '//trim(adjustl(text)), ' of ', trim(adjustl(used_target%Material(i)%Elements(j)%Name)), ' (element #', trim(adjustl(text1))//')'
       enddo
-      write(text,'(e12.6)') used_target%Material(i)%At_Dens
+      write(text,'(e13.6)') used_target%Material(i)%At_Dens
       write(print_to, '(a,a,a)') ' With the atomic density: ', trim(adjustl(text)), ' [1/cm^3]'
    enddo
 
@@ -5402,6 +5692,21 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
       MC_output = .true.   ! mark that there was any optional output
    endif
 
+   if (numpar%Surface_grid_par(2)%along_axis .and. numpar%Surface_grid_par(3)%along_axis) then
+      write(print_to,'(a)') '  Surface emission of electrons perpendicular to X'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Surface_grid_par(1)%along_axis .and. numpar%Surface_grid_par(3)%along_axis) then
+      write(print_to,'(a)') '  Surface emission of electrons perpendicular to Y'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
+   if (numpar%Surface_grid_par(1)%along_axis .and. numpar%Surface_grid_par(2)%along_axis) then
+      write(print_to,'(a)') '  Surface emission of electrons perpendicular to Z'
+      MC_output = .true.   ! mark that there was any optional output
+   endif
+
    if (.not.MC_output) then
       write(print_to,'(a)') '  none'
    endif
@@ -5785,18 +6090,28 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_spectrum_p_X)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI_X)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_h_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu_X)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_spectrum_ph_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_e_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_p_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_h_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu_Y)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_spectrum_ph_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_e_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_p_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_h_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu_Z)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_spectrum_ph_X_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_X_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_ph_Y_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_Y_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_ph_Z_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_Z_intrinsic)	! module "Dealing_with_files"
 
    ! Files with theta distribution vs space:
    call close_file('close', FN=numpar%FN_theta_ph_X)	! module "Dealing_with_files"
@@ -5824,36 +6139,42 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_car_1d_X_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Y_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Z_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_X_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_E_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Y_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Z_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_mu)	! module "Dealing_with_files"
 
    if (allocated(numpar%FN_car_1d_X_h)) then
       Nsiz = size(numpar%FN_car_1d_X_h)
@@ -5897,12 +6218,14 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_cyl_1d_R_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_mu)	! module "Dealing_with_files"
 
    if (allocated(numpar%FN_cyl_1d_R_h)) then
       Nsiz = size(numpar%FN_cyl_1d_R_h)
@@ -5922,12 +6245,14 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_cyl_2d_RL_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_mu)	! module "Dealing_with_files"
 
    if (allocated(numpar%FN_cyl_2d_RL_h)) then
       Nsiz = size(numpar%FN_cyl_2d_RL_h)

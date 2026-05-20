@@ -51,6 +51,7 @@ subroutine get_electron_EMFP(Material, numpar, Err)
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
+   logical :: create_file
    
    ! That's the factor to use to set the grid, with respect to the photon grid
    grid_renorm = 10.0d0
@@ -108,6 +109,7 @@ subroutine get_electron_EMFP(Material, numpar, Err)
          Path_total = trim(adjustl(Path_total))//path_sep//trim(adjustl(Material(i)%Name))
          File_name = trim(adjustl(Path_total))//path_sep//trim(adjustl(m_electron_elast_CS))//'_total_'//trim(adjustl(Model_name))//'.dat'
          inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+         create_file = .false. ! assume there is no need to create it
          !if (file_exist) then  ! just read from the file, no need to recalculate:
          if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
             open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -118,11 +120,18 @@ subroutine get_electron_EMFP(Material, numpar, Err)
                call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                if (.not.read_well) then
                   close(FN)	! redo the file
-                  goto 8392
+                  !goto 8392
+                  create_file = .true. ! no such file => create it
+                  exit ! the do-cicle
                endif
             enddo
          else	! no such file => create it
-8392     open(newunit = FN, FILE = trim(adjustl(File_name)), action='write')
+            create_file = .true. ! no such file => create it
+         endif
+
+!8392     continue
+         if (create_file) then ! no such file => create it
+            open(newunit = FN, FILE = trim(adjustl(File_name)), action='write')
             Element => Material(i)%Elements(1)  ! unused here, so just set an "empty" value
             do m = 1, Nsiz  ! for all energy grid points:
                call get_el_elastic_CS(Material(i)%El_elastic_total%E(m), Material(i), Element, numpar, Material(i)%El_elastic_total%Total(m))   ! [A^2] below
@@ -160,6 +169,8 @@ subroutine get_electron_EMFP(Material, numpar, Err)
             ! Calculate total elastic cross sections for this element:
             File_name = trim(adjustl(Folder_with_CS))//path_sep//trim(adjustl(m_electron_elast_CS))//'_total_'//trim(adjustl(Model_name))//'.dat'
             inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if this file is there
+            create_file = .false. ! assume there is no need to create it
+
 !             if (file_exist) then	! only create it if file does not exist
             if ((file_exist) .and. (.not.numpar%recalculate_MFPs)) then    ! just read from the file, no need to recalculate:
                open(newunit = FN, FILE = trim(adjustl(File_name)),action='read')
@@ -169,11 +180,19 @@ subroutine get_electron_EMFP(Material, numpar, Err)
                   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
                   if (.not.read_well) then
                      close(FN)	! redo the file
-                     goto 8391
+                     !goto 8391
+                     create_file = .true. ! no such file => create it
+                     exit ! the do-cicle
                   endif
                enddo ! m = 1, Ngrid
             else
-8391        open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
+               create_file = .true. ! no such file => create it
+            endif
+
+!8391        continue
+
+            if (create_file) then ! no such file => create it
+               open(newunit = FN, FILE = trim(adjustl(File_name)),action='write')
                do m = 1, Ngrid	! for all energy grid points:
                   call get_el_elastic_CS(Element%El_elastic%E(m), Material(i), Element, numpar, Element%El_elastic%Total(m))	! below
                   Element%El_elastic%Total_MFP(m) = MFP_from_sigma(Element%El_elastic%Total(m),  1.0d24)    ! module "CS_general_tools"

@@ -66,6 +66,7 @@ subroutine Set_initial_parameters(numpar, used_target, bunch, MC)
          MC(iter)%N_h = 0    ! number of active holes
          MC(iter)%N_SHI = 0  ! number of active SHIs
          MC(iter)%N_at_nrg = 0  ! number of active atomic events of energy transfer
+         MC(iter)%N_surf_emission = 0  ! number of active surface emission events
          i_SHI = 0 ! to count typies of SHI
       
          ! Start setting the parameters into MC arrays:
@@ -406,9 +407,16 @@ subroutine Set_defaults_MC(numpar, bunch, MC)
          enddo
       endif
 
+      if (.not.allocated(MC(i)%MC_Surface_emission_events)) then
+         allocate(MC(i)%MC_Surface_emission_events(N_size))    ! all elastic scattering events as objects
+         do j = 1, N_size
+            call set_default_particle(MC(i)%MC_Surface_emission_events(j))  ! module "Objects"
+         enddo
+      endif
+
    enddo
 end subroutine Set_defaults_MC
 
- 
- 
+
+
 END MODULE Initial_conditions
