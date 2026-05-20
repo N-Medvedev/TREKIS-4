@@ -559,9 +559,9 @@ type Num_par
    character(200) :: FILE_vel_theta_ph, FILE_vel_theta_e, FILE_vel_theta_h, FILE_vel_theta_p, FILE_vel_theta_SHI, FILE_vel_theta_mu
    integer :: FN_vel_theta_ph, FN_vel_theta_e, FN_vel_theta_h, FN_vel_theta_p, FN_vel_theta_SHI, FN_vel_theta_mu
    ! Files with spectra vs space:
-   integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X
-   integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y
-   integer :: FN_spectrum_ph_Z, FN_spectrum_e_Z, FN_spectrum_p_Z, FN_spectrum_SHI_Z, FN_spectrum_h_Z
+   integer :: FN_spectrum_ph_X, FN_spectrum_e_X, FN_spectrum_p_X, FN_spectrum_SHI_X, FN_spectrum_h_X, FN_spectrum_mu_X
+   integer :: FN_spectrum_ph_Y, FN_spectrum_e_Y, FN_spectrum_p_Y, FN_spectrum_SHI_Y, FN_spectrum_h_Y, FN_spectrum_mu_Y
+   integer :: FN_spectrum_ph_Z, FN_spectrum_e_Z, FN_spectrum_p_Z, FN_spectrum_SHI_Z, FN_spectrum_h_Z, FN_spectrum_mu_Z
    integer :: FN_theta_ph_X, FN_theta_e_X, FN_theta_p_X, FN_theta_SHI_X, FN_theta_h_X
    integer :: FN_theta_ph_Y, FN_theta_e_Y, FN_theta_p_Y, FN_theta_SHI_Y, FN_theta_h_Y
    integer :: FN_theta_ph_Z, FN_theta_e_Z, FN_theta_p_Z, FN_theta_SHI_Z, FN_theta_h_Z
