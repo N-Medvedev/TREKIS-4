@@ -88,7 +88,7 @@ character(100) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 02.05.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 20.05.2026)'
 
 
 ! All output file names:
@@ -2307,6 +2307,7 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
    ! Create a directory:
    if (numpar%Spectr_grid_par(1)%along_axis) then  ! Along X
       axis_name = 'X'
+      ! Full spectrum:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'.dat'                 
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
@@ -2329,10 +2330,35 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
           write(FN,'(a)')   ! start a new line
        enddo
        write(FN,'(a)') ! skip line between timesteps
+
+      ! Spectrum excluding incident particles:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'_intrinsic.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_e_X_intrinsic, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)') '#Time    E Distribution_vs_space_X'
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)') '#fs    eV 1/eV    etc.'
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)', advance='no') '#   '
+         write(numpar%FN_spectrum_e_X_intrinsic,'(es15.3,$)') numpar%Spectr_grid(1)%spatial_grid1(:)
+         write(numpar%FN_spectrum_e_X_intrinsic,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_spectrum_e_X_intrinsic ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(numpar%NRG_grid)
+       do i = 1, Nsiz
+          Spectrum_cur => out_data%Spectra_e_X_intrinsic(i,:)
+          Nsiz2 = size(Spectrum_cur)
+          write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_X(i,:)
+          write(FN,'(a)')   ! start a new line
+       enddo
+       write(FN,'(a)') ! skip line between timesteps
    endif    ! X
    
    if (numpar%Spectr_grid_par(2)%along_axis) then  ! Along Y
       axis_name = 'Y'
+      ! Full spectrum:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'.dat'                 
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
@@ -2347,11 +2373,35 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
       FN = numpar%FN_spectrum_e_Y ! just set a number
       ! Size of the array for output spectrum:
       Nsiz = size(numpar%NRG_grid)
-       do i = 1, Nsiz
+      do i = 1, Nsiz
           Spectrum_cur => out_data%Spectra_e_Y(i,:)
           Nsiz2 = size(Spectrum_cur)
           write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
           !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_Y(i,:)
+          write(FN,'(a)')   ! start a new line
+      enddo
+      write(FN,'(a)') ! skip line between timesteps
+
+      ! Spectrum excluding incident particles:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'_intrinsic.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_e_Y_intrinsic, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)') '#Time    E Distribution_vs_space_X'
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)') '#fs    eV 1/eV    etc.'
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)', advance='no') '#   '
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(es15.3,$)') numpar%Spectr_grid(2)%spatial_grid1(:)
+         write(numpar%FN_spectrum_e_Y_intrinsic,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_spectrum_e_Y_intrinsic ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(numpar%NRG_grid)
+       do i = 1, Nsiz
+          Spectrum_cur => out_data%Spectra_e_Y_intrinsic(i,:)
+          Nsiz2 = size(Spectrum_cur)
+          write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_X(i,:)
           write(FN,'(a)')   ! start a new line
        enddo
        write(FN,'(a)') ! skip line between timesteps
@@ -2359,6 +2409,7 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
    
    if (numpar%Spectr_grid_par(3)%along_axis) then  ! Along Z
       axis_name = 'Z'
+      ! Full spectrum:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'.dat'                 
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
@@ -2373,17 +2424,38 @@ subroutine electron_spectra_1d(used_target, numpar, out_data, tim)
       FN = numpar%FN_spectrum_e_Z ! just set a number
       ! Size of the array for output spectrum:
       Nsiz = size(numpar%NRG_grid)
-!        print*, 'SIZES:', size(numpar%NRG_grid), size(out_data%Spectra_e_Z, 1)
-       do i = 1, Nsiz
+      do i = 1, Nsiz
           Spectrum_cur => out_data%Spectra_e_Z(i,:)
           Nsiz2 = size(Spectrum_cur)
           write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
           !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_Z(i,:)
           write(FN,'(a)')   ! start a new line
+      enddo
+      write(FN,'(a)') ! skip line between timesteps
+       
+      ! Spectrum excluding incident particles:
+      File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+                    trim(adjustl(m_output_spectrum_e_1d))//trim(adjustl(axis_name))//'_intrinsic.dat'
+      inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
+      if (.not. file_exist) then   ! it's the first time, create file and write the header
+         open(newunit = numpar%FN_spectrum_e_Z_intrinsic, FILE = trim(adjustl(File_name)))
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)') '#Time    E Distribution_vs_space_X'
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)') '#fs    eV 1/eV    etc.'
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)', advance='no') '#   '
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(es15.3,$)') numpar%Spectr_grid(3)%spatial_grid1(:)
+         write(numpar%FN_spectrum_e_Z_intrinsic,'(a)')    ! to start new line
+      endif
+      FN = numpar%FN_spectrum_e_Z_intrinsic ! just set a number
+      ! Size of the array for output spectrum:
+      Nsiz = size(numpar%NRG_grid)
+       do i = 1, Nsiz
+          Spectrum_cur => out_data%Spectra_e_Z_intrinsic(i,:)
+          Nsiz2 = size(Spectrum_cur)
+          write(FN,'(es24.16, $)') tim, numpar%NRG_grid(i), ( Spectrum_cur(j), j=1,Nsiz2-1 )
+          !write(FN,'(f16.6, es24.16, $)') tim, numpar%NRG_grid(i), out_data%Spectra_e_X(i,:)
+          write(FN,'(a)')   ! start a new line
        enddo
        write(FN,'(a)') ! skip line between timesteps
-       
-!        print*, 'electron_spectra_1d'
        
    endif    ! Z
    
@@ -6018,18 +6090,28 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_spectrum_p_X)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI_X)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_h_X)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu_X)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_spectrum_ph_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_e_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_p_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI_Y)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_h_Y)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu_Y)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_spectrum_ph_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_e_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_p_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_SHI_Z)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_spectrum_h_Z)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_mu_Z)	! module "Dealing_with_files"
+
+   call close_file('close', FN=numpar%FN_spectrum_ph_X_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_X_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_ph_Y_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_Y_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_ph_Z_intrinsic)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_spectrum_e_Z_intrinsic)	! module "Dealing_with_files"
 
    ! Files with theta distribution vs space:
    call close_file('close', FN=numpar%FN_theta_ph_X)	! module "Dealing_with_files"
@@ -6057,36 +6139,42 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_car_1d_X_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Y_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Z_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_X_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_X_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_X_E_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Y_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Y_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Y_E_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_car_1d_Z_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_car_1d_Z_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_car_1d_Z_E_mu)	! module "Dealing_with_files"
 
    if (allocated(numpar%FN_car_1d_X_h)) then
       Nsiz = size(numpar%FN_car_1d_X_h)
@@ -6130,12 +6218,14 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_cyl_1d_R_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_1d_R_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_1d_R_E_mu)	! module "Dealing_with_files"
 
    if (allocated(numpar%FN_cyl_1d_R_h)) then
       Nsiz = size(numpar%FN_cyl_1d_R_h)
@@ -6155,12 +6245,14 @@ subroutine close_all_output(numpar)
    call close_file('close', FN=numpar%FN_cyl_2d_RL_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_mu)	! module "Dealing_with_files"
 
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_ph)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_e)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_p)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_SHI)	! module "Dealing_with_files"
    call close_file('close', FN=numpar%FN_cyl_2d_RL_E_a)	! module "Dealing_with_files"
+   call close_file('close', FN=numpar%FN_cyl_2d_RL_E_mu)	! module "Dealing_with_files"
 
    if (allocated(numpar%FN_cyl_2d_RL_h)) then
       Nsiz = size(numpar%FN_cyl_2d_RL_h)

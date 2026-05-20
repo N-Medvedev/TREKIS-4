@@ -151,12 +151,13 @@ end type Atom_kind
 !============================================== 
 ! Barrier of electron emission from the surface of the material:
 type :: Emission_barrier
-   integer :: barr_type ! type of potential barrier at the surface: 0=step, 1=Eckart
-   real(8) :: Work_func		! [eV] Work function
-   real(8) :: Surf_bar		! [A] surface barrier length
-   real(8) :: Bar_height	! [eV] barrier height for electron emission
-   real(8) :: gamma         ! a parameter entering electron transmission probability
-   real(8) :: E1            ! a parameter entering electron transmission probability
+   ! Default values are for vacuum:
+   integer :: barr_type = 0         ! type of potential barrier at the surface: 0=step, 1=Eckart
+   real(8) :: Work_func = 0.0d0     ! [eV] Work function
+   real(8) :: Surf_bar = 0.0d0      ! [A] surface barrier length
+   real(8) :: Bar_height = 0.0d0    ! [eV] barrier height for electron emission
+   real(8) :: gamma = 0.0d0         ! a parameter entering electron transmission probability
+   real(8) :: E1 = 0.0d0            ! a parameter entering electron transmission probability
 end type Emission_barrier
 
 
@@ -278,16 +279,21 @@ type output_data
    real(8), dimension(:,:), allocatable :: Spectrum_h ! VB spectra for each target material
    ! Velosity theta disributions:
    real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu
-   ! Spectra in 1d space:
-   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
+   ! Energy spectra in 1d space:
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! along R
+   ! Energy spectra in 1d space, excluding incident particles (for those that can be different from target particles):
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic ! along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic ! along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic ! along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic ! along R
    ! Theta distribution in 1d space:
-   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! Theta distribution in space along X
-   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! Theta distribution in space along Y
-   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! Theta distribution in space along Z
-   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! Theta distribution in space along R
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! along R
 
    ! Spatial distributions in 1d:
    real(8), dimension(:), allocatable :: Distr_ph_X, Distr_ph_Y, Distr_ph_Z, Distr_ph_R, Distr_ph_L, &
@@ -559,6 +565,10 @@ type Num_par
    integer :: FN_theta_ph_X, FN_theta_e_X, FN_theta_p_X, FN_theta_SHI_X, FN_theta_h_X
    integer :: FN_theta_ph_Y, FN_theta_e_Y, FN_theta_p_Y, FN_theta_SHI_Y, FN_theta_h_Y
    integer :: FN_theta_ph_Z, FN_theta_e_Z, FN_theta_p_Z, FN_theta_SHI_Z, FN_theta_h_Z
+   ! Files with spectra vs space, excluding incident particles:
+   integer :: FN_spectrum_ph_X_intrinsic, FN_spectrum_e_X_intrinsic
+   integer :: FN_spectrum_ph_Y_intrinsic, FN_spectrum_e_Y_intrinsic
+   integer :: FN_spectrum_ph_Z_intrinsic, FN_spectrum_e_Z_intrinsic
    ! name of the file with surface emission data:
    character(200) :: FILE_Surface_e_dens, FILE_Surface_e_NRG
    integer :: FN_Surface_e_dens, FN_Surface_e_NRG
@@ -1010,7 +1020,7 @@ pure subroutine set_default_particle(Prtcl)
    ! Default values to start with:
    Prtcl%active = .false.   ! by default, a particle is excluded from simulations
    Prtcl%generation = -1    ! has not been generated yet
-   Prtcl%in_target = 1      ! by default, let it be in the first target
+   Prtcl%in_target = 0      ! by default, let it be in vacuum
    Prtcl%Ekin = 0.0d0     ! [eV] kinetic energy
    Prtcl%t0 = 0.0d0         ! [fs] starting time
    Prtcl%ti = 1.0d22        ! [fs] time of next event (scattering, decay, etc.)

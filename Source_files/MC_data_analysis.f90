@@ -45,15 +45,22 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
    ! Velosity theta disributions:
    real(8), dimension(:), allocatable :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu  ! velosity theta distributions
    ! Energy spectra vs space in 1d:
-   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! along R
+
+   ! Energy spectra vs space in 1d, excluding incident particles (only for those that may be different from target):
+   real(8), dimension(:,:), allocatable :: Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic  ! along X
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic  ! along Y
+   real(8), dimension(:,:), allocatable :: Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic  ! along Z
+   real(8), dimension(:,:), allocatable :: Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic  ! along R
+
    ! Theta distribution vs space in 1d:
-   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! theta distribution in space along X
-   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! theta distribution in space along Y
-   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! theta distribution in space along Z
-   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! theta distribution in space along R
+   real(8), dimension(:,:), allocatable :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X  ! along X
+   real(8), dimension(:,:), allocatable :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y  ! along Y
+   real(8), dimension(:,:), allocatable :: Theta_ph_Z, Theta_e_Z, Theta_p_Z, Theta_h_Z, Theta_SHI_Z, Theta_mu_Z  ! along Z
+   real(8), dimension(:,:), allocatable :: Theta_ph_R, Theta_e_R, Theta_p_R, Theta_h_R, Theta_SHI_R, Theta_mu_R  ! along R
 
    ! Surface emission data:
    real(8), dimension(:,:), allocatable :: Dens_e_Surface_X, Dens_e_Surface_Y, Dens_e_Surface_Z ! emittred electron density
@@ -167,7 +174,12 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
             Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X, &
             Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
             Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
-            Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ) ! below
+            Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R, &
+            Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+            Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+            Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+            Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic  &
+            ) ! below
    endif
    
 !    print*, 'analyze_MC_output_data 4'
@@ -266,6 +278,10 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
     Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R, &
+    Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic, &
     Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu, &
     Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X, &
     Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
@@ -388,6 +404,15 @@ subroutine analyze_MC_output_data(used_target, numpar, MC, out_data, tim)
     out_data%Spectra_p_R = Spectra_p_R * rNMC
     out_data%Spectra_h_R = Spectra_h_R * rNMC
     out_data%Spectra_SHI_R = Spectra_SHI_R * rNMC
+    ! Spectra vs space in 1d, excluding incident particles:
+    out_data%Spectra_ph_X_intrinsic = Spectra_ph_X_intrinsic * rNMC
+    out_data%Spectra_e_X_intrinsic  = Spectra_e_X_intrinsic  * rNMC
+    out_data%Spectra_ph_Y_intrinsic = Spectra_ph_Y_intrinsic * rNMC
+    out_data%Spectra_e_Y_intrinsic  = Spectra_e_Y_intrinsic  * rNMC
+    out_data%Spectra_ph_Z_intrinsic = Spectra_ph_Z_intrinsic * rNMC
+    out_data%Spectra_e_Z_intrinsic  = Spectra_e_Z_intrinsic  * rNMC
+    out_data%Spectra_ph_R_intrinsic = Spectra_ph_R_intrinsic * rNMC
+    out_data%Spectra_e_R_intrinsic  = Spectra_e_R_intrinsic  * rNMC
     ! Theta distribution vs space in 1d:
     out_data%Theta_ph_X = Theta_ph_X * rNMC
     out_data%Theta_e_X = Theta_e_X * rNMC
@@ -807,6 +832,10 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
     Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R, &
+    Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic, &
     Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu, &
     Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X, &
     Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y, &
@@ -883,10 +912,15 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    real(8), dimension(:,:), intent(inout) :: Spectrum_h ! VB holes spectra for each material
    real(8), dimension(:), intent(inout) :: Vel_theta_ph, Vel_theta_e, Vel_theta_p, Vel_theta_h, Vel_theta_SHI, Vel_theta_mu   ! velosity theta distribution
    ! Spectra in 1d space:
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! energy spectra in space along X
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! energy spectra in space along R
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X  ! along X
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! along Y
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! along Z
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  ! along R
+   ! Spectra in 1d space, excluding incident particles:
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic ! along X
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic ! along Y
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic ! along Z
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic ! along R
    ! Theta distribution in 1d space:
    real(8), dimension(:,:), intent(inout) :: Theta_ph_X, Theta_e_X, Theta_p_X, Theta_h_X, Theta_SHI_X, Theta_mu_X ! theta distr in space along X
    real(8), dimension(:,:), intent(inout) :: Theta_ph_Y, Theta_e_Y, Theta_p_Y, Theta_h_Y, Theta_SHI_Y, Theta_mu_Y ! theta distr in space along Y
@@ -1043,12 +1077,20 @@ subroutine sort_data(used_target, MC, numpar, tim, Spectrum_ph, Spectrum_e, Spec
    !$omp do schedule(dynamic) reduction( + : Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
    !$omp    Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
    !$omp    Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-   !$omp    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R)
+   !$omp    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
+   !$omp    Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+   !$omp    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+   !$omp    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+   !$omp    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic   )
    do iter = 1, numpar%NMC  ! analyze data in all iterations
       call get_spectra_in_space_1d(MC(iter), numpar, tim, Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
                                                     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
                                                     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-                                                    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R) ! below
+                                                    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
+                                                    Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+                                                    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+                                                    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+                                                    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic  ) ! below
 !        print*, 'sort_data 1.5', iter
    enddo
    !$omp enddo
@@ -3349,45 +3391,54 @@ end subroutine get_muon_spectrum
 subroutine get_spectra_in_space_1d(MC, numpar, tim, Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, &
                                                     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, &
                                                     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, &
-                                                    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R)
+                                                    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, &
+                                                    Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+                                                    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+                                                    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+                                                    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic  )
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), intent(in) :: tim   ! [fs] current time step
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! energy spectra in space along X
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! energy spectra in space along Y
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! energy spectra in space along Z
-   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! energy spectra in space along R
+   ! Energy spectrum vs. scape in 1d:
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X  ! along X
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y  ! along Y
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z  ! along Z
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R  ! along R
+   ! Energy spectrum vs. scape in 1d, excluding incident particles:
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic ! along X
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic ! along Y
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic ! along Z
+   real(8), dimension(:,:), intent(inout) :: Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic ! along R
+   !----------------------------------------
 
+   ! For photons:
+   ! NOT READY
+
+
+   ! For electrons:
    ! Along X:
    if (numpar%Spectr_grid_par(1)%along_axis) then  ! collect data
-      call get_electron_spectra_1d(MC, numpar, tim, Spectra_e_X) ! below
+      call get_electron_spectra_1d(MC, numpar, tim, Spectra_e_X, Spectra_e_X_intrinsic) ! below
    endif
-   
    ! Along Y:
    if (numpar%Spectr_grid_par(2)%along_axis) then  ! collect data
-      call get_electron_spectra_1d(MC, numpar, tim, Spectra_e_Y) ! below
+      call get_electron_spectra_1d(MC, numpar, tim, Spectra_e_Y, Spectra_e_Y_intrinsic) ! below
    endif
-   
-!    print*, 'get_spectra_in_space_1d :', size(Spectra_e_Z,1), size(Spectra_e_Z,2)
-   
    ! Along Z:
    if (numpar%Spectr_grid_par(3)%along_axis) then  ! collect data
-      call get_electron_spectra_1d(MC, numpar, tim, Spectra_e_Z) ! below 
+      call get_electron_spectra_1d(MC, numpar, tim, Spectra_e_Z, Spectra_e_Z_intrinsic) ! below
    endif
-   
-!    print*, size(Spectra_e_Z,1), size(Spectra_e_Z,1)
-!    print*, 'get_spectra_in_space_1d END'
    
 end subroutine get_spectra_in_space_1d
 
 
 
 
-subroutine get_electron_spectra_1d(MC, numpar, tim, Spectrum_e)
+subroutine get_electron_spectra_1d(MC, numpar, tim, Spectrum_e, Spectra_e_intrinsic)
    type(MC_arrays), intent(in) :: MC      ! elements of MC array for all particles in one iteration
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), intent(in) :: tim   ! [fs] current time step
-   real(8), dimension(:,:), intent(inout) :: Spectrum_e     ! electron spectrum
+   real(8), dimension(:,:), intent(inout) :: Spectrum_e, Spectra_e_intrinsic     ! full electron spectrum; excluding incident electrons
    !------------------------------
    real(8) :: dE
    integer :: i, Nsiz, i_arr, i_space
@@ -3421,20 +3472,36 @@ subroutine get_electron_spectra_1d(MC, numpar, tim, Spectrum_e)
                ! Along X:
                if (numpar%Spectr_grid_par(1)%along_axis) then  ! collect data
                   i_space = add_cartesian_particle_for_spectra_1d(MC%MC_Electrons(i), numpar, tim, 1)    ! below
-                  Spectrum_e(i_arr, i_space) = Spectrum_e(i_arr, i_space) + 1.0d0/dE    ! add an electron into this array, per energy interval to make distribution
+                  ! add an electron into this array, per energy interval to make distribution:
+                  Spectrum_e(i_arr, i_space) = Spectrum_e(i_arr, i_space) + 1.0d0/dE
+                  ! Same for intrinsic particles (excluding incident electrons):
+                  if (MC%MC_Electrons(i)%generation /= 0) then ! it is not an incident electron
+                     Spectra_e_intrinsic(i_arr, i_space) = Spectra_e_intrinsic(i_arr, i_space) + 1.0d0/dE
+                  endif
                endif
                ! Along Y:
                if (numpar%Spectr_grid_par(2)%along_axis) then  ! collect data
                   i_space = add_cartesian_particle_for_spectra_1d(MC%MC_Electrons(i), numpar, tim, 2)    ! below
-                  Spectrum_e(i_arr, i_space) = Spectrum_e(i_arr, i_space) + 1.0d0/dE    ! add an electron into this array, per energy interval to make distribution
+                  ! add an electron into this array, per energy interval to make distribution:
+                  Spectrum_e(i_arr, i_space) = Spectrum_e(i_arr, i_space) + 1.0d0/dE
+                  ! Same for intrinsic particles (excluding incident electrons):
+                  if (MC%MC_Electrons(i)%generation /= 0) then ! it is not an incident electron
+                     Spectra_e_intrinsic(i_arr, i_space) = Spectra_e_intrinsic(i_arr, i_space) + 1.0d0/dE
+                  endif
                endif
                ! Along Z:
                if (numpar%Spectr_grid_par(3)%along_axis) then  ! collect data
                   i_space = add_cartesian_particle_for_spectra_1d(MC%MC_Electrons(i), numpar, tim, 3)    ! below
+                  ! add an electron into this array, per energy interval to make distribution:
+                  Spectrum_e(i_arr, i_space) = Spectrum_e(i_arr, i_space) + 1.0d0/dE
+                  ! Same for intrinsic particles (excluding incident electrons):
+                  if (MC%MC_Electrons(i)%generation /= 0) then ! it is not an incident electron
+                     Spectra_e_intrinsic(i_arr, i_space) = Spectra_e_intrinsic(i_arr, i_space) + 1.0d0/dE
+                  endif
 !                   print*, 'get_electron_spectra_1d', size(Spectrum_e,1), size(Spectrum_e,2), dE, i_arr, i_space
-                  Spectrum_e(i_arr, i_space) = Spectrum_e(i_arr, i_space) + 1.0d0/dE    ! add an electron into this array, per energy interval to make distribution
                endif
-               
+
+
 !                if (i_arr > 1) then  ! Testing
 !                   print*, 'spectra_1d', MC%MC_Electrons(i)%Ekin, numpar%NRG_grid(i_arr), numpar%NRG_grid(i_arr-1)
 !                   if (i_space > 1) then
@@ -3558,17 +3625,12 @@ subroutine get_theta_in_space_1d(MC, numpar, tim, Theta_ph_X, Theta_e_X, Theta_p
       call get_electron_theta_1d(MC, numpar, tim, Theta_e_Y) ! below
    endif
 
-!    print*, 'get_theta_in_space_1d :', size(Spectra_e_Z,1), size(Spectra_e_Z,2)
-
    ! Along Z:
    if (numpar%Theta_grid_par(3)%along_axis) then  ! collect data
       call get_electron_theta_1d(MC, numpar, tim, Theta_e_Z) ! below
    endif
 
    ! [ONLY 1d DISTRIBUTION FOR ELECTRONS IS READY SO FAR]
-
-!    print*, size(Spectra_e_Z,1), size(Spectra_e_Z,1)
-!    print*, 'get_theta_in_space_1d END'
 
 end subroutine get_theta_in_space_1d
 
@@ -3749,7 +3811,11 @@ subroutine allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_
     Spectra_ph_X, Spectra_e_X, Spectra_p_X, Spectra_h_X, Spectra_SHI_X, Spectra_mu_X, &
     Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y, &
     Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z, &
-    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R  )
+    Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R, &
+    Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic  )
    integer, dimension(:), intent(in) :: Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_siz2, Nspec_siz3    ! sizes
    ! Energy disributions (spectra):
    real(8), dimension(:), allocatable, intent(inout) :: Spectrum_ph, Spectrum_e, Spectrum_p, Spectrum_SHI, Spectrum_mu  ! energy spectra
@@ -3759,6 +3825,12 @@ subroutine allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_
    real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_Y, Spectra_e_Y, Spectra_p_Y, Spectra_h_Y, Spectra_SHI_Y, Spectra_mu_Y  ! energy spectra in space along Y
    real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_Z, Spectra_e_Z, Spectra_p_Z, Spectra_h_Z, Spectra_SHI_Z, Spectra_mu_Z  ! energy spectra in space along Z
    real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_R, Spectra_e_R, Spectra_p_R, Spectra_h_R, Spectra_SHI_R, Spectra_mu_R ! energy spectra in space along R
+   ! Energy spectra vs space along axis, excluding incident particles:
+   real(8), dimension(:,:), allocatable, intent(inout) :: Spectra_ph_X_intrinsic, Spectra_e_X_intrinsic, &
+    Spectra_ph_Y_intrinsic, Spectra_e_Y_intrinsic, &
+    Spectra_ph_Z_intrinsic, Spectra_e_Z_intrinsic, &
+    Spectra_ph_R_intrinsic, Spectra_e_R_intrinsic
+   !----------------
    
    ! Energy spectra:
    allocate(Spectrum_ph(Nsiz(1)), source = 0.0d0)
@@ -3768,30 +3840,39 @@ subroutine allocate_spectra_arrays(Nsiz, Nsiz_VB, Nspec_siz0, Nspec_siz1, Nspec_
    allocate(Spectrum_SHI(Nsiz(1)), source = 0.0d0)
    allocate(Spectrum_mu(Nsiz(1)), source = 0.0d0)
    ! Spectra vs space 1d:
-   allocate(Spectra_ph_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)   ! X
-   allocate(Spectra_e_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
-   allocate(Spectra_p_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
-   allocate(Spectra_h_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
+   allocate(Spectra_ph_X (Nsiz(1), Nspec_siz0(2)), source = 0.0d0)   ! X
+   allocate(Spectra_e_X  (Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
+   allocate(Spectra_p_X  (Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
+   allocate(Spectra_h_X  (Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
    allocate(Spectra_SHI_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
-   allocate(Spectra_mu_X(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
-   allocate(Spectra_ph_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)   ! Y
-   allocate(Spectra_e_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
-   allocate(Spectra_p_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
-   allocate(Spectra_h_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
+   allocate(Spectra_mu_X (Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
+   allocate(Spectra_ph_Y (Nsiz(1), Nspec_siz0(3)), source = 0.0d0)   ! Y
+   allocate(Spectra_e_Y  (Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
+   allocate(Spectra_p_Y  (Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
+   allocate(Spectra_h_Y  (Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
    allocate(Spectra_SHI_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0) 
-   allocate(Spectra_mu_Y(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
-   allocate(Spectra_ph_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)  ! Z
-   allocate(Spectra_e_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
-   allocate(Spectra_p_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
-   allocate(Spectra_h_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
+   allocate(Spectra_mu_Y (Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
+   allocate(Spectra_ph_Z (Nsiz(1), Nspec_siz0(4)), source = 0.0d0)   ! Z
+   allocate(Spectra_e_Z  (Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
+   allocate(Spectra_p_Z  (Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
+   allocate(Spectra_h_Z  (Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
    allocate(Spectra_SHI_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
-   allocate(Spectra_mu_Z(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
-   allocate(Spectra_ph_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)   ! R
-   allocate(Spectra_e_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
-   allocate(Spectra_p_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
-   allocate(Spectra_h_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
+   allocate(Spectra_mu_Z (Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
+   allocate(Spectra_ph_R (Nsiz(1), Nspec_siz0(8)), source = 0.0d0)   ! R
+   allocate(Spectra_e_R  (Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
+   allocate(Spectra_p_R  (Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
+   allocate(Spectra_h_R  (Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
    allocate(Spectra_SHI_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
-   allocate(Spectra_mu_R(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
+   allocate(Spectra_mu_R (Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
+   ! Excluding incident particles:
+   allocate(Spectra_ph_X_intrinsic(Nsiz(1), Nspec_siz0(2)), source = 0.0d0)   ! X
+   allocate(Spectra_e_X_intrinsic (Nsiz(1), Nspec_siz0(2)), source = 0.0d0)
+   allocate(Spectra_ph_Y_intrinsic(Nsiz(1), Nspec_siz0(3)), source = 0.0d0)   ! Y
+   allocate(Spectra_e_Y_intrinsic (Nsiz(1), Nspec_siz0(3)), source = 0.0d0)
+   allocate(Spectra_ph_Z_intrinsic(Nsiz(1), Nspec_siz0(4)), source = 0.0d0)   ! Z
+   allocate(Spectra_e_Z_intrinsic (Nsiz(1), Nspec_siz0(4)), source = 0.0d0)
+   allocate(Spectra_ph_R_intrinsic(Nsiz(1), Nspec_siz0(8)), source = 0.0d0)   ! R
+   allocate(Spectra_e_R_intrinsic (Nsiz(1), Nspec_siz0(8)), source = 0.0d0)
 end subroutine allocate_spectra_arrays
 
 
@@ -4471,8 +4552,11 @@ subroutine allocate_output(used_target, numpar, out_data)
        out_data%Spectra_ph_X, out_data%Spectra_e_X, out_data%Spectra_p_X, out_data%Spectra_h_X, out_data%Spectra_SHI_X, out_data%Spectra_mu_X, &
        out_data%Spectra_ph_Y, out_data%Spectra_e_Y, out_data%Spectra_p_Y, out_data%Spectra_h_Y, out_data%Spectra_SHI_Y, out_data%Spectra_mu_Y, &
        out_data%Spectra_ph_Z, out_data%Spectra_e_Z, out_data%Spectra_p_Z, out_data%Spectra_h_Z, out_data%Spectra_SHI_Z, out_data%Spectra_mu_Z, &
-       out_data%Spectra_ph_R, out_data%Spectra_e_R, out_data%Spectra_p_R, out_data%Spectra_h_R, out_data%Spectra_SHI_R, out_data%Spectra_mu_R &
-            ) ! below
+       out_data%Spectra_ph_R, out_data%Spectra_e_R, out_data%Spectra_p_R, out_data%Spectra_h_R, out_data%Spectra_SHI_R, out_data%Spectra_mu_R, &
+       out_data%Spectra_ph_X_intrinsic, out_data%Spectra_e_X_intrinsic, &
+       out_data%Spectra_ph_Y_intrinsic, out_data%Spectra_e_Y_intrinsic, &
+       out_data%Spectra_ph_Z_intrinsic, out_data%Spectra_e_Z_intrinsic, &
+       out_data%Spectra_ph_R_intrinsic, out_data%Spectra_e_R_intrinsic  ) ! below
    endif
 
    ! Allocate velosity theta distributions:
@@ -4608,12 +4692,14 @@ subroutine reset_output_arrays(out_data)
     out_data%Spectrum_p = 0.0d0
     out_data%Spectrum_h = 0.0d0
     out_data%Spectrum_SHI = 0.0d0
+    out_data%Spectrum_mu = 0.0d0
     ! Velosity theta distribution:
     out_data%Vel_theta_ph = 0.0d0
     out_data%Vel_theta_e = 0.0d0
     out_data%Vel_theta_p = 0.0d0
     out_data%Vel_theta_h = 0.0d0
     out_data%Vel_theta_SHI = 0.0d0
+    out_data%Vel_theta_mu = 0.0d0
 
     ! Surface emission data: => do not reset, add up instead
     !out_data%Dens_e_Surface_X = 0.0d0
@@ -4635,21 +4721,37 @@ subroutine reset_output_arrays(out_data)
     out_data%Spectra_p_X = 0.0d0
     out_data%Spectra_h_X = 0.0d0
     out_data%Spectra_SHI_X = 0.0d0
+    out_data%Spectra_mu_X = 0.0d0
     out_data%Spectra_ph_Y = 0.0d0
     out_data%Spectra_e_Y = 0.0d0
     out_data%Spectra_p_Y = 0.0d0
     out_data%Spectra_h_Y = 0.0d0
     out_data%Spectra_SHI_Y = 0.0d0
+    out_data%Spectra_mu_Y = 0.0d0
     out_data%Spectra_ph_Z = 0.0d0
     out_data%Spectra_e_Z = 0.0d0
     out_data%Spectra_p_Z = 0.0d0
     out_data%Spectra_h_Z = 0.0d0
     out_data%Spectra_SHI_Z = 0.0d0
+    out_data%Spectra_mu_Z = 0.0d0
     out_data%Spectra_ph_R = 0.0d0
     out_data%Spectra_e_R = 0.0d0
     out_data%Spectra_p_R = 0.0d0
     out_data%Spectra_h_R = 0.0d0
     out_data%Spectra_SHI_R = 0.0d0
+    out_data%Spectra_mu_R = 0.0d0
+
+    ! Spectra vs space 1d, excluding incident particles:
+    out_data%Spectra_ph_X_intrinsic = 0.0d0
+    out_data%Spectra_e_X_intrinsic = 0.0d0
+    out_data%Spectra_ph_Y_intrinsic = 0.0d0
+    out_data%Spectra_e_Y_intrinsic = 0.0d0
+    out_data%Spectra_ph_Z_intrinsic = 0.0d0
+    out_data%Spectra_e_Z_intrinsic = 0.0d0
+    out_data%Spectra_ph_R_intrinsic = 0.0d0
+    out_data%Spectra_e_R_intrinsic = 0.0d0
+
+
     ! Spatial distributions:
     out_data%Distr_ph_X = 0.0d0
     out_data%Distr_ph_Y = 0.0d0
@@ -4696,6 +4798,15 @@ subroutine reset_output_arrays(out_data)
     out_data%Distr_SHI_Rc = 0.0d0
     out_data%Distr_SHI_Thetac = 0.0d0
     out_data%Distr_SHI_Phic = 0.0d0
+    out_data%Distr_mu_X = 0.0d0
+    out_data%Distr_mu_Y = 0.0d0
+    out_data%Distr_mu_Z = 0.0d0
+    out_data%Distr_mu_R = 0.0d0
+    out_data%Distr_mu_L = 0.0d0
+    out_data%Distr_mu_Theta = 0.0d0
+    out_data%Distr_mu_Rc = 0.0d0
+    out_data%Distr_mu_Thetac = 0.0d0
+    out_data%Distr_mu_Phic = 0.0d0
 !     out_data%Distr_a_X = 0.0d0   ! do not reset, add up instead
 !     out_data%Distr_a_Y = 0.0d0  ! do not reset, add up instead
 !     out_data%Distr_a_Z = 0.0d0  ! do not reset, add up instead
@@ -4750,6 +4861,15 @@ subroutine reset_output_arrays(out_data)
     out_data%Distr_SHI_RcThc = 0.0d0
     out_data%Distr_SHI_RcPhic = 0.0d0
     out_data%Distr_SHI_ThcPhic = 0.0d0
+    out_data%Distr_mu_XY = 0.0d0
+    out_data%Distr_mu_YZ = 0.0d0
+    out_data%Distr_mu_XZ = 0.0d0
+    out_data%Distr_mu_RL = 0.0d0
+    out_data%Distr_mu_RTheta = 0.0d0
+    out_data%Distr_mu_LTheta = 0.0d0
+    out_data%Distr_mu_RcThc = 0.0d0
+    out_data%Distr_mu_RcPhic = 0.0d0
+    out_data%Distr_mu_ThcPhic = 0.0d0
 !     out_data%Distr_a_XY = 0.0d0  ! do not reset, add up instead
 !     out_data%Distr_a_YZ = 0.0d0  ! do not reset, add up instead
 !     out_data%Distr_a_XZ = 0.0d0  ! do not reset, add up instead
@@ -4774,6 +4894,9 @@ subroutine reset_output_arrays(out_data)
     out_data%Distr_SHI_XYZ = 0.0d0
     out_data%Distr_SHI_RLTheta = 0.0d0
     out_data%Distr_SHI_RcThcPhic = 0.0d0
+    out_data%Distr_mu_XYZ = 0.0d0
+    out_data%Distr_mu_RLTheta = 0.0d0
+    out_data%Distr_mu_RcThcPhic = 0.0d0
 !     out_data%Distr_a_XYZ = 0.0d0  ! do not reset, add up instead
 !     out_data%Distr_a_RLTheta = 0.0d0  ! do not reset, add up instead
 !     out_data%Distr_a_RcThcPhic = 0.0d0  ! do not reset, add up instead
@@ -4823,6 +4946,15 @@ subroutine reset_output_arrays(out_data)
     out_data%E_Distr_SHI_Rc = 0.0d0
     out_data%E_Distr_SHI_Thetac = 0.0d0
     out_data%E_Distr_SHI_Phic = 0.0d0
+    out_data%E_Distr_mu_X = 0.0d0
+    out_data%E_Distr_mu_Y = 0.0d0
+    out_data%E_Distr_mu_Z = 0.0d0
+    out_data%E_Distr_mu_R = 0.0d0
+    out_data%E_Distr_mu_L = 0.0d0
+    out_data%E_Distr_mu_Theta = 0.0d0
+    out_data%E_Distr_mu_Rc = 0.0d0
+    out_data%E_Distr_mu_Thetac = 0.0d0
+    out_data%E_Distr_mu_Phic = 0.0d0
 !     out_data%E_Distr_a_X = 0.0d0  ! do not reset, add up instead
 !     out_data%E_Distr_a_Y = 0.0d0  ! do not reset, add up instead
 !     out_data%E_Distr_a_Z = 0.0d0  ! do not reset, add up instead
@@ -4877,6 +5009,15 @@ subroutine reset_output_arrays(out_data)
     out_data%E_Distr_SHI_RcThc = 0.0d0
     out_data%E_Distr_SHI_RcPhic = 0.0d0
     out_data%E_Distr_SHI_ThcPhic = 0.0d0
+    out_data%E_Distr_mu_XY = 0.0d0
+    out_data%E_Distr_mu_YZ = 0.0d0
+    out_data%E_Distr_mu_XZ = 0.0d0
+    out_data%E_Distr_mu_RL = 0.0d0
+    out_data%E_Distr_mu_RTheta = 0.0d0
+    out_data%E_Distr_mu_LTheta = 0.0d0
+    out_data%E_Distr_mu_RcThc = 0.0d0
+    out_data%E_Distr_mu_RcPhic = 0.0d0
+    out_data%E_Distr_mu_ThcPhic = 0.0d0
 !     out_data%E_Distr_a_XY = 0.0d0  ! do not reset, add up instead
 !     out_data%E_Distr_a_YZ = 0.0d0  ! do not reset, add up instead
 !     out_data%E_Distr_a_XZ = 0.0d0  ! do not reset, add up instead
@@ -4901,6 +5042,9 @@ subroutine reset_output_arrays(out_data)
     out_data%E_Distr_SHI_XYZ = 0.0d0
     out_data%E_Distr_SHI_RLTheta = 0.0d0
     out_data%E_Distr_SHI_RcThcPhic = 0.0d0
+    out_data%E_Distr_mu_XYZ = 0.0d0
+    out_data%E_Distr_mu_RLTheta = 0.0d0
+    out_data%E_Distr_mu_RcThcPhic = 0.0d0
 !     out_data%E_Distr_a_XYZ = 0.0d0  ! do not reset, add up instead
 !     out_data%E_Distr_a_RLTheta = 0.0d0  ! do not reset, add up instead
 !     out_data%E_Distr_a_RcThcPhic = 0.0d0  ! do not reset, add up instead

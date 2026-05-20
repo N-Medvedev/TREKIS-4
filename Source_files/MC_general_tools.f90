@@ -756,8 +756,13 @@ subroutine flight_time_to_boundary(used_target, numpar, Prtcl, T, neutral)
    real(8), intent(out) :: T  ! [fs] time to the crossing point
    logical, intent(in), optional :: neutral ! if it's neutral particle, periodic conditions can be simplified
    !-------------------------------------------
-   real(8) :: R0(3), R(3), V(3), t_box, t_target
+   real(8) :: R0(3), R(3), V(3), t_box, t_target, t_target_cur
+   integer :: i
+
+   ! To start with:
    t_target = 1.0d25
+   t_target_cur = 1.1d25
+
    ! 1) Check how far it is from the border of the simulation box boundary:
    if (present(neutral)) then   ! skip periodic boundary, if user chose to (mainly for photons):
       call where_crossing_box_boundary(Prtcl%R(:), Prtcl%V(:), numpar%box_start_x, numpar%box_end_x, &
@@ -802,7 +807,7 @@ subroutine flight_time_to_boundary(used_target, numpar, Prtcl, T, neutral)
          type is (Sphere)
             ! Transform into coordinates of the target center:
             call shift_coordinate_system(Prtcl%R(1), Prtcl%R(2), Prtcl%R(3), ARRAY%X, ARRAY%Y, ARRAY%Z, R0(1), R0(2), R0(3))   ! module "Geometries"
-            call intersection_with_sphere(R0(1), R0(2), R0(3), Prtcl%V(1), Prtcl%V(2), Prtcl%V(3), ARRAY%R, T)   ! module "Geometries"
+            call intersection_with_sphere(R0(1), R0(2), R0(3), Prtcl%V(1), Prtcl%V(2), Prtcl%V(3), ARRAY%R, t_target)   ! module "Geometries"
          type is (Sphere_segment)
             ! Not done yet! DO NOT USE!!
          type is (Cylinder)
@@ -812,11 +817,49 @@ subroutine flight_time_to_boundary(used_target, numpar, Prtcl, T, neutral)
             ! Transform velosities into the coordinate system of the target center:
             call rotate_coordinate_system(Prtcl%V(1), Prtcl%V(2), Prtcl%V(3), V(1), V(2), V(3), ARRAY%angle_x, ARRAY%angle_y, ARRAY%angle_z)   ! module "Geometries"
             ! Check where the boundary is crossed:
-            call where_crossing_cylinder(R, V, ARRAY%L_start, ARRAY%L_end, ARRAY%R, T)    ! module "Geometries"
+            call where_crossing_cylinder(R, V, ARRAY%L_start, ARRAY%L_end, ARRAY%R, t_target)    ! module "Geometries"
          type is (Cylinder_segment)
             ! Not done yet! DO NOT USE!!
        endselect
       END ASSOCIATE
+   else ! vacuum: find the closest target:
+      do i = 1, size(used_target%Geom)    ! check all targets
+         ASSOCIATE (ARRAY => used_target%Geom(i)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
+            select type (ARRAY)	! Depending on the type of used_target%Geom(i)%Set
+            type is (Rectangle)
+               ! Transform into coordinates of the target center:
+               call shift_coordinate_system(Prtcl%R(1), Prtcl%R(2), Prtcl%R(3), ARRAY%X, ARRAY%Y, ARRAY%Z, R0(1), R0(2), R0(3))   ! module "Geometries"
+               call rotate_coordinate_system(R0(1), R0(2), R0(3), R(1), R(2), R(3), ARRAY%angle_x, ARRAY%angle_y, ARRAY%angle_z)   ! module "Geometries"
+               ! Transform velosities into the coordinate system of the target center:
+               call rotate_coordinate_system(Prtcl%V(1), Prtcl%V(2), Prtcl%V(3), V(1), V(2), V(3), ARRAY%angle_x, ARRAY%angle_y, ARRAY%angle_z)   ! module "Geometries"
+
+               ! Check where the boundary is crossed:
+               call where_crossing_box_boundary(R(:),V(:), ARRAY%Xstart, ARRAY%Xend, &
+                   ARRAY%Ystart, ARRAY%Yend, ARRAY%Zstart, ARRAY%Zend, &
+                   Prtcl%generation, 0, 0, 0, t_target_cur) ! module "Geometries"
+
+            type is (Sphere)
+               ! Transform into coordinates of the target center:
+               call shift_coordinate_system(Prtcl%R(1), Prtcl%R(2), Prtcl%R(3), ARRAY%X, ARRAY%Y, ARRAY%Z, R0(1), R0(2), R0(3))   ! module "Geometries"
+               call intersection_with_sphere(R0(1), R0(2), R0(3), Prtcl%V(1), Prtcl%V(2), Prtcl%V(3), ARRAY%R, t_target_cur)   ! module "Geometries"
+            type is (Sphere_segment)
+               ! Not done yet! DO NOT USE!!
+            type is (Cylinder)
+               ! Transform into coordinates of the target center:
+               call shift_coordinate_system(Prtcl%R(1), Prtcl%R(2), Prtcl%R(3), ARRAY%X, ARRAY%Y, ARRAY%Z, R0(1), R0(2), R0(3))   ! module "Geometries"
+               call rotate_coordinate_system(R0(1), R0(2), R0(3), R(1), R(2), R(3), ARRAY%angle_x, ARRAY%angle_y, ARRAY%angle_z)   ! module "Geometries"
+               ! Transform velosities into the coordinate system of the target center:
+               call rotate_coordinate_system(Prtcl%V(1), Prtcl%V(2), Prtcl%V(3), V(1), V(2), V(3), ARRAY%angle_x, ARRAY%angle_y, ARRAY%angle_z)   ! module "Geometries"
+               ! Check where the boundary is crossed:
+               call where_crossing_cylinder(R, V, ARRAY%L_start, ARRAY%L_end, ARRAY%R, t_target_cur)    ! module "Geometries"
+            type is (Cylinder_segment)
+               ! Not done yet! DO NOT USE!!
+            endselect
+         END ASSOCIATE
+         ! Save the closest boundary:
+         if (t_target > t_target_cur) t_target = t_target_cur
+      enddo ! i
+
    endif ! (Prtcl%in_target > 0)
    T = min(t_box, t_target) ! the closest surface to be crossed
    
@@ -837,12 +880,14 @@ end subroutine flight_time_to_boundary
    !----------------------------
    real(8), dimension(3) :: R_shift
    real(8) :: eps, Xc, Yc, Zc, Xcr, Ycr, Zcr, n_abs, PrtclV
-   integer :: i, N_mat, ind_boundary
+   integer :: i, N_mat, ind_boundary, tar_ind
    
    if (present(INFO)) INFO = 0  ! no error at the start
    N_mat = size(used_target%Material)    ! how many different materials we have
    !eps = 1.0d-6 ! precision
    eps = m_tollerance_eps   ! module "Geometries"
+
+   !print*, 'define_normal_to_surface 1:', Prtcl%in_target
    
    ! 1) Find which target's boundary the particle is crossing:
    if (Prtcl%in_target == 0) then ! particle coming from vacuum, find which material it enters:
@@ -851,11 +896,17 @@ end subroutine flight_time_to_boundary
       R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
       
       ! Update particle's material index according to the new material it enters:
-      call find_the_target(used_target, Prtcl, R_shift) ! below
+      call find_the_target(used_target, Prtcl, R_shift, tar_ind=tar_ind) ! below
+   else
+      tar_ind = Prtcl%in_target     ! use the current target index
    endif
+
+   !print*, 'define_normal_to_surface 2:', Prtcl%in_target, tar_ind
+
    
    ! 2) Find which surface it is corssing:
-   ASSOCIATE (ARRAY => used_target%Geom(Prtcl%in_target)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
+   !ASSOCIATE (ARRAY => used_target%Geom(Prtcl%in_target)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
+   ASSOCIATE (ARRAY => used_target%Geom(tar_ind)%Set)	! that's the syntax to use when passing polimorphic arrays into subroutines
        select type (ARRAY)	! Depending on the type of used_target%Geom(i)%Set
          type is (Rectangle)
             

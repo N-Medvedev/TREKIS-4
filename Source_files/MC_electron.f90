@@ -117,8 +117,8 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    integer, intent(inout) :: INFO  ! info about errors to pass to main subroutine
    !------------------------------------------------------
    real(8), dimension(3)  :: R_shift, norm_to_surf, V_perp, V
-   real(8) :: Vnorm, Ekin_norm, T, RN, Vabs, Z
-   integer :: target_ind, i, surf_ind
+   real(8) :: Vnorm, Ekin_norm, T, RN, Vabs, Z, PrtclV
+   integer :: target_ind, i, surf_ind, tar_ind
    logical :: transmit
    type(Emission_barrier), pointer :: Em_Barr
    
@@ -151,9 +151,19 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    Ekin_norm = kinetic_energy_from_velosity(Vnorm, g_me)    ! module "Relativity"
    
    ! 4) Get the probability of boundary crossing:
-   Em_Barr => used_target%Material(Prtcl%in_target)%Surface_barrier
+   if (Prtcl%in_target == 0) then ! particle coming from vacuum, find which material it enters:
+      PrtclV = max(SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) ), m_tollerance_eps) ! exclude zero
+      R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
+      ! Find the material index according to the new material it enters:
+      call find_the_target(used_target, Prtcl, R_shift, tar_ind=tar_ind) ! module "MC_general_tools"
+   else
+      tar_ind = Prtcl%in_target     ! use the current target index
+   endif
+   ! Use the barrier of the target:
+   Em_Barr => used_target%Material(tar_ind)%Surface_barrier
+
+
    ! Projection of energy on the normal to use to calculate transmission probability:
-!    T = electron_transmission_probability(Em_Barr%Work_func, Em_Barr%gamma, Em_Barr%E1, Ekin_norm)     ! module "MC_general_tools"
    ! Total kinetic energy to use to calculate transmission probability:
    select case(Em_Barr%barr_type)
    case (1) ! Eckart-type barrier
@@ -161,7 +171,7 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    case default ! step barrier
       T = electron_transmission_probability_step(Em_Barr%Work_func, Ekin_norm) ! module "MC_general_tools"
    end select
-   
+
    ! 5) Sample transmission vs. reflection:
    transmit = .true.   ! to start with, assume transmission
    RN = 0.0d0
@@ -180,6 +190,9 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       ! Find into which target this electron enters:
 
       ! 6.0) Save the data on surface emission, if required, before changing any particle parameter:
+
+      !print*, 'Inside target 1#', Prtcl%in_target
+
       call save_surface_emission_data(numpar, MC, Prtcl, surf_ind)   ! below
 
       ! Find which target's boundary the particle is crossing:
@@ -198,7 +211,8 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
 
       ! Update particle's material index according to the new material it enters:
       call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
-!        print*, 'Transmission'
+
+      !print*, 'Inside target 2#', Prtcl%in_target
          
       ! 6.a) Shift electron just across the border (along the direction of velocity):
       !Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
@@ -294,6 +308,12 @@ subroutine save_surface_emission_data(numpar, MC, Prtcl, surf_ind)
 
    ! Only do it if the user requested surface emission data:
    if (ANY(numpar%Surface_grid_par(:)%along_axis)) then
+      ! If it's an external particle enterring, don't count it as emission:
+      if (Prtcl%in_target == 0) then ! it's from vacuum into the surface
+         !print*, 'Incomming!'
+         return   ! skip the whole shebang
+      endif
+
       ! One more event happened:
       MC%N_surf_emission = MC%N_surf_emission + 1
       i_em = MC%N_surf_emission  ! just shorthand notation
