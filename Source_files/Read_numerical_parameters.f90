@@ -1802,7 +1802,7 @@ subroutine Read_and_set_grid(FN, File_name, count_lines, grid_par, grid_set, gri
         endif
     else ! (.not. read_well)   ! if user provided grid parameters
         call read_grid_from_file(temp_ch2, numpar, grid_set%spatial_grid1, grid_created)    ! below
-        ! Check the grid was not read from the file:
+        ! Check if the grid was not read from the file:
         if (.not.grid_created) then   ! create a default grid
             backspace ( FN ) ! to read the line again from the file into a proper variable
             ! Read the parameters of the grid:

@@ -26,15 +26,16 @@ subroutine get_CDF(numpar, used_target, Err)
    type(Matter), intent(inout), target :: used_target	! parameters of the target
    type(Error_handling), intent(inout) :: Err	! error log
    !---------------------------------------------------------------
-   real(8), dimension(:), allocatable :: lambda, CDF_data
-   real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin, temp(3), N_at_mol
-   integer :: i, j, k, m, Nat, Nsiz, FN, FN2, N_CDF, Reason, count_lines, N_elem, N_temp
+   real(8), dimension(:), allocatable :: lambda, CDF_data, sigma_EPLD
+   real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin, temp(3), N_at_mol, alpha, arg
+   integer :: i, j, k, m, Nat, Nsiz, FN, FN2, N_CDF, Reason, count_lines, N_elem, N_temp, crossing_ind, min_ind
    character(200) :: folder, folder_with_cdf, file_with_cdf, command, file_with_coefs, Path_valent, File_name
    logical :: file_exist, read_well
    real(8), pointer :: E
    character, pointer :: path_sep
    type(Atom_kind), pointer :: Element
    logical :: create_file    ! no such file => create it
+   logical :: crossing_found
    !--------------------------
 
    path_sep => numpar%path_sep
@@ -275,6 +276,7 @@ subroutine get_CDF(numpar, used_target, Err)
 
       ! Deal with the valence band
       if (allocated(used_target%Material(i)%CDF_valence%A)) then    ! just to check
+         crossing_found = .false.   ! to start with
          ! Save the total valence band cross section:
          File_name = trim(adjustl(Path_valent))//path_sep//trim(adjustl(m_photon_absorption))//'_valence_CDF_Ritchie.dat'
          if(.not.allocated(used_target%Material(i)%Ph_absorption_valent%Total)) then   ! valence band has not been defined yet, so do that
@@ -325,6 +327,9 @@ subroutine get_CDF(numpar, used_target, Err)
 
                enddo ! m = 1, Nsiz
                
+
+               allocate(sigma_EPLD(Nsiz), source = 0.0d0)   ! to start with
+
                ! Combine valence CDF (at low energy) with the atomic one (at the high energy):
                do m = Nsiz, 1, -1   ! scan all energy grid points, starting from the top
                   E => used_target%Material(i)%Ph_absorption_valent%E(m)	! photon energy [eV]
@@ -350,20 +355,74 @@ subroutine get_CDF(numpar, used_target, Err)
                      enddo ! k
                   enddo ! j
 
-                  !pause 'sigma_cur'
+                  sigma_EPLD(m) = sigma   ! save EPDL data for valence band
+               enddo ! m
 
-                  ! At sufficiently low energy (~100-200 eV), a peak in valence CDF should cross the atomic one:
-                  if ( (E < 200.0d0) .and. (sigma < used_target%Material(i)%Ph_absorption_valent%Total(m))) then ! replace atomic sigma with valent one:
+               ! Now, compare the two, CDF and EPDL:
+               min_ind = transfer(minloc(used_target%Material(i)%Ph_absorption_valent%Total_MFP),min_ind) ! minimum in CDF-based MFP
+               !print*, 'min_ind', min_ind
+
+               do m = min_ind, Nsiz
+                  crossing_ind = m
+
+                  lambda(m) = MFP_from_sigma(sigma_EPLD(m), used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
+
+                  if (lambda(m) < used_target%Material(i)%Ph_absorption_valent%Total_MFP(m)) then ! replace atomic sigma with valent one:
+                     crossing_found = .true.
+                     crossing_ind = m
                      exit ! the rest we leave equal to the valence CS precalculated above
                   endif
-                  used_target%Material(i)%Ph_absorption_valent%Total(m) = sigma   ! [A^2]
-!                   print*, j, E, Element%valent
-                  lambda(m) = MFP_from_sigma(sigma, used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
-                  used_target%Material(i)%Ph_absorption_valent%Total_MFP(m) = lambda(m)  ! [1/A]
+                  if (E < 200.0d0) exit   ! our limit for search
+               enddo
+               !print*, 'crossing_ind', crossing_found, crossing_ind
 
-                  !print*, 'a', E, sigma, lambda(m)
+               ! Default is CDF-based:
+               lambda(:) = used_target%Material(i)%Ph_absorption_valent%Total_MFP(:)
 
-               enddo ! m
+               if (crossing_found) then   ! replace CDF with EPDL:
+                  used_target%Material(i)%Ph_absorption_valent%Total(crossing_ind:Nsiz) = sigma_EPLD(crossing_ind:Nsiz)   ! [A^2]
+                  do m = crossing_ind, Nsiz
+                     ! There, replace it with EPDL:
+                     lambda(m) = MFP_from_sigma(sigma_EPLD(m), used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
+                     used_target%Material(i)%Ph_absorption_valent%Total_MFP(m) = lambda(m)  ! [1/A]
+                     !print*, 'a', E, sigma, lambda(m)
+                  enddo ! m
+               else     ! there was no crossing - use smooth transition:
+                  do m = 1, Nsiz
+                     ! Coefficient for smoothing:
+
+                     arg = (used_target%Material(i)%Ph_absorption_valent%E(m) - &
+                            used_target%Material(i)%Ph_absorption_valent%E(min_ind)-10.0d0 )/5.0d0
+                     if (arg < -20.0) then ! too small
+                        alpha = 1.0d0
+                     elseif (arg > 20.0) then ! too large
+                        alpha = 0.0d0
+                     else ! calcualte exact expression:
+                        alpha = 1.0d0 / (1.0d0 + exp( arg ))
+                     endif
+
+                     if (used_target%Material(i)%Ph_absorption_valent%E(m) < &
+                         used_target%Material(i)%Ph_absorption_valent%E(min_ind)) then ! use CDF
+                        !lambda(m) = used_target%Material(i)%Ph_absorption_valent%Total_MFP(m)
+                     else ! check when we replace it
+                        lambda(m) = MFP_from_sigma(sigma_EPLD(m), used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
+
+                        if (lambda(m) < 1.0d18) then ! not an infinity
+                           ! Interpolate cross section between CDF and EPDL smoothly:
+                           used_target%Material(i)%Ph_absorption_valent%Total(m) = &
+                              alpha * used_target%Material(i)%Ph_absorption_valent%Total(m) + &
+                              (1.0d0 - alpha) * sigma_EPLD(m)   ! [A^2]
+                        endif
+                     endif
+
+                     lambda(m) = MFP_from_sigma(used_target%Material(i)%Ph_absorption_valent%Total(m), used_target%Material(i)%At_Dens)    ! module "CS_general_tools"
+
+                     !print*, 'ph', used_target%Material(i)%Ph_absorption_valent%E(m), lambda(m), used_target%Material(i)%Ph_absorption_valent%Total_MFP(m), alpha, arg
+
+                     used_target%Material(i)%Ph_absorption_valent%Total_MFP(m) = lambda(m)  ! [1/A]
+                  enddo ! m
+               endif
+
                
                ! Write the combined valence CDF into the file:
                do m = 1, Nsiz	! for all energy grid points:
@@ -660,6 +719,7 @@ subroutine get_CDF(numpar, used_target, Err)
 ! clean up the memory:
    if (allocated(lambda)) deallocate(lambda)
    if (allocated(CDF_data)) deallocate(CDF_data)
+   if (allocated(sigma_EPLD)) deallocate(sigma_EPLD)
    nullify(path_sep, Element, E)
 end subroutine get_CDF
 

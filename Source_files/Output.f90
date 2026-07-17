@@ -88,7 +88,7 @@ character(100) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 20.05.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 17.07.2026)'
 
 
 ! All output file names:
