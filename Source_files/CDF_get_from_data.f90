@@ -29,7 +29,7 @@ subroutine get_CDF(numpar, used_target, Err)
    real(8), dimension(:), allocatable :: lambda, CDF_data, sigma_EPLD
    real(8) :: Omega, ksum, fsum, sigma, elem_contrib, sigma_cur, Wmin, temp(3), N_at_mol, alpha, arg
    integer :: i, j, k, m, Nat, Nsiz, FN, FN2, N_CDF, Reason, count_lines, N_elem, N_temp, crossing_ind, min_ind
-   character(200) :: folder, folder_with_cdf, file_with_cdf, command, file_with_coefs, Path_valent, File_name
+   character(200) :: folder, folder_with_cdf, file_with_cdf, command, file_with_coefs, Path_valent, File_name, message
    logical :: file_exist, read_well
    real(8), pointer :: E
    character, pointer :: path_sep
@@ -225,9 +225,20 @@ subroutine get_CDF(numpar, used_target, Err)
       Path_valent = trim(adjustl(Path_valent))//path_sep//trim(adjustl(used_target%Material(i)%Name))
 
       ! Check if valence band needs single-pole approximation:
+
+      ! Construct the message:
+      message = ''      ! to start with
+      if (.not.allocated(used_target%Material(i)%CDF_valence%A)) then
+         message = 'Do not have CDF for valence band in '//trim(adjustl(used_target%Material(i)%Name))
+      endif
+      if (numpar%El_inelast == 5) then
+         message = 'Single-pole approximation was selected for VB'
+      endif
+
       if ( (.not.allocated(used_target%Material(i)%CDF_valence%A)) .or. (numpar%El_inelast == 5)) then
-         print*, 'Do not have CDF for valence band in '//trim(adjustl(used_target%Material(i)%Name))
-         print*, 'Using single-pole approximation instead:'
+         !print*, 'Do not have CDF for valence band in '//trim(adjustl(used_target%Material(i)%Name))
+         print*, trim(adjustl(message))
+         print*, 'Using single-pole approximation :'
          ! Allocate the single pole parameters:
          if (allocated(used_target%Material(i)%CDF_valence%A)) deallocate(used_target%Material(i)%CDF_valence%A)
          if (allocated(used_target%Material(i)%CDF_valence%E0)) deallocate(used_target%Material(i)%CDF_valence%E0)
@@ -465,6 +476,15 @@ subroutine get_CDF(numpar, used_target, Err)
       endif ! if (allocated(used_target%Material(i)%CDF_valence%A)) then
       
       ! Also deal with phonons if possible:
+
+      message = ''      ! to start with
+      if (.not.allocated(used_target%Material(i)%CDF_phonon%A)) then
+         message = 'Do not have CDF for phonons in '//trim(adjustl(used_target%Material(i)%Name))
+      endif
+      if (numpar%El_elastic == 1) then
+         message = 'Single-pole approximation was selected for phonons'
+      endif
+
       if (allocated(used_target%Material(i)%CDF_phonon%A) .and. (numpar%El_elastic == 1)) then
          ! Print out k-sum rule for phonons:
          if (numpar%verbose) print*, 'Phonons in '//trim(adjustl(used_target%Material(i)%Name))
@@ -492,7 +512,8 @@ subroutine get_CDF(numpar, used_target, Err)
             print*, '------------------------'
          endif
       else
-         print*, 'Do not have CDF for phonons in '//trim(adjustl(used_target%Material(i)%Name))
+         !print*, 'Do not have CDF for phonons in '//trim(adjustl(used_target%Material(i)%Name))
+         print*, trim(adjustl(message))
          print*, 'Using single-pole approximation instead'
          !print*, 'Can not calculate sum rules...'
          ! Allocate the single pole parameters:
