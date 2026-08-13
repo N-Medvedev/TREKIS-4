@@ -1,5 +1,5 @@
 Si3N4
-
-3.44 	! density of the material in [g/cm^3]
-
--5.0	! [eV] Pair Creation Energy (or band gap) of the solid
+3.44	! density of the material in [g/cm^3]
+4.5		! [eV] band gap
+0.0e0	! [eV] Fermi energy
+10611.0	! Speed of sound [m/s]

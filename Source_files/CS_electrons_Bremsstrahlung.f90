@@ -191,7 +191,78 @@ end subroutine get_el_Brems_CS
 
 
 
+
+
 function Bremsstrahlung_total_CS(Ee, Element, Emax_in) result(sigma)
+   real(8) :: sigma	! [A^2] cross section
+   real(8), intent(in) :: Ee	! [eV] electron energy
+   type(Atom_kind), intent(in), target :: Element	! data for this element
+   real(8), intent(in), optional :: Emax_in ! user provided upper integration limit (used for calculation of transferred energy)
+   !------------------------------------
+   real(8) :: dSigma, dSigma0, dSigma_mid, dS, eps, sig_step, Wth
+   real(8) :: Emin, Emax, Ecur, Ecur0, dE, dE_max, dE_min, dE_half, E_mid
+   integer :: i, Ngrid
+
+   Wth = m_Wth  ! [eV] Threshold for photon energy allowed to be emitted via Bremsstrahlung; [1] Eq.(3.145)
+   if (Ee > 2.0d0*Wth) then	! only for energies larger than threshold
+      eps = 1.0d-8	! precision limit
+      dS = 0.01d0	! maximal allowed change in dSigma per step
+      Ngrid = 500	! grid point for integration over E
+      Emin = Wth/(Ee + g_me_eV)
+      Emax = Ee/(Ee + g_me_eV)
+      Ecur = Emin	! starting
+      dE_max = (Emax - Emin)/dble(Ngrid)	! maximal allowed integration step
+      ! In a case if user provided the upper integration limit:
+      if (present(Emax_in)) then
+         ! make sure user did not provide unphysical value:
+         if (Emax_in < Emax) Emax = Emax_in
+         if (Emax_in < Emin) Emax = Emin
+      endif
+      dE_min = dE_max/100.0d0
+      dE = dE_min	! start with it, and later reduce if needed
+      dE_half = dE*0.50d0
+      ! Start integration of differential cross section to obtain the total one:
+      sigma = 0.0d0
+      dSigma0 = Brems_dSigma(Ee, Ecur, Element%Zat, Element%Pair_R, Element%Pair_nu_inf)	! below
+      !(Ee, Element, k, mu)	! below
+      i = 0
+      do while (Ecur < Emax)
+         i = i + 1	! steps counter
+         ! Simpson 3/8 (or 1/3) method of integration with fized log-grid:
+         Ecur0 = Ecur
+         !Ecur = Ecur + dE
+         Ecur = Emin * (Emax/Emin) ** (dble(i)/dble(Ngrid))
+         dE = Ecur - Ecur0
+
+         if (Ecur > Emax) then	! if by chance we exceeded the limit
+            Ecur = Emax
+            dE = Emax - Ecur0
+            dE_half = 0.5d0*dE
+         endif
+
+         dSigma = Brems_dSigma(Ee, Ecur, Element%Zat, Element%Pair_R, Element%Pair_nu_inf)	! below
+
+         E_mid =  Ecur0 + dE_half
+         dSigma_mid = Brems_dSigma(Ee, E_mid, Element%Zat, Element%Pair_R, Element%Pair_nu_inf)	! below
+
+         ! Add up the contributions according to Simpson-3/8 scheme:
+         sig_step = dE/6.0d0*(dSigma0 + 4.0d0*dSigma_mid + dSigma)
+         sigma = sigma + sig_step
+!       write(*,'(a,f,f,f,es,es)') 'S', Ee*1e-6, Ecur, dE, dSigma, sigma
+         ! Save the data for the next point of integration:
+         dSigma0 = dSigma
+      enddo
+   else	! below threshold, no Bremsstrahlung
+      sigma = 0.0d0
+   endif
+end function Bremsstrahlung_total_CS
+
+
+
+
+
+
+function Bremsstrahlung_total_CS_old(Ee, Element, Emax_in) result(sigma)
    real(8) :: sigma	! [A^2] cross section
    real(8), intent(in) :: Ee	! [eV] electron energy
    type(Atom_kind), intent(in), target :: Element	! data for this element
@@ -280,7 +351,7 @@ function Bremsstrahlung_total_CS(Ee, Element, Emax_in) result(sigma)
    else	! below threshold, no Bremsstrahlung
       sigma = 0.0d0
    endif
-end function Bremsstrahlung_total_CS
+end function Bremsstrahlung_total_CS_old
 
 
 function  Brems_dSigma(Ee, Ecur, Z, R, nu_inf) result(dSigma)

@@ -17,7 +17,9 @@ Phonons			! Phonons
 2E-4	0.10	0.013
 0.005	0.155	0.009
 
+
 !DOS
+
 
 !EFFECTIVE_MASS
 0.5

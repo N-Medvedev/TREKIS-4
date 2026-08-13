@@ -1,0 +1,17 @@
+MoS2
+7.0		! density of the material in [g/cm^3]
+1.0		! [eV] band gap
+-5.3	! [eV] Fermi energy
+7000 	! Speed of sound [m/s]
+
+
+DOS
+DOS_MoS2.dat
+
+
+BARRIER
+5.0		10.0	6.0
+
+
+!EFFECTIVE_MASS
+0.3
