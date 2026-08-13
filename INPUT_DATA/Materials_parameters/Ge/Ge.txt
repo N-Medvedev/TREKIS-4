@@ -1,0 +1,24 @@
+Ge
+5.323	! density of the material in [g/cm^3]
+0.66 	! [eV] band gap
+5.735	! [eV] Fermi energy
+5400.0	! Speed of sound [m/s]
+
+VALENCE
+1
+245.0	17.0	15.0		! A, E0, Gamma coefficients
+
+!PHONONS
+2
+4e-9	0.012	0.005
+1e-7	0.05	0.08
+
+
+DOS
+dos_Ge.dat
+
+BARRIER
+4.78	10.0d0	6.18d0
+
+!EFFECTIVE_MASS
+0.3
