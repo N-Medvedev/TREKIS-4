@@ -280,7 +280,8 @@ subroutine get_el_elastic_CS(Ee, Material, Element, numpar, sigma, mu_max_in, E_
       ! Target mean atomic number:
       select case (numpar%CDF_elast_Zeff)
       case(0)           ! Z=Zeff (Barkas-like) [6]
-         Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, Material%Mean_Z, (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
+         !Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, Material%Mean_Z, (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
+         Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, (Material%Mean_Z-1.0d0), (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
       case default         ! Z=1 (constant; or dynamical screening used inside the momentum transfer subroutine)
          Zeff = 1.0d0    ! electron charge
       endselect
