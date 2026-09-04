@@ -170,12 +170,17 @@ subroutine event_photon_pair_production(used_target, numpar, MC, NOP, MD_supce, 
    
    ! 2) Get energy of the emitted electron:
    call emitted_pair_electron_energy(Element, Prtcl%Ekin, Ee) ! below
+   ! The energy is total, we must subtract the rest-mass energy to get kinetic one:
+   Ee_tot = Ee    ! save for later/tests
+   Ee = Ee_tot - g_me_eV      ! kinetic energy of the electron [eV]
+   Ee = max(Ee, 0.0d0)        ! ensure non-negative energy
    
    ! 3) Make a new electron:
    MC%N_e = MC%N_e + 1
    ! 3a) Sample emitted electron angles:
-   call get_pair_electron_angles(Ee, theta_e, phi_e) ! below   
-   
+   call get_pair_electron_angles(Ee, theta_e, phi_e) ! below
+
+
    ! 3b) Set the direction of motion:
 !    V0(:) = MC%MC_Photons(NOP)%V(:)/g_cvel   ! [m/s]
    V0(:) = Prtcl%V(:)/ sqrt(SUM(Prtcl%V(:)*Prtcl%V(:)))   ! [A/fs]
@@ -199,7 +204,9 @@ subroutine event_photon_pair_production(used_target, numpar, MC, NOP, MD_supce, 
    ! 5) Make a new positron:
    MC%N_p = MC%N_p + 1
    ! Its energy:
-   Epos = Prtcl%Ekin - Ee - 2.0d0*g_me_eV
+   !Epos = Prtcl%Ekin - Ee - 2.0d0*g_me_eV
+   Epos = Prtcl%Ekin - Ee_tot - g_me_eV ! kinetic energy of the positron [eV]
+
    ! 5a) Sample emitted positron angles:
    call get_pair_electron_angles(Epos, theta_p, phi_p) ! below
    
@@ -293,7 +300,7 @@ subroutine event_photon_Compton(used_target, numpar, MC, NOP,  MD_supce, E_e, E_
    type(MD_supcell), intent(in) :: MD_supce  ! MD supercell parameters for connection between MC and MD modules
    real(8), dimension(:,:,:), intent(inout) :: E_e, E_h ! data to pass to MD later
    !------------------------------------------------------
-    integer :: KOA, NSH
+   integer :: KOA, NSH
    real(8) :: Ekin, Ekin_new, dE, polar_angle, azimuth_angle   ! electron energy and angles of emittion
    real(8) :: polar_angle_ph, azimuth_angle_ph     ! photon deflection angle
    real(8) :: polar_angle_h, azimuth_angle_h        ! hole deflection angle
@@ -385,7 +392,7 @@ subroutine event_photon_Compton(used_target, numpar, MC, NOP,  MD_supce, E_e, E_
    endif
 
    
-   ! 4) Get the photoelectron direction of emission:
+   ! 4) Get the electron direction of emission:
    ! Get the cosines of the photon velosity:
    V_tot = sqrt(SUM(Prtcl%V(:)*Prtcl%V(:)))
    V0(:) = Prtcl%V(:)/V_tot

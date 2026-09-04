@@ -290,7 +290,7 @@ end subroutine choose_random_shell
  
  
 !BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-! Subrtines related to boundary crossing:
+! Subroutines related to boundary crossing:
 
 
 pure function electron_transmission_probability(Work_func, Em_gamma, Em_E1, Ekin) result(T) 
