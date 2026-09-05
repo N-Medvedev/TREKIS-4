@@ -137,7 +137,7 @@ subroutine event_photon_pair_production(used_target, numpar, MC, NOP, MD_supce, 
    type(Target_atoms), pointer :: matter
    type(Atom_kind), pointer :: Element
    real(8) :: Ee, Epos, theta_e, phi_e, theta_p, phi_p, N_elem, elem_contrib, CS_cur, CS_sum, CS_sampled
-   real(8) :: V0(3), V(3), V_e(3), V_e_abs
+   real(8) :: V0(3), V(3), V_e(3), V_e_abs, Ee_tot
    integer :: j, KOA, KOA1
    logical :: found_shl
    

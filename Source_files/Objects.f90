@@ -3,7 +3,7 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev, R. Rymzhanov, F. Akhmetov
-! in 2018-2021
+! in 2018-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains all defined objects
 
@@ -77,6 +77,11 @@ type :: Ritchi_CDF
    ! parameters entering single-pole delta-CDF:
    real(8), dimension(:), allocatable :: h_omega_e2    ! [eV^2] (h*Omega_e)^2 where Omega_e is the electron plasma frequency
 end type Ritchi_CDF
+
+
+type :: Recon_CDF
+   complex(8), dimension(:), allocatable :: CDF ! Complex dielectric function
+endtype Recon_CDF
 
 
 !==============================================

@@ -3,7 +3,7 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2018
+! in 2018-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to deal with optical data and convert them into CDF
 ! [1] N. Medvedev, et al., J. Phys. D: Appl. Phys. 48 (2015) 355303
@@ -12,8 +12,9 @@
 
 MODULE CDF_Ritchi
 use Universal_constants
-use Little_subroutines, only: find_in_array_monoton
+use Little_subroutines, only: find_in_array_monoton, interpolate_data_single
 use Relativity, only: kinetic_energy_from_momentum
+use Objects, only: Target_atoms, Num_par, Recon_CDF
 
 implicit none
 
@@ -24,7 +25,349 @@ parameter (m_two_third = 2.0d0/3.0d0)
 
  contains
 
- 
+
+
+
+
+! Complex CDF producing Ritchie-Howie loss function:
+subroutine Total_copmlex_CDF(Material, numpar, hw, hq, complex_CDF, photon, Shell_CDF)
+   type(Target_atoms), intent(in), target :: Material	!material parameters of each target that it's constructed of
+   type(Num_par), intent(in) :: numpar	! all numerical parameters
+   real(8), intent(in) ::  hw    ! transferred energy [eV]
+   real(8), intent(in) ::  hq    ! transferred momentum [sqrt(eV/J)/m] (not [kg*m/s] !)
+   complex(8), intent(out) :: complex_CDF ! constructed CDF
+   logical, intent(in), optional :: photon
+   type(Recon_CDF), dimension(:), allocatable, intent(inout), optional :: Shell_CDF   ! shell-resolved CDFs
+   !----------------------
+   logical :: it_is_photon, it_contributes
+   integer :: Nat, Nshl, i, j, E0_model
+   real(8) :: ImE, ReE, den, ReL, ImL, Q, Mass
+   complex(8) :: Part_CDF
+
+   if (present(photon)) then ! it may be a photon
+      it_is_photon = photon
+   elseif (abs(hq) < 1.0d-6) then ! close enough to be a photon
+      it_is_photon = .true.
+   else ! by default, it is not a photon
+      it_is_photon = .false.
+   endif
+
+   E0_model = numpar%CDF_dispers
+   Nat = size(Material%Elements)    ! number of atoms
+   complex_CDF = dcmplx(0.0d0,0.0d0)   ! to start with
+   ! Get CDF for all core shells of all elements:
+   ReE = 0.0d0   ! to start with
+   ImE = 0.0d0   ! to start with
+
+   ! For now, let's assume we are only interested in electronic CDF:
+   Mass = g_me
+
+
+   ! valence band, if defined and used:
+   if (allocated(Material%CDF_valence%A)) then ! core shell
+      call construct_CDF(Part_CDF, Material, Mass, 0, 0, hw, hq, &
+                         Material%DOS%v_f, E0_model, photon=it_is_photon, ReL=ReE, ImL=ImE) ! below
+
+      ! Save individual shell CDF:
+      if (present(Shell_CDF)) then ! save for each shell separately
+         if (.not.allocated(Shell_CDF)) then
+            allocate(Shell_CDF(Nat+1))
+            allocate(Shell_CDF(Nat+1)%CDF(1))
+         endif
+         den = ReL**2 + ImL**2   ! denominator in both, real and imaginary parts
+         if (abs(den) > 1.0d-12) then
+            Shell_CDF(Nat+1)%CDF(1) = dcmplx(-ReL/den, ImL/den)
+         else  ! no CDF for this shell at this energy
+            Shell_CDF(Nat+1)%CDF(1) = dcmplx(1.0d0, 0.0d0)
+         endif
+      endif
+   endif
+
+
+   do i = 1, Nat ! for all atoms
+      !Nshl = size(Target_atoms(i)%Ip)    ! number of shells of the current atom i
+      Nshl = size(Material%Elements(i)%Ip)
+
+      ! add core shells:
+      do j = 1, Nshl ! for all shells
+         Part_CDF = dcmplx(0.0d0,0.0d0)   ! to restart
+         if ( (.not.Material%Elements(Nat)%valent(Nshl)) .or. (.not.allocated(Material%CDF_valence%A)) )  then ! core shell, or no VB
+            ! Get CDF corresponding to Ritchie-Howie loss function for this shell:
+            ! 1) Get real and imaginary parts of the loss function:
+            call construct_CDF(Part_CDF, Material, Mass, i, j, hw, hq, &
+                            Material%DOS%v_f, E0_model, photon=it_is_photon, ReL=ReE, ImL=ImE) ! below
+
+            ! Save individual shell CDF:
+            if (present(Shell_CDF)) then ! save for each shell separately
+               if (.not.allocated(Shell_CDF(i)%CDF)) then
+                  allocate(Shell_CDF(i)%CDF(Nshl))
+                  Shell_CDF(i)%CDF(Nshl) = dcmplx(0.0d0,0.0d0)
+               endif
+               !if ((i /= 1) .or. (j /= size(Target_atoms(1)%Ip))) then ! not VB, core shell:
+               if (.not.Material%Elements(Nat)%valent(Nshl)) then ! core shell
+                  Q = (g_h*hq)**2 / (2.0d0*g_me)
+                  !if (hw+Q <= Target_atoms(i)%Ip(j) ) then  ! (energy+recoin elenry) below Ip, no CDF contribution
+                  if (hw+Q <= Material%Elements(i)%Ip(j) ) then  ! (energy+recoin energy) below Ip, no CDF contribution
+                     it_contributes = .false.
+                  else  ! it can contribute
+                     it_contributes = .true.
+                  endif
+               else  ! VB always contributes to CDF
+                  it_contributes = .true.
+               endif
+
+               if (it_contributes) then
+                  den = ReL**2 + ImL**2   ! denominator in both, real and imaginary parts
+                  if (abs(den) > 1.0d-12) then
+                     Shell_CDF(i)%CDF(j) = dcmplx(-ReL/den, ImL/den)
+                  else  ! no CDF for this shell at this energy
+                     Shell_CDF(i)%CDF(j) = dcmplx(1.0d0, 0.0d0)
+                  endif
+               else  ! make fully screened charge on this shell
+                  !Shell_CDF(i)%CDF(j) = dcmplx(1.0d0/(1.0d0 + Target_atoms(i)%Nel(j)), 0.0d0)
+                  Shell_CDF(i)%CDF(j) = cmplx(1.0d25, 0.0d0)
+               endif
+            endif
+         endif ! core shell
+
+         ! 2) Sum them up:
+         ReE = ReE + (1.0d0 + ReL)  ! without unity, to be added later to the total CDF
+         ImE = ImE + ImL            ! complete
+
+         ! VB test:
+         !if ((i == 1) .and. (j == Nshl)) then
+         !   write(*,'(es24.6,es24.6,es24.6,es24.6,es24.6,es24.6)') hw, dble(Part_CDF), aimag(Part_CDF), &
+         !                        dble(sqrt(Part_CDF)), aimag(sqrt(Part_CDF))
+         !endif
+      enddo ! j
+   enddo ! i
+
+   ! Combine all into full Re(-1/e(w,q)) = -(1 - sum(ReE_i)):
+   ReE = -(1.0d0 - ReE)
+   den = ReE**2 + ImE**2   ! denominator in both, real and imaginary parts
+   if (abs(den) > 1.0d-12) then
+      complex_CDF = dcmplx(-ReE/den, ImE/den)   ! partial complex CDF for this shell, reconstructed from Ritchie-Howie loss function
+   else  ! no CDF
+      complex_CDF = dcmplx(1.0d0, 0.0d0)
+   endif
+
+end subroutine Total_copmlex_CDF
+
+
+! CDF corresponding to Ritchie-Howie loss function for a single given shell:
+subroutine construct_CDF(Part_CDF, Material, Mass, Nat, Nshl, hw, hq, v_f, E0_model, photon, ReL, ImL)
+   complex(8), intent(out) :: Part_CDF ! constructed CDF
+   type(Target_atoms), intent(in), target :: Material	!material parameters of each target that it's constructed of
+   real(8), intent(in) :: Mass ! Incident particle mass
+   integer, intent(in) :: Nat, Nshl    ! index of atom and shell
+   real(8), intent(in) ::  hw    ! transferred energy [eV]
+   real(8), intent(in) ::  hq    ! transferred momentum [sqrt(eV/J)/m] (not [kg*m/s] !)
+   real(8), intent(in) :: v_f            ! Fermi velocity parameter for dispersion relation
+   integer, intent(in) :: E0_model       ! whilch model to use for the extension of the dielectric functions
+   logical, intent(in), optional :: photon
+   real(8), intent(out), optional :: ReL, ImL   ! real and imaginary parts of the loss function, if required
+   !-----------------------
+   real(8) :: ImE, ReE, den, Q, Ekin, eps, M_in, mass_temp
+   logical :: it_is_photon, this_shell_contributes
+   real(8), dimension(:), pointer :: A, E0, Gamma
+
+
+   eps = 1.0d-9
+
+   if (present(photon)) then ! it may be a photon
+      it_is_photon = photon
+   else ! by default, it is not a photon
+      it_is_photon = .false.
+   endif
+
+   Part_CDF = dcmplx(1.0d0,0.0d0)  ! to start with
+   this_shell_contributes = .true. ! default
+
+   ! For core shells, there is no CDF below the ionization potential:
+   ! check if it is not valence/conduction band:
+   if ( (Nat == 0) .or. (Nshl == 0) ) then ! valence
+      if (allocated(Material%CDF_valence%A)) then
+         A => Material%CDF_valence%A
+         E0 => Material%CDF_valence%E0(:)
+         Gamma => Material%CDF_valence%Gamma(:)
+      else
+         print*, "ERROR in construct_CDF, valence CDF called but not provided"
+      endif
+   else !if (.not.Material%Elements(Nat)%valent(Nshl)) then ! core shell
+      A => Material%Elements(Nat)%CDF(Nshl)%A(:)
+      E0 => Material%Elements(Nat)%CDF(Nshl)%E0
+      Gamma => Material%Elements(Nat)%CDF(Nshl)%Gamma(:)
+
+      ! check if this shell can contribute:
+      Q = (g_h*hq)**2 / (2.0d0*g_me)
+      if (hw+Q <= Material%Elements(Nat)%Ip(Nshl) ) then  ! (energy+recoin energy) below Ip, no CDF contribution
+         this_shell_contributes = .false.
+      else
+         this_shell_contributes = .true.
+      endif
+   endif
+
+   if (this_shell_contributes) then ! this shell contributes into CDF:
+      ! CDF oscillator parameters:
+
+      ! Mass of the scatterign center:
+      if (Mass > eps) then ! given mass
+         M_in = Mass
+      else  ! hole effective mass from DOS
+         Ekin = hw  ! Approximation/placeholder
+         call interpolate_data_single(Material%DOS%E, Material%DOS%Eff_m, (Material%DOS%E_VB_top - Ekin), mass_temp) ! module "Little_subroutines"
+         M_in = mass_temp * g_me
+      endif
+
+
+      ! 1) Get full Ritchie-Howie Im(-1/e(w,q)):
+      ImE = Diel_func(A, E0, Gamma, hw, hq, v_f, E0_model, Mass) ! below
+
+      ! 2) Constructs full Re(-1/e(w,q)) from Ritchie-Howie Im(-1/e(w,q)):
+      ReE = Reewq(A, E0, Gamma, hw, hq, Mass, v_f, E0_model, it_is_photon)  ! below
+
+      ! 3) Construct the CDF from Re(-1/e) and Im(-1/e):
+      den = ReE**2 + ImE**2   ! denominator in both, real and imaginary parts
+
+      if (abs(den) > 1.0d-12) then
+         Part_CDF = dcmplx(-ReE/den, ImE/den)   ! partial complex CDF for this shell, reconstructed from Ritchie-Howie loss function
+      else  ! no CDF
+         Part_CDF = dcmplx(1.0d0, 0.0d0)
+      endif
+      if (present(ReL)) ReL = ReE
+      if (present(ImL)) ImL = ImE
+   else
+      if (present(ReL)) ReL = -1.0d0
+      if (present(ImL)) ImL = 0.0d0
+   endif
+
+   nullify(A, E0, Gamma)
+end subroutine construct_CDF
+
+
+
+
+! Constructs full Re(-1/e(w,q)) from Ritchie-Howie Im(-1/e(w,q)):
+pure function Reewq(A, E, Gamma, hw, hq, Mass, v_f, E0_model, photon) result(ReE)
+    real(8) :: ReE   ! Real part Re(-1/e(w,q)) corresponding to the fitted loss function Im(-1/e(w,q))
+    real(8), dimension(:), intent(in) :: A, E, Gamma     ! CDF parameters
+    real(8), intent(in) :: hw    ! transferred energy [eV]
+    real(8), intent(in) :: hq    ! transferred momentum [sqrt(eV/J) /m] (not [kg*m/s] !)
+    real(8), intent(in), optional :: v_f            ! Fermi velocity parameter for dispersion relation
+    real(8), intent(in), optional :: Mass           ! Target scattering center mass
+    integer, intent(in), optional :: E0_model       ! whilch model to use for the extension of the dielectric functions
+    logical, intent(in), optional :: photon         ! is it photon?
+    !------------------
+    !real(8), pointer :: A, Gamma, E ! no need to copy variable, just point onto it!
+    real(8) sumf, Mtarget, v_fermi
+    integer i, N, E0_mod
+    logical :: it_is_photon
+
+    if (present(photon)) then ! it may be a photon
+       it_is_photon = photon
+    else ! by default, it is not a photon
+       it_is_photon = .false.
+    endif
+
+    if (present(Mass)) then
+        Mtarget = Mass
+    else ! assume electron
+        Mtarget = g_me
+    endif
+
+    if (present(v_f)) then
+       v_fermi = v_f
+    else    ! default, do not use this dispersion
+       v_fermi = 0.0d0
+    endif
+
+    if (present(E0_model)) then
+        E0_mod = E0_model
+    else    ! default
+        E0_mod = 0
+    endif
+
+    N = size(A)  ! number of oscillators
+    ReE = 0.0e0
+    do i = 1, N !Nff_esh(Nosh)
+        ! Single oscillator contribution:
+        sumf = One_Reewq(A(i), E(i), Gamma(i), hw, hq, it_is_photon, Mtarget, v_fermi, E0_mod) ! below
+        ! Sum them all up:
+        ReE = ReE + sumf
+    enddo
+    ! Combine all into full Re(-1/e(w,q)) = -(1 - sum(ReE_i)):
+    ReE = -(1.0d0 - ReE)
+end function Reewq
+
+
+pure function One_Reewq(A, E, Gamma, dE, dq, photon, Mtarget, v_fermi, E0_model) result(ReEps)     ! fit functions in Ritchie algorithm
+   real(8) ReEps    ! to be constructed
+   real(8), intent(in) :: A, E, Gamma, dE, dq   ! parameters and variable
+   logical, intent(in) :: photon      ! for photon always q=0
+   real(8), intent(in) :: Mtarget     ! [kg] target atoms mass
+   real(8), intent(in) :: v_fermi     ! Fermi velocity parameter
+   integer, intent(in) :: E0_model       ! whilch model to use for the extension of the dielectric functions
+   !------------------------
+   real(8) E0                      ! temporary parameter
+   real(8) qlim, EEE, sqq, Mass, Ef_m, Gamma1, hq2, dE2, E02
+   integer i, j
+   logical :: it_is_photon
+
+   it_is_photon = photon
+   Mass = Mtarget
+
+   phot:if (it_is_photon) then ! it's a photon:
+      Gamma1 = Gamma
+      E0 = E
+   else phot ! an electron:
+      hq2 = g_h*g_h*dq*dq
+
+      ! Get the oscillator parameters:
+      call Extend_E0_to_finite_q(E0, Gamma1, E, Gamma, hq2, dq, it_is_photon, Mass, v_fermi, E0_model) ! below
+
+   endif phot
+
+   dE2 = dE*dE
+   E02 = E0*E0
+
+   ! Part of Re(-1/e) = -(1 - ReEps) from the Ritchie-Howie model loss function:
+   ReEps = A*(E02 - dE2)/((dE2 - E02)**2 + (Gamma1**2)*dE2)
+end function One_Reewq
+
+
+pure subroutine Extend_E0_to_finite_q(E0, Gamma1, E, Gamma, hq2, dq, photon, Mtarget, v_fermi, E0_model)
+   real(8), intent(out) :: E0, Gamma1  ! coefficients extended to finite q
+   real(8), intent(in) ::  E, Gamma, hq2, dq
+   logical, intent(in) :: photon      ! for photon always q=0
+   real(8), intent(in) :: Mtarget     ! [kg] target atoms mass
+   real(8), intent(in) :: v_fermi     ! Fermi velocity parameter
+   integer, intent(in) :: E0_model       ! whilch model to use for the extension of the dielectric functions
+   !-----------
+   integer :: j
+   real(8) :: Mass, sqq, qlim
+
+
+    sqq = hq2/(2.0d0*Mtarget)
+
+    select case(E0_model)
+    case(1) ! free electron dispersion relation
+         E0 = E + sqq
+         Gamma1 = Gamma
+    case(2) ! Plasmon-pole approximation
+         E0 = sqrt(E*E + (v_fermi**2)*hq2*0.3333333333333d0 + sqq*sqq)
+         Gamma1 = Gamma
+    case(3) ! Extended dielectric model of Ritchie
+         !E0 = (E**(2.0d0/3.0d0) + (sqq)**(2.0d0/3.0d0))**(3.0d0/2.0d0)
+         E0 = (E**(0.666666666666d0) + (sqq)**(0.666666666666d0))**1.5d0
+         Gamma1 = sqrt(Gamma*Gamma + sqq*sqq)
+    case default ! free electron by default
+         E0 = E + sqq
+         Gamma1 = Gamma
+    end select
+
+end subroutine Extend_E0_to_finite_q
+
+
 
 pure function Diel_func(A, E, Gamma, hw, hq, v_f, E0_model, Mass) result(f) ! full CDF as sum of single scillators
    real(8) :: f     ! full CDF as a sum of individual functions
