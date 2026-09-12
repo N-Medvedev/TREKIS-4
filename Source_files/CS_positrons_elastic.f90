@@ -269,7 +269,8 @@ subroutine get_pos_elastic_CS(Ee, Material, Element, numpar, sigma, mu_max_in, E
    case (1,5)     ! CDF
       ! Target mean atomic number:
       if (numpar%CDF_elast_Zeff /= 1) then
-         Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, Material%Mean_Z, (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
+         !Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, Material%Mean_Z, (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
+         Zeff = 1.0d0 + Equilibrium_charge_SHI(Ee, g_me, (Material%Mean_Z-1.0d0), (Material%Mean_Z-1.0d0), 0, 1.0d0) ! module "SHI_charge_state"
       else
          Zeff = 1.0d0    ! electron charge
       endif

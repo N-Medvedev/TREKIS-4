@@ -88,7 +88,7 @@ character(100) :: m_output_MD_displacements
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 28.07.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 08.09.2026)'
 
 
 ! All output file names:
@@ -4979,7 +4979,7 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    type(MD_potential), dimension(:,:), intent(inout), allocatable :: MD_pots    ! MD potentials for each kind of atom-atom interactions
    logical, intent(in) :: do_lable  ! printout lable or not
    !------------------------
-   integer i , Nsiz, j, k
+   integer i , Nsiz, j, k, n_th
    character(100) :: text, text1, text2, text3
    logical :: MC_output, MD_output
    !------------------------
@@ -5085,7 +5085,9 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
 
 #ifdef _OPENMP
    write(text1,'(i10)') numpar%NOMP
-   write(print_to,'(a,a)') ' Number of threads for OPENMP: ', trim(adjustl(text1))
+   n_th = omp_get_max_threads()
+   write(text2,'(i10)') n_th
+   write(print_to,'(a,a)') ' Number of threads for OPENMP, requested: ', trim(adjustl(text1))//' used: '//trim(adjustl(text1))
 #else ! if you set to use OpenMP in compiling: 'make OMP=no'
    write(print_to,'(a)') ' The code is compiled without OPENMP'
 #endif

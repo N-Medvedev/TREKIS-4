@@ -972,6 +972,21 @@ subroutine elastic_energy_transfer(numpar, Prtcl, matter, KOA, dE, theta)
 !       print*, 'mu', mu, Prtcl%Ekin, dE, E_left, CS_sampled, CS_tot
       theta = acos(mu)
 
+      ! Identify atom from stoicheometry:
+      call random_number(RN)   ! intrinsic FORTRAN subroutine
+      ! Find which of the partial cross sections correspond to the sampled one:
+      CS_sum = 0.0d0   ! to start with
+      N_elem = dble(SUM(matter%Elements(:)%percentage))   ! number of elements in this compound material
+      do j =1, matter%N_Elements-1     ! for each element, expect for the last one
+         Element => matter%Elements(j)          ! all information about this element
+         elem_contrib = dble(Element%percentage)/N_elem   ! element contribution to this compound (e.g. in SiO2: it is 1/3 of Si, 2/3 of O)
+         CS_sum = CS_sum + elem_contrib
+         if (CS_sum > RN) then
+            KOA = j
+            exit  ! found element, exit search
+         endif
+      enddo
+
    case (2)  ! Mott
    
       ! 1) Select the element the electron scatters on:
@@ -1021,6 +1036,7 @@ subroutine elastic_energy_transfer(numpar, Prtcl, matter, KOA, dE, theta)
    case default ! no scattering
       dE = 0.0d0
       theta = 0.0d0
+      KOA = 0
    end select
 
    nullify(Element)
