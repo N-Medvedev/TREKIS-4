@@ -7,7 +7,7 @@ available at: https://github.com/N-Medvedev/TREKIS-4
 This module is written by N. Medvedev
 in 2026
 -----------------------------------
-Standalone script to batch parse TREKIS 1D distribution files in a directory 
+Standalone script to batch parse TREKIS 1D distribution files in a directory
 and generate MP4 animations showing the evolution across time steps for each spatial bin.
 Scans exclusively for .dat files containing 'spectrum_1d_[axis]' or 'velocity_theta_distr_1d_[axis]'.
 Supports configurable linear or logarithmic scales for X and Y axes with automatic detection.
@@ -30,7 +30,7 @@ import pandas as pd
 FILE_PATTERN = re.compile(r"(spectrum_1d_\w+|velocity_theta_distr_1d_\w+).*\.dat$", re.IGNORECASE)
 
 
-def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", yscale="auto"):
+def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", yscale="auto", ext="mp4"):
     """Parses a single 1D distribution file and generates an MP4 animation for each spatial bin."""
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
@@ -118,7 +118,7 @@ def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", ysca
     if len(col_names) > 2:
         raw_dist = col_names[2].replace("_", " ")
         base_dist_name = re.sub(r"\b(space\s+)?[xyzr]\b", f"space {axis_name.upper()}", raw_dist, flags=re.IGNORECASE)
-    
+
     dist_label = f"{base_dist_name} ({axis_name.upper()})" if "space" not in base_dist_name.lower() else base_dist_name
     time_unit = f" {col_units[0]}" if len(col_units) > 0 else ""
 
@@ -135,7 +135,7 @@ def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", ysca
 
     # Determine global axis limits for consistent animation scaling across time steps
     x_min, x_max = df[col_names[1]].min(), df[col_names[1]].max()
-    
+
     bin_cols = [f"Bin_{i+1}" for i in range(num_bins)]
     y_min = df[bin_cols].min().min()
     y_max = df[bin_cols].max().max()
@@ -184,7 +184,7 @@ def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", ysca
             y_min_lim = y_min - 0.05 * y_range
             y_max_lim = y_max + 0.1 * y_range
             ax.set_ylim(y_min_lim, y_max_lim)
-        
+
         # Initialize line object for animation
         (line,) = ax.plot([], [], lw=2, color='tab:blue')
 
@@ -204,7 +204,7 @@ def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", ysca
             sub_df = df[df[col_names[0]] == t]
             x_data = sub_df[col_names[1]]
             y_data = sub_df[bin_col]
-            
+
             line.set_data(x_data, y_data)
             title_text.set_text(f"{bin_titles[bin_idx]}\nt = {t}{time_unit}")
             return line, title_text
@@ -213,7 +213,7 @@ def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", ysca
             fig, update, init_func=init, frames=len(unique_times), interval=1000/fps, blit=True
         )
 
-        save_filename = f"{base_name}_bin_{bin_idx+1}.mp4"
+        save_filename = f"{base_name}_bin_{bin_idx+1}.{ext}"
         out_path = (
             os.path.join(output_dir, save_filename)
             if output_dir
@@ -235,7 +235,7 @@ def parse_and_animate_file(filepath, output_dir=None, fps=5, xscale="auto", ysca
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Automatically find and create MP4 animations for 1D spectra/velocity data files in a folder."
+        description=f"Automatically find and create animations for 1D spectra/velocity data files in a folder."
     )
     parser.add_argument(
         "-d",
@@ -249,13 +249,13 @@ def main():
         "--output-dir",
         type=str,
         default=None,
-        help="Directory to save generated MP4 videos (default: same directory as data files)",
+        help="Directory to save generated videos (default: same directory as data files)",
     )
     parser.add_argument(
         "--fps",
         type=int,
         default=5,
-        help="Frames per second for the output MP4 videos (default: 5)",
+        help="Frames per second for the output videos (default: 5)",
     )
     parser.add_argument(
         "--xscale",
@@ -271,6 +271,12 @@ def main():
         default="auto",
         help="Y-axis scale ('auto' switches to log if range > 1e4 and values are positive)",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="mp4",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
 
@@ -283,7 +289,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     matched_files = [
-        f for f in os.listdir(target_dir) 
+        f for f in os.listdir(target_dir)
         if f.lower().endswith(".dat") and FILE_PATTERN.search(f)
     ]
 
@@ -296,7 +302,7 @@ def main():
     for fname in matched_files:
         print(f"\nProcessing animation for: {fname}")
         file_path = os.path.join(target_dir, fname)
-        parse_and_animate_file(file_path, output_dir=out_dir, fps=args.fps, xscale=args.xscale, yscale=args.yscale)
+        parse_and_animate_file(file_path, output_dir=out_dir, fps=args.fps, xscale=args.xscale, yscale=args.yscale, ext=args.ext)
 
     print("\nBatch video creation complete.")
 

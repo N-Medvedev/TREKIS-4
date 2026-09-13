@@ -3,7 +3,7 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2015-2021
+! in 2015-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains useful universal-purpuse subroutines
 
@@ -73,9 +73,52 @@ end interface grid_count
 
 
 ! private :: ! hides items not listed on public statement 
-public :: Find_in_array, Find_in_array_monoton, extend_array_size, find_order_of_number, sort_array_bubble, extend_array_size_by_one, print_error
+public :: Find_in_array, Find_in_array_monoton, extend_array_size, find_order_of_number, sort_array_bubble, &
+            extend_array_size_by_one, print_error, call_python
 
  contains
+
+
+
+
+
+subroutine call_python(path_sep, path_to_MFP, python_script, add)
+   character(*), intent(in) :: path_sep, path_to_MFP, python_script, add
+   !----------------
+   character(1000) :: command
+   character(10) :: python_call
+   integer :: status
+
+
+   call define_python_call(path_sep, python_call) ! below
+
+   command = trim(adjustl(python_call))//" PLOTTING_SCRIPTS"//trim(adjustl(path_sep))//     &
+             trim(adjustl(python_script))//" -d "//trim(adjustl(path_to_MFP))//' '//trim(adjustl(add))
+
+   ! Run the Python script with arguments
+   call execute_command_line(trim(adjustl(command)), exitstat=status)
+
+   if (status /= 0) then
+      print *, "Error: Python script failed with status", status
+   else
+      !print *, "Python script executed successfully."
+   end if
+
+   !pause "call_python"
+end subroutine call_python
+
+
+subroutine define_python_call(path_sep, py_call)
+   character(*), intent(in) :: path_sep
+   character(*), intent(out) :: py_call
+
+   if (path_sep .EQ. '\') then	! if it is Windows
+      py_call = 'python '
+   else ! It is linux
+      py_call = 'python3 '
+   endif
+end subroutine define_python_call
+
 
 
 subroutine print_error(text_to_print, print_to) ! wrapper for error message printout

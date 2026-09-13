@@ -65,7 +65,7 @@ def parse_1d_block_file(file_path):
     return df, col_names, col_units
 
 
-def animate_1d_histogram_file(out_folder, fname, fps=10, verbose=False, xscale="auto", yscale="auto"):
+def animate_1d_histogram_file(out_folder, fname, fps=10, verbose=False, xscale="auto", yscale="auto", ext="mp4"):
     file_path = os.path.join(out_folder, fname)
     df, col_names, col_units = parse_1d_block_file(file_path)
 
@@ -184,7 +184,7 @@ def animate_1d_histogram_file(out_folder, fname, fps=10, verbose=False, xscale="
         frames=len(grouped), interval=1000//fps, blit=False
     )
 
-    out_path = os.path.join(out_folder, f"{base_name}_histogram_anim.mp4")
+    out_path = os.path.join(out_folder, f"{base_name}_histogram_anim.{ext}")
 
     try:
         writer = animation.FFMpegWriter(fps=fps, metadata=dict(artist='Matplotlib'), bitrate=3000)
@@ -197,7 +197,7 @@ def animate_1d_histogram_file(out_folder, fname, fps=10, verbose=False, xscale="
         plt.close()
 
 
-def process_1d_directory_animations(directory_path='.', fps=10, xscale="auto", yscale="auto"):
+def process_1d_directory_animations(directory_path='.', fps=10, xscale="auto", yscale="auto", ext="mp4"):
     all_dat_files = glob.glob(os.path.join(directory_path, "*.dat"))
     target_files = []
 
@@ -223,7 +223,7 @@ def process_1d_directory_animations(directory_path='.', fps=10, xscale="auto", y
     print(f"Found {len(target_files)} 1D density/energy .dat file(s) to animate:")
     for file_path in target_files:
         fname = os.path.basename(file_path)
-        animate_1d_histogram_file(directory_path, fname, fps=fps, verbose=True, xscale=xscale, yscale=yscale)
+        animate_1d_histogram_file(directory_path, fname, fps=fps, verbose=True, xscale=xscale, yscale=yscale, ext=ext)
 
 
 if __name__ == "__main__":
@@ -256,6 +256,12 @@ if __name__ == "__main__":
         default="auto",
         help="Y-axis scale ('auto' switches to log if range > 1e4 and values are positive)",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="mp4",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
     target_dir = os.path.abspath(args.dir)
@@ -264,4 +270,4 @@ if __name__ == "__main__":
         print(f"Error: Directory '{target_dir}' does not exist.")
         sys.exit(1)
 
-    process_1d_directory_animations(target_dir, fps=args.fps, xscale=args.xscale, yscale=args.yscale)
+    process_1d_directory_animations(target_dir, fps=args.fps, xscale=args.xscale, yscale=args.yscale, ext=args.ext)

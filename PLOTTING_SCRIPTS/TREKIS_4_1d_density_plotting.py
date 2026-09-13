@@ -64,7 +64,7 @@ def parse_1d_block_file(file_path):
     return df, col_names, col_units
 
 
-def plot_1d_histogram_file(out_folder, fname, verbose=False, xscale="auto", yscale="auto"):
+def plot_1d_histogram_file(out_folder, fname, verbose=False, xscale="auto", yscale="auto", ext="png"):
     file_path = os.path.join(out_folder, fname)
     df, col_names, col_units = parse_1d_block_file(file_path)
 
@@ -168,7 +168,7 @@ def plot_1d_histogram_file(out_folder, fname, verbose=False, xscale="auto", ysca
     plt.title(title_label, wrap=True)
     plt.tight_layout()
 
-    out_path = os.path.join(out_folder, f"{base_name}_histogram_plot.png")
+    out_path = os.path.join(out_folder, f"{base_name}_histogram_plot.{ext}")
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
 
@@ -176,7 +176,7 @@ def plot_1d_histogram_file(out_folder, fname, verbose=False, xscale="auto", ysca
         print(f"Saved 1D histogram plot to: {out_path}")
 
 
-def process_1d_directory(directory_path='.', xscale="auto", yscale="auto"):
+def process_1d_directory(directory_path='.', xscale="auto", yscale="auto", ext="png"):
     all_dat_files = glob.glob(os.path.join(directory_path, "*.dat"))
     target_files = []
 
@@ -200,7 +200,7 @@ def process_1d_directory(directory_path='.', xscale="auto", yscale="auto"):
     print(f"Found {len(target_files)} 1D density/energy .dat file(s) to process as histograms:")
     for file_path in target_files:
         fname = os.path.basename(file_path)
-        plot_1d_histogram_file(directory_path, fname, verbose=True, xscale=xscale, yscale=yscale)
+        plot_1d_histogram_file(directory_path, fname, verbose=True, xscale=xscale, yscale=yscale, ext=ext)
 
 
 if __name__ == "__main__":
@@ -227,6 +227,12 @@ if __name__ == "__main__":
         default="auto",
         help="Y-axis scale ('auto' switches to log if ymax - ymin > 1e4 and values are positive)",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="png",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
     target_dir = os.path.abspath(args.dir)
@@ -235,4 +241,4 @@ if __name__ == "__main__":
         print(f"Error: Directory '{target_dir}' does not exist.")
         sys.exit(1)
 
-    process_1d_directory(target_dir, xscale=args.xscale, yscale=args.yscale)
+    process_1d_directory(target_dir, xscale=args.xscale, yscale=args.yscale, ext=args.ext)

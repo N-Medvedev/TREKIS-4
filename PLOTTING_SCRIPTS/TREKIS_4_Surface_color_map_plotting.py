@@ -28,6 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.colors as colors
+import argparse
 
 def parse_header(filename):
     """
@@ -137,7 +138,7 @@ def make_animation(data_index, cmap, norm, label, extent, frames, x_label, y_lab
     ani.save(outfile, fps=10, dpi=150)
     plt.close(fig)
 
-def plot_surface_file(filename, output_dir=None):
+def plot_surface_file(filename, output_dir=None, ext="mp4"):
     """
     Processes a single Surface file and outputs two MP4 videos (front and back).
     """
@@ -175,8 +176,8 @@ def plot_surface_file(filename, output_dir=None):
     norm_back = colors.Normalize(vmin=0, vmax=all_back_max)
 
     # Output paths for MP4s
-    front_outfile = os.path.join(output_dir, f"{base_name}_front.mp4")
-    back_outfile = os.path.join(output_dir, f"{base_name}_back.mp4")
+    front_outfile = os.path.join(output_dir, f"{base_name}_front.{ext}")
+    back_outfile = os.path.join(output_dir, f"{base_name}_back.{ext}")
 
     # Front surface video
     make_animation(
@@ -190,7 +191,9 @@ def plot_surface_file(filename, output_dir=None):
     )
     print(f"Saved: {back_outfile}")
 
-def process_directory(directory_path='.'):
+
+
+def process_directory(directory_path='.', out_ext=".mp4"):
     """
     Finds all 'OUTPUT_*Surface*.dat' files in the given directory and plots them.
     """
@@ -204,11 +207,47 @@ def process_directory(directory_path='.'):
     print(f"Found {len(target_files)} file(s) matching 'OUTPUT_*Surface*.dat':")
     for file_path in target_files:
         print(f"\nProcessing: {os.path.basename(file_path)}")
-        plot_surface_file(file_path, output_dir=directory_path)
+        plot_surface_file(file_path, output_dir=directory_path, ext=out_ext)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Parse TREKIS-4 2D surface files and generate animated videos.",
+        epilog="""Examples:
+            python trekis_surface_2d.py
+                -> Process current directory, save videos as MP4
+
+            python trekis_surface_2d.py --dir ./PyTREKIS_OUTPUT/run1 --ext .avi
+                -> Process run1 folder, save videos as AVI
+
+            python trekis_surface_2d.py --dir ./data --ext .mkv
+                -> Process ./data, save videos as MKV
+            """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        "--dir", "-d",
+        type=str,
+        default=".",
+        help="Directory to scan for OUTPUT_*Surface*.dat files (default: current directory)."
+    )
+    parser.add_argument(
+        "--ext", "-ext",
+        type=str,
+        default=".mp4",
+        help="Output video file extension (default: .mp4)."
+    )
+
+    args = parser.parse_args()
+
+    target_dir = os.path.abspath(args.dir)
+    if not os.path.isdir(target_dir):
+        print(f"Error: Directory '{target_dir}' does not exist.")
+        return
+
+    process_directory(directory_path=target_dir, out_ext=args.ext)
 
 if __name__ == "__main__":
-    import sys
+    main()
 
-    # Allow passing directory via command line argument, defaulting to current folder
-    target_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
-    process_directory(target_dir)

@@ -7,14 +7,26 @@ available at: https://github.com/N-Medvedev/TREKIS-4
 This module is written by N. Medvedev
 in 2026
 -----------------------------------
-Standalone script to plot processed DOS and effective mass
-calculated within the effective one-band approximation.
+TREKIS-4 DOS Plotting Utility
 
+Standalone script to parse processed DOS files and plot valence/conduction bands
+together with effective mass (one-band approximation).
 
 Usage:
+    python parse_dos_line.py [options]
+
+Examples:
     python parse_dos_line.py
+        -> Scan current directory, save plots as PNG
+
+    python parse_dos_line.py --dir ./PyTREKIS_OUTPUT/run1 --ext .pdf
+        -> Scan run1 folder, save plots as PDF
+
+    python parse_dos_line.py --dir ./data --ext .png --verbose
+        -> Scan ./data, save plots as PNG, with verbose output
 """
 
+import argparse
 import os
 import glob
 import re
@@ -35,24 +47,24 @@ def parse_dos_line(line_str):
     # Regex fallback for scientific notation numbers without clear spacing
     float_pattern = r'[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?'
     matches = re.findall(float_pattern, line_str)
-    
+
     if len(matches) >= 4:
         return float(matches[0]), float(matches[1]), float(matches[3])
     elif len(matches) == 3:
         return float(matches[0]), float(matches[1]), float(matches[2])
-    
+
     return None, None, None
 
 def parse_dos_file(file_path):
     """
     Parses a DOS data file containing columns:
     E, DOS, k, me_eff
-    
+
     Excludes effective mass values greater than 100 (or less than -100).
     """
     val_E, val_DOS, cond_E, cond_DOS = [], [], [], []
     val_effm_E, val_effm_vals, cond_effm_E, cond_effm_vals = [], [], [], []
-    
+
     mode = None
     has_explicit_modes = False
 
@@ -67,7 +79,7 @@ def parse_dos_file(file_path):
 
     for line in lines:
         line_str = line.strip()
-        
+
         if line_str.startswith("# --- Valence"):
             mode = "valence"
             continue
@@ -101,7 +113,7 @@ def parse_dos_file(file_path):
                 cond_effm_E.append(e)
                 cond_effm_vals.append(effm)
 
-    return (val_E, val_DOS, cond_E, cond_DOS, 
+    return (val_E, val_DOS, cond_E, cond_DOS,
             val_effm_E, val_effm_vals, cond_effm_E, cond_effm_vals)
 
 def plot_processed_dos(out_folder, fname, file_label, out_name, out_extension=".png", verbose=False):
@@ -113,7 +125,7 @@ def plot_processed_dos(out_folder, fname, file_label, out_name, out_extension=".
     if verbose:
         print("DOS plotting:", out_folder, fname)
 
-    (val_E, val_DOS, cond_E, cond_DOS, 
+    (val_E, val_DOS, cond_E, cond_DOS,
      val_effm_E, val_effm_vals, cond_effm_E, cond_effm_vals) = parse_dos_file(file_path)
 
     if not val_E and not cond_E:
@@ -127,7 +139,7 @@ def plot_processed_dos(out_folder, fname, file_label, out_name, out_extension=".
         ax1.plot(val_E, val_DOS, color="skyblue", lw=1.5, label="Valence DOS")
     if cond_E:
         ax1.plot(cond_E, cond_DOS, color="orange", lw=1.5, label="Conduction DOS")
-    
+
     ax1.set_xlabel("Energy (eV)")
     ax1.set_ylabel("DOS (states/eV)")
     ax1.grid(False)
@@ -140,13 +152,14 @@ def plot_processed_dos(out_folder, fname, file_label, out_name, out_extension=".
             ax2.plot(val_effm_E, val_effm_vals, color="blue", ls="--", lw=1.2, label="Valence m*")
         if cond_effm_vals:
             ax2.plot(cond_effm_E, cond_effm_vals, color="red", ls="--", lw=1.2, label="Conduction m*")
-        
+
         ax2.set_ylabel("Effective mass ($m_e$)")
 
         # Combine legends
         lines1, labels1 = ax1.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper right", fontsize=8)
+        #ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper right", fontsize=8)
+        ax1.legend(lines1 + lines2, labels1 + labels2, loc="best", fontsize=8)
     else:
         ax1.legend(loc="best", fontsize=8)
 
@@ -160,18 +173,18 @@ def plot_processed_dos(out_folder, fname, file_label, out_name, out_extension=".
     if verbose:
         print(f" Saved DOS plot to: {out_path}")
 
-def process_directory(directory_path='.'):
+
+
+def process_directory(directory_path='.', out_ext=".png", verbose=False):
     """
     Finds all matching DOS text/dat files in the directory and plots them.
-    Excludes image and video files.
     """
     patterns = ["*DOS*.dat", "*DOS*.txt", "OUTPUT_DOS_*"]
     target_files = []
-    
+
     for pat in patterns:
         target_files.extend(glob.glob(os.path.join(directory_path, pat)))
-    
-    # Filter out generated images/videos from matching list
+
     ignore_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.mp4', '.avi')
     target_files = [f for f in set(target_files) if not f.lower().endswith(ignore_extensions)]
     target_files = sorted(target_files)
@@ -184,22 +197,64 @@ def process_directory(directory_path='.'):
     for file_path in target_files:
         fname = os.path.basename(file_path)
         base_name = os.path.splitext(fname)[0]
-        
-        # Clean title string: "OUTPUT_DOS_of_Al" -> "DOS of Al"
+
         clean_label = base_name.replace("OUTPUT_", "").replace("_", " ")
         if clean_label.startswith("DOS DOS"):
             clean_label = clean_label.replace("DOS DOS", "DOS")
-            
+
         plot_processed_dos(
             out_folder=directory_path,
             fname=fname,
             file_label=clean_label,
             out_name=f"{base_name}_plot",
-            out_extension=".png",
-            verbose=True
+            out_extension=out_ext,
+            verbose=verbose
         )
 
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Parse DOS files and plot valence/conduction bands with effective mass.",
+        epilog="""Examples:
+  python parse_dos_line.py
+      -> Scan current directory, save plots as PNG
+
+  python parse_dos_line.py --dir ./PyTREKIS_OUTPUT/run1 --ext .pdf
+      -> Scan run1 folder, save plots as PDF
+
+  python parse_dos_line.py --dir ./data --ext .png --verbose
+      -> Scan ./data, save plots as PNG, with verbose output
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        "--dir", "-d",
+        type=str,
+        default=".",
+        help="Directory to scan for DOS files (default: current directory)."
+    )
+    parser.add_argument(
+        "--ext", "-ext",
+        type=str,
+        default=".png",
+        help="Output file extension (default: .png)."
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose output."
+    )
+
+    args = parser.parse_args()
+
+    target_dir = os.path.abspath(args.dir)
+    if not os.path.isdir(target_dir):
+        print(f"Error: Directory '{target_dir}' does not exist.")
+        return
+
+    process_directory(directory_path=target_dir, out_ext=args.ext, verbose=args.verbose)
+
+
 if __name__ == "__main__":
-    import sys
-    target_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
-    process_directory(target_dir)
+    main()

@@ -123,10 +123,10 @@ def read_mfp_file(filepath):
     return np.array(energies), np.array(values)
 
 
-def process_directory(source_dir, output_dir, show_plots):
+def process_directory(source_dir, output_dir, ext: str="png", show_plots: bool = False):
     """Processes MFP files inside a specific directory and saves summary plots."""
     all_files = [f for f in os.listdir(source_dir) if f.lower().endswith(".dat") and f.startswith("OUTPUT_")]
-    
+
     parsed_files = []
     for f in all_files:
         info = parse_filename(f)
@@ -188,7 +188,7 @@ def process_directory(source_dir, output_dir, show_plots):
         
         plt.tight_layout()
 
-        save_filename = f"Mean_free_paths_{particle}_{material_name}.png"
+        save_filename = f"Mean_free_paths_{particle}_{material_name}.{ext}"
         out_path = os.path.join(output_dir, save_filename)
         plt.savefig(out_path, dpi=300)
         print(f"  -> Saved MFP plot: {out_path}")
@@ -216,6 +216,12 @@ def main():
         help="Directory to save generated plots",
     )
     parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="png",
+        help="Extension of the plots to be created",
+    )
+    parser.add_argument(
         "--show",
         action="store_true",
         help="Display interactive plot windows",
@@ -239,12 +245,12 @@ def main():
             print(f"\nProcessing directory: {sub_d}")
             out_d = os.path.abspath(args.output_dir) if args.output_dir else sub_d
             os.makedirs(out_d, exist_ok=True)
-            process_directory(sub_d, out_d, args.show)
+            process_directory(sub_d, out_d, args.ext, args.show)
     else:
         print(f"No directories matching 'MFPs_and_Ranges_in_*' found inside {target_dir}. Scanning target directory directly.")
         out_dir = os.path.abspath(args.output_dir) if args.output_dir else target_dir
         os.makedirs(out_dir, exist_ok=True)
-        process_directory(target_dir, out_dir, args.show)
+        process_directory(target_dir, out_dir, args.ext, args.show)
 
     print("\nMFP plotting complete.")
 

@@ -416,6 +416,11 @@ type gnu_par
    character(100) :: gnu_terminal
 end type gnu_par
 
+type py_par
+   logical :: do_python_figs, do_python_videos
+   character(10) :: fig_extension, video_extension
+end type py_par
+
 
 
 !==============================================
@@ -600,6 +605,7 @@ type Num_par
 
    ! OUTPUT PRINTOUT:
    type(gnu_par) :: gnupl       ! parameters for gnuplotting
+   type(py_par) :: py_plot      ! parameters for python plotting
    logical :: printout_DOS      ! user defines to printout analyzed DOS and related parameters or not
    logical :: printout_MFPs     ! user defines to printout analytical particles mean free paths or not
    logical :: printout_ranges   ! user defines to printout analytical particles ranges or not

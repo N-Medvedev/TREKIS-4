@@ -292,6 +292,8 @@ write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
 
 ! Execute all gnuplot scripts to plot the data user requested to:
 if (g_numpar%gnupl%do_gnuplot) call execute_all_gnuplots(g_numpar) ! module "Output"
+! All call for python plotting scripts:
+call execute_all_pythons(g_numpar) ! module "Output"
 
 !--------------------------------------------------------------
 ! Finilize simulation run:

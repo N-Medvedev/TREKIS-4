@@ -22,7 +22,7 @@ use Dealing_with_files, only: copy_file, close_file, get_file_stat, Count_lines_
 use Dealing_with_XYZ_files, only: write_XYZ
 use Dealing_with_LAMMPS, only: Write_LAMMPS_input_file
 use Gnuplotting
-use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy, m_starline, m_dashline
+use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy, m_starline, m_dashline, call_python
 use Read_input_data, only: m_input_minimal, m_input_data, m_numerical_parameters, m_input_folder, m_databases, &
                            m_EADL, m_EPDL
 use Periodic_table, only : Atomic_data, Read_from_periodic_table
@@ -87,8 +87,18 @@ character(100) :: m_output_MD_LAMMPS
 character(100) :: m_output_MD_displacements
 
 
+! Python plotting script names:
+character(100) ::   m_python_MFP, m_python_Se, &
+                    m_python_DOS, m_totals, &
+                    m_python_1d_counts_fig, m_python_1d_counts_vid, &
+                    m_python_1d_density_fig, m_python_1d_density_vid, &
+                    m_python_1d_spectra_fig, m_python_1d_spectra_vid, &
+                    m_python_surface_3d, m_python_surface_colormap, &
+                    m_python_time_dependencies_fig, m_python_time_dependencies_video
+
+
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 08.09.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 13.09.2026)'
 
 
 ! All output file names:
@@ -236,6 +246,23 @@ parameter (m_output_annihil = 'OUTPUT_Annihilation_MFPs_')
 parameter (m_output_Range = 'OUTPUT_Ranges_')
 parameter (m_output_Se = 'OUTPUT_Stopping_')
 parameter (m_output_Se_vs_range = 'OUTPUT_Se_vs_range_')
+!ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+parameter (m_python_MFP = 'TREKIS_4_mean_free_paths_plotting.py')
+parameter (m_python_Se = 'TREKIS_4_stopping_and_range.py')
+parameter (m_python_DOS = 'TREKIS_4_DOS_plotting.py')
+parameter (m_totals = 'TREKIS_4_totals_plotting.py')
+parameter (m_python_1d_counts_fig = 'TREKIS_4_1d_counts_plotting.py')
+parameter (m_python_1d_counts_vid = 'TREKIS_4_1d_counts_video.py')
+parameter (m_python_1d_density_fig = 'TREKIS_4_1d_density_plotting.py')
+parameter (m_python_1d_density_vid = 'TREKIS_4_1d_density_video.py')
+parameter (m_python_1d_spectra_fig = 'TREKIS_4_1d_spectra_plotting.py')
+parameter (m_python_1d_spectra_vid = 'TREKIS_4_1d_spectra_video.py')
+parameter (m_python_surface_3d = 'TREKIS_4_Surface_3d_surface_plotting.py')
+parameter (m_python_surface_colormap = 'TREKIS_4_Surface_color_map_plotting.py')
+parameter (m_python_time_dependencies_fig = 'TREKIS_4_time_dependencies_plotting.py')
+parameter (m_python_time_dependencies_video = 'TREKIS_4_time_dependencies_video.py')
+
+
 
 
  contains
@@ -3108,10 +3135,33 @@ subroutine print_MFPs(used_target, numpar, bunch)    ! create all output files
    type(Matter), intent(in) :: used_target      ! parameters of the target
    type(Num_par), intent(in) :: numpar    ! all numerical parameters
    type(Radiation_param), dimension(:), intent(in) :: bunch	! incomming radiation
+   !-------------
+   character(300) :: path_to_MFP, file_extension
+   integer :: i
+
    ! All MFPs:
    call printout_MFPs(used_target, numpar, bunch)  ! below
    ! All Ranges:
    call printout_Se_and_ranges(used_target, numpar, bunch)  ! below
+
+
+   ! Python potting of MFP files:
+   if (numpar.py_plot.do_python_figs) then
+
+      file_extension = "-ext "//numpar%py_plot%fig_extension
+
+      ! Prepare file with the data output:
+      TRGT:do i = 1, used_target%NOC ! for all targets
+        path_to_MFP = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_folder_MFP))//trim(adjustl(used_target%Material(i)%Name))
+
+        ! Plot all MFPs:
+        call call_python(numpar%path_sep, path_to_MFP, m_python_MFP, trim(adjustl(file_extension)))    ! module "Little_subroutines"
+        ! Plot all Se and ranges:
+        call call_python(numpar%path_sep, path_to_MFP, m_python_Se, trim(adjustl(file_extension)))     ! module "Little_subroutines"
+
+    enddo TRGT
+   endif
+
 end subroutine print_MFPs
 
 
@@ -4324,7 +4374,7 @@ subroutine printout_MFPs(used_target, numpar, bunch)
          !------------------------------------------------
 
       enddo TRGT ! for all targets
-   endif
+   endif ! only if user requested
    
    nullify(E, path_sep, Element)
 end subroutine printout_MFPs
@@ -4719,6 +4769,47 @@ subroutine gnuplot_DOS_m_eff(used_target, numpar)
    endif
 end subroutine gnuplot_DOS_m_eff
 
+
+
+!===================================================
+! Python scripts for plotting:
+subroutine execute_all_pythons(numpar, out_path)
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   character(*), intent(in), optional :: out_path    ! folder with the cmd-files
+   !--------------------------
+   character(1000) :: output_path, file_extension
+
+   if (present(out_path)) then  ! if user provided the folder name:
+      output_path = out_path
+   else ! if not, by default use the main output folder:
+      output_path = numpar%output_path
+   endif
+
+   ! Python plots:
+   if (numpar%py_plot%do_python_figs) then ! call all python plotting scripts:
+      file_extension = "-ext "//numpar%py_plot%fig_extension
+      ! call_python is from module "Little_subroutines":
+      call call_python(numpar%path_sep, output_path, m_python_DOS, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_totals, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_1d_counts_fig, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_1d_density_fig, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_1d_spectra_fig, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_time_dependencies_fig, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_time_dependencies_fig, trim(adjustl(file_extension)))
+   endif
+
+   ! Python videos:
+   if (numpar%py_plot%do_python_videos) then ! call all python plotting scripts:
+      file_extension = "-ext "//numpar%py_plot%video_extension
+      ! call_python is from module "Little_subroutines":
+      call call_python(numpar%path_sep, output_path, m_python_1d_counts_vid, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_1d_density_vid, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_1d_spectra_vid, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_surface_3d, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_surface_colormap, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_time_dependencies_video, trim(adjustl(file_extension)))
+   endif
+end subroutine execute_all_pythons
 
 
 !===================================================
