@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+0000000000000000000000000000000000000000000000000000000000000
+This file is part of TREKIS-4
+available at: https://github.com/N-Medvedev/TREKIS-4
+1111111111111111111111111111111111111111111111111111111111111
+This module is written by N. Medvedev
+in 2026
+-----------------------------------
 Standalone script to batch parse TREKIS mean free path (IMFP/MFP) files with varied naming conventions, 
 group them by particle type, prioritize total files, exclude data > 1e20, and generate summary plots.
 Scans folders matching 'MFPs_and_Ranges_in_*' if present.

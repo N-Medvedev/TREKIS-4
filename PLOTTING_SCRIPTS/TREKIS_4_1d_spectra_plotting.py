@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+0000000000000000000000000000000000000000000000000000000000000
+This file is part of TREKIS-4
+available at: https://github.com/N-Medvedev/TREKIS-4
+1111111111111111111111111111111111111111111111111111111111111
+This module is written by N. Medvedev
+in 2026
+-----------------------------------
 Standalone script to batch parse TREKIS 1D distribution files in a directory.
 Scans exclusively for .dat files containing 'spectrum_1d_[axis]' or 'velocity_theta_distr_1d_[axis]'.
 
