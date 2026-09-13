@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+0000000000000000000000000000000000000000000000000000000000000
+This file is part of TREKIS-4
+available at: https://github.com/N-Medvedev/TREKIS-4
+1111111111111111111111111111111111111111111111111111111111111
+This module is written by N. Medvedev
+in 2026
+-----------------------------------
 Standalone script to batch parse TREKIS stopping files, group them by particle type, 
 prioritize total files, and generate 3 summary plots per particle:
 1. Stopping power vs Energy (Col 1 vs Col 0)

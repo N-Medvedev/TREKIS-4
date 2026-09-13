@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+"""
+0000000000000000000000000000000000000000000000000000000000000
+This file is part of TREKIS-4
+available at: https://github.com/N-Medvedev/TREKIS-4
+1111111111111111111111111111111111111111111111111111111111111
+This module is written by N. Medvedev
+in 2026
+-----------------------------------
+Standalone script to plot processed DOS and effective mass
+calculated within the effective one-band approximation.
+
+
+Usage:
+    python parse_dos_line.py
+"""
+
 import os
 import glob
 import re

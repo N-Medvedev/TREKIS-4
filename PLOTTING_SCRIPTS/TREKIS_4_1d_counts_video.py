@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+0000000000000000000000000000000000000000000000000000000000000
+This file is part of TREKIS-4
+available at: https://github.com/N-Medvedev/TREKIS-4
+1111111111111111111111111111111111111111111111111111111111111
+This module is written by N. Medvedev
+in 2026
+-----------------------------------
 Standalone script to batch animate 1D restored files with simulation box scaling and configurable axis scales.
 Supports configurable linear or logarithmic scales for X and Y axes with automatic detection.
 
