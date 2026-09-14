@@ -3,7 +3,7 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2016-2020
+! in 2016-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 module Gnuplotting
 
@@ -16,12 +16,17 @@ subroutine process_user_gnu_parameters(gnu_extension, gnu_terminal, do_gnuplot)
    character(*), intent(in) :: gnu_extension
    character(*), intent(inout) :: gnu_terminal
    logical, intent(inout) :: do_gnuplot
+
    ! If user does not want gnuplot:
-   if (trim(adjustl(gnu_extension)) == '0') then ! gnuplot is sad but accepts its fate
-      do_gnuplot = .false.
-   else ! gnuplot is happy to serve
-      do_gnuplot = .true.
+   if (.not. do_gnuplot) then
+      return
    endif
+
+   !if (trim(adjustl(gnu_extension)) == '0') then ! gnuplot is sad but accepts its fate
+   !   do_gnuplot = .false.
+   !else ! gnuplot is happy to serve
+   !   do_gnuplot = .true.
+   !endif
    ! Set terminal accordingly to the type of plots user wants:
    select case (gnu_extension)
    case ('EPS', 'Eps', 'EPs', 'eps')

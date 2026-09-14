@@ -1887,6 +1887,14 @@ subroutine sort_holes_cartesian(used_target, N_prtcl, MC_Prtcl, numpar, tim, Dis
       do i = 1, N_prtcl
          ! Include only active particles:
          if (MC_Prtcl(i)%active) then
+
+            if ( MC_Prtcl(i)%R(3) <= 0.0 ) then
+                 print*, 'Hole outside the material:'
+                 print*, 'R=', MC_Prtcl(i)%R(:)
+                 print*, 'T=', MC_Prtcl(i)%in_target
+                 print*, 'O=', MC_Prtcl(i)%origin
+            endif
+
             ! Find to which array to add this hole, according to its element and shell:
             N_arr = hole_number_in_array(used_target, MC_Prtcl(i)%in_target, MC_Prtcl(i)%KOA, MC_Prtcl(i)%Sh)     ! below
             ! Add into the corresponding arrays:
@@ -2740,7 +2748,7 @@ subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), dimension(:), intent(inout) :: Vel_theta_ph     ! photon angular distribution
    !------------------------------
-   real(8) :: d_theta, theta, one_over_N, over_sin_theta
+   real(8) :: d_theta, theta, one_over_N, over_sin_theta, theta_rad
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
@@ -2762,11 +2770,12 @@ subroutine get_photon_velotheta(MC, numpar, Vel_theta_ph)
 
                ! Find velosity theta [deg]:
                theta = get_v_theta(MC%MC_Photons(i)%V)   ! module "Geometris"
+               theta_rad = theta * g_deg2rad    ! [rad]
                ! The distribution by theta needs to be converted into pherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
-                  over_sin_theta = 1.0d0/sin(theta)
+                  over_sin_theta = 1.0d0/sin(theta_rad)
                else
                   over_sin_theta = 1.0d0
                endif
@@ -2803,7 +2812,7 @@ subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), dimension(:), intent(inout) :: Vel_theta_e     ! electron angular distribution
    !------------------------------
-   real(8) :: d_theta, theta, one_over_N, over_sin_theta
+   real(8) :: d_theta, theta, one_over_N, over_sin_theta, theta_rad
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
@@ -2829,12 +2838,13 @@ subroutine get_electron_velotheta(MC, numpar, Vel_theta_e)
 !                print*, MC%N_e, i, theta
                ! Find velosity theta [deg]:
                theta = get_v_theta(MC%MC_Electrons(i)%V)   ! module "Geometris"
+               theta_rad = theta * g_deg2rad    ! [rad]
                
                ! The distribution by theta needs to be converted into spherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
-                  over_sin_theta = 1.0d0/sin(theta * g_deg2rad)
+                  over_sin_theta = 1.0d0/sin(theta_rad)
                else
                   over_sin_theta = 1.0d0
                endif
@@ -2879,7 +2889,7 @@ subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), dimension(:), intent(inout) :: Vel_theta_p     ! positron angular distribution
    !------------------------------
-   real(8) :: d_theta, theta, one_over_N, over_sin_theta
+   real(8) :: d_theta, theta, one_over_N, over_sin_theta, theta_rad
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
@@ -2901,11 +2911,13 @@ subroutine get_positron_velotheta(MC, numpar, Vel_theta_p)
 !                print*, MC%N_e, i, MC%MC_Positrons(i)%Ekin
                ! Find velosity theta [deg]:
                theta = get_v_theta(MC%MC_Positrons(i)%V)   ! module "Geometris"
+               theta_rad = theta * g_deg2rad    ! [rad]
+
                ! The distribution by theta needs to be converted into spherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
-                  over_sin_theta = 1.0d0/sin(theta)
+                  over_sin_theta = 1.0d0/sin(theta_rad)
                else
                   over_sin_theta = 1.0d0
                endif
@@ -2943,7 +2955,7 @@ subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), dimension(:), intent(inout) :: Vel_theta_h     ! positron angular distribution
    !------------------------------
-   real(8) :: d_theta, theta, one_over_N, over_sin_theta
+   real(8) :: d_theta, theta, one_over_N, over_sin_theta, dist, Vabs, theta_rad
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
@@ -2970,12 +2982,13 @@ subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
                else ! core holes have no velosity
                   theta = 0.0d0
                endif
-               
+               theta_rad = theta * g_deg2rad    ! [rad]
+
                ! The distribution by theta needs to be converted into pherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
-                  over_sin_theta = 1.0d0/sin(theta)
+                  over_sin_theta = (1.0d0/sin(theta_rad))
                else
                   over_sin_theta = 1.0d0
                endif
@@ -2993,8 +3006,18 @@ subroutine get_hole_velotheta(MC, numpar, Vel_theta_h)
                   i_arr = i_arr + 1 ! assign particle to the end of the interval
                   d_theta = numpar%vel_theta_grid(i_arr) - numpar%vel_theta_grid(i_arr-1)
                endif
-                ! add a particle into this array, per theta interval to make distribution:
-               Vel_theta_h(i_arr) = Vel_theta_h(i_arr) + one_over_N/d_theta * over_sin_theta
+               ! add a particle into this array, per theta interval to make distribution:
+               dist = one_over_N/d_theta * over_sin_theta
+               Vel_theta_h(i_arr) = Vel_theta_h(i_arr) + dist
+
+               if (dist < 0.0) then
+                  print*, "Error in get_hole_velotheta: negative contribution:", dist
+                  print*, one_over_N, d_theta, over_sin_theta
+                  print*, i, MC%MC_Holes(i)%KOA, MC%MC_Holes(i)%Sh, MC%MC_Holes(i)%valent
+                  Vabs = sqrt( SUM(MC%MC_Holes(i)%V(:)*MC%MC_Holes(i)%V(:)) )
+                  print*, acos(MC%MC_Holes(i)%V(3)/Vabs) * g_rad2deg, Vabs  ! [deg]
+               endif
+
 !              write(*,'(a,i4,i4,f,f,f)') '(get_hole_velotheta)', i, i_arr, numpar%vel_theta_grid(i_arr), theta, Spectrum_e(i_arr)
             endif
          enddo
@@ -3013,7 +3036,7 @@ subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    real(8), dimension(:), intent(inout) :: Vel_theta_SHI ! SHI angular distribution
    !------------------------------
-   real(8) :: d_theta, theta, one_over_N, over_sin_theta
+   real(8) :: d_theta, theta, one_over_N, over_sin_theta, theta_rad
    integer :: i, Nsiz, i_arr
    logical :: anything_to_do
    
@@ -3034,11 +3057,13 @@ subroutine get_SHI_velotheta(MC, numpar, Vel_theta_SHI)
 
                ! Find velosity theta:
                theta = get_v_theta(MC%MC_SHIs(i)%V)   ! module "Geometris"
+               theta_rad = theta * g_deg2rad    ! [rad]
+
                ! The distribution by theta needs to be converted into pherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
-                  over_sin_theta = 1.0d0/sin(theta)
+                  over_sin_theta = 1.0d0/sin(theta_rad)
                else
                   over_sin_theta = 1.0d0
                endif
@@ -3641,7 +3666,7 @@ subroutine get_electron_theta_1d(MC, numpar, tim, Theta_e)
    real(8), intent(in) :: tim   ! [fs] current time step
    real(8), dimension(:,:), intent(inout) :: Theta_e     ! electron theta distribution
    !------------------------------
-   real(8) :: dTheta, theta, over_sin_theta, one_over_N
+   real(8) :: dTheta, theta, over_sin_theta, one_over_N, theta_rad
    integer :: i, Nsiz, i_arr, i_space
    logical :: anything_to_do
 
@@ -3662,12 +3687,13 @@ subroutine get_electron_theta_1d(MC, numpar, tim, Theta_e)
                ! Find where to put in on the given energy grid:
                               ! Find velosity theta [deg]:
                theta = get_v_theta(MC%MC_Electrons(i)%V)   ! module "Geometris"
+               theta_rad = theta * g_deg2rad    ! [rad]
 
                ! The distribution by theta needs to be converted into spherical coordiante
                ! to convert from distribution by theta in Cartesian to
                ! theta in Spherical, one need additionally to divide by sin(theta), see page 8 [1]:
                if (abs(theta) > m_tollerance_eps) then
-                  over_sin_theta = 1.0d0/sin(theta * g_deg2rad)
+                  over_sin_theta = 1.0d0/sin(theta_rad)
                else
                   over_sin_theta = 1.0d0
                endif

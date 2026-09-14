@@ -28,7 +28,7 @@ import pandas as pd
 FILE_PATTERN = re.compile(r"(spectrum_1d_\w+|velocity_theta_distr_1d_\w+).*\.dat$", re.IGNORECASE)
 
 
-def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="auto", yscale="auto"):
+def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="auto", yscale="auto", ext="png"):
     """Parses a single 1D distribution file and generates plots for all spatial bins with configurable scales."""
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
@@ -194,7 +194,7 @@ def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="aut
         
         plt.tight_layout(pad=1.2)
 
-        save_filename = f"{base_name}_bin_{bin_idx+1}.png"
+        save_filename = f"{base_name}_bin_{bin_idx+1}.{ext}"
         out_path = (
             os.path.join(output_dir, save_filename)
             if output_dir
@@ -245,6 +245,12 @@ def main():
         action="store_true",
         help="Display interactive plot windows in addition to saving",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="png",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
 
@@ -270,7 +276,7 @@ def main():
     for fname in matched_files:
         print(f"\nProcessing: {fname}")
         file_path = os.path.join(target_dir, fname)
-        parse_and_plot_file(file_path, output_dir=out_dir, show_plots=args.show, xscale=args.xscale, yscale=args.yscale)
+        parse_and_plot_file(file_path, output_dir=out_dir, show_plots=args.show, xscale=args.xscale, yscale=args.yscale, ext=args.ext)
 
     print("\nBatch processing complete.")
 

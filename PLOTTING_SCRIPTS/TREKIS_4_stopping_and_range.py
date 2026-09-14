@@ -115,7 +115,7 @@ def read_stopping_file(filepath):
     return np.array(energies), np.array(stopping_powers), np.array(ranges)
 
 
-def process_directory(source_dir, output_dir, show_plots):
+def process_directory(source_dir, output_dir, show_plots, ext="png"):
     """Processes stopping files inside a specific directory and saves the 3 required plots per particle."""
     all_files = [f for f in os.listdir(source_dir) if f.lower().endswith(".dat") and f.startswith("OUTPUT_")]
     
@@ -161,7 +161,7 @@ def process_directory(source_dir, output_dir, show_plots):
         ax.grid(False)
         plt.tight_layout()
 
-        save_path_1 = os.path.join(output_dir, f"Stopping_power_vs_energy_{particle}_{material_name}.png")
+        save_path_1 = os.path.join(output_dir, f"Stopping_power_vs_energy_{particle}_{material_name}.{ext}")
         plt.savefig(save_path_1, dpi=300)
         print(f"  -> Saved plot: {save_path_1}")
         if show_plots:
@@ -181,7 +181,7 @@ def process_directory(source_dir, output_dir, show_plots):
         ax.grid(False)
         plt.tight_layout()
 
-        save_path_2 = os.path.join(output_dir, f"Range_vs_energy_{particle}_{material_name}.png")
+        save_path_2 = os.path.join(output_dir, f"Range_vs_energy_{particle}_{material_name}.{ext}")
         plt.savefig(save_path_2, dpi=300)
         print(f"  -> Saved plot: {save_path_2}")
         if show_plots:
@@ -201,7 +201,7 @@ def process_directory(source_dir, output_dir, show_plots):
         ax.grid(False)
         plt.tight_layout()
 
-        save_path_3 = os.path.join(output_dir, f"Stopping_power_vs_range_{particle}_{material_name}.png")
+        save_path_3 = os.path.join(output_dir, f"Stopping_power_vs_range_{particle}_{material_name}.{ext}")
         plt.savefig(save_path_3, dpi=300)
         print(f"  -> Saved plot: {save_path_3}")
         if show_plots:
@@ -230,6 +230,12 @@ def main():
         action="store_true",
         help="Display interactive plot windows",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="png",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
 
@@ -249,12 +255,12 @@ def main():
             print(f"\nProcessing directory: {sub_d}")
             out_d = os.path.abspath(args.output_dir) if args.output_dir else sub_d
             os.makedirs(out_d, exist_ok=True)
-            process_directory(sub_d, out_d, args.show)
+            process_directory(sub_d, out_d, args.show, args.ext)
     else:
         print(f"No directories matching 'MFPs_and_Ranges_in_*' found inside {target_dir}. Scanning target directory directly.")
         out_d = os.path.abspath(args.output_dir) if args.output_dir else target_dir
         os.makedirs(out_d, exist_ok=True)
-        process_directory(target_dir, out_d, args.show)
+        process_directory(target_dir, out_d, args.show, args.ext)
 
     print("\nStopping power & range plotting complete.")
 

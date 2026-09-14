@@ -495,35 +495,39 @@ subroutine particle_cross_box_boundary(used_target, numpar, N_particles, NOP, Pr
    ! 2) Check if it is an incomming particle, or an excited from the target:
    if (Prtcl(NOP)%generation == 0) then ! external incomming
       ! 3a) Remove external particle when a box boundary is reached:
-      call cross_boundary(numpar, N_particles, NOP, Prtcl, 0, 0, particle_removed) ! below
+      call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, 0, 0, particle_removed) ! below
    else ! internal part of the target that got excited:
       ! 3b) Do something, depending on kind of boundaries defined by the user:
       select case (Box_wall_index)  ! 1=top (Z_start), 2= bottom(Z_end), 3=left (Y_start), 4=right (Y_end), 5=back (X_start), 6=front (X_end)
       case (1:2) ! perpendicular to Z
          if (present (type_of_periodicity)) then    ! enforce this condition, no matter what is provided in numpar%periodic_z
 !             print*, 'type_of_periodicity=', type_of_periodicity, NOP
-            call cross_boundary(numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed) ! below
+            call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed) ! below
          else   ! follow what is provided in numpar%periodic_z
 !             print*, 'type_of_periodicity=', numpar%periodic_z, NOP
-            call cross_boundary(numpar, N_particles, NOP, Prtcl, numpar%periodic_z, Box_wall_index, particle_removed) ! below
+            call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, numpar%periodic_z, Box_wall_index, particle_removed) ! below
          endif
       case (3:4) ! perpendicular to Y
          if (present (type_of_periodicity)) then    ! enforce this condition, no matter what is provided in numpar%periodic_y
-            call cross_boundary(numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed) ! below
+            call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed) ! below
          else   ! follow what is provided in numpar%periodic_y
-            call cross_boundary(numpar, N_particles, NOP, Prtcl, numpar%periodic_y, Box_wall_index, particle_removed) ! below
+            call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, numpar%periodic_y, Box_wall_index, particle_removed) ! below
          endif
       case (5:6) ! perpendicular to X
          if (present (type_of_periodicity)) then    ! enforce this condition, no matter what is provided in numpar%periodic_x
-            call cross_boundary(numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed) ! below
+            call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed) ! below
          else   ! follow what is provided in numpar%periodic_x
-            call cross_boundary(numpar, N_particles, NOP, Prtcl, numpar%periodic_x, Box_wall_index, particle_removed) ! below
+            call cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, numpar%periodic_x, Box_wall_index, particle_removed) ! below
          endif
       end select
       
       ! Update the flight time until the next boundary crossing:
       if (.not.particle_removed) then    ! if not absorbing boundary
 !         print*, 'PCBB before:', Prtcl(NOP)%Ekin, Prtcl(NOP)%ti, Prtcl(NOP)%t_sc, 'R:', Prtcl(NOP)%R(:), 'V:', Prtcl(NOP)%V(:)
+         ! Update the target, if needed:
+         call find_the_target(used_target, Prtcl(NOP)) ! module "MC_general_tools"
+
+         ! Update flight times:
          call update_flight_time_to_boundary(used_target, numpar, Prtcl(NOP))   ! below
 !         print*, 'PCBB after:', Prtcl(NOP)%Ekin, Prtcl(NOP)%ti, Prtcl(NOP)%t_sc, 'R:', Prtcl(NOP)%R(:), 'V:', Prtcl(NOP)%V(:)
       endif
@@ -531,7 +535,8 @@ subroutine particle_cross_box_boundary(used_target, numpar, N_particles, NOP, Pr
 end subroutine particle_cross_box_boundary
 
 
-subroutine cross_boundary(numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed)
+subroutine cross_boundary(used_target, numpar, N_particles, NOP, Prtcl, type_of_periodicity, Box_wall_index, particle_removed)
+   type(Matter), intent(in) :: used_target   ! parameters of the target
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    integer, intent(inout) :: N_particles   ! number of particles of this type
    integer, intent(in) :: NOP   ! index of particle in the array
@@ -539,13 +544,39 @@ subroutine cross_boundary(numpar, N_particles, NOP, Prtcl, type_of_periodicity, 
    integer, intent(in) :: type_of_periodicity   ! defined by the user: 0=absorbing; 1=periodic; 2=reflective; 3=white
    integer, intent(in) ::  Box_wall_index ! 1=top (Z_start), 2= bottom(Z_end), 3=left (Y_start), 4=right (Y_end), 5=back (X_start), 6=front (X_end)
    logical, intent(inout) :: particle_removed   ! is particle removed or not
-   real(8) :: PrtclV, eps
+   !---------------------
+   real(8) :: PrtclV, eps, R_temp(3)
+   integer :: tar_ind
+   logical :: is_hole
    
    eps = 1.0d-1 * m_tollerance_eps      ! shift size
-   
+
    select case (type_of_periodicity)
    case (1) ! periodic
+
+      ! identify if the particle is a hole:
+      select type (Prtcl)
+         type is (Hole)
+            is_hole = .true.
+            R_temp = Prtcl(NOP)%R
+         class default
+            is_hole = .false.
+      end select
+
       call cross_periodic_boundary(numpar, Prtcl(NOP)%R, Box_wall_index) ! below
+
+      ! Holes cannot appear in vacuum:
+      if (is_hole) then ! check where it is
+         call find_the_target(used_target, Prtcl(NOP), tar_ind=tar_ind) ! below
+         if (tar_ind == 0) then ! it is vacuum
+            ! Put the particle back, use reflective conditions:
+            Prtcl(NOP)%R = R_temp
+            call reflect_from_wall(Box_wall_index, Prtcl(NOP)%V)  ! below
+            PrtclV = max( SQRT( SUM( Prtcl(NOP)%V(:)*Prtcl(NOP)%V(:) ) ), m_tollerance_eps) ! exclude zero
+            Prtcl(NOP)%R(:) = Prtcl(NOP)%R(:) + eps * Prtcl(NOP)%V(:)/PrtclV     ! place particle minimal distance from the border
+         endif
+      endif
+
 !       PrtclV = max( SQRT( SUM( Prtcl(NOP)%V(:)*Prtcl(NOP)%V(:) ) ), m_tollerance_eps) ! exclude zero
 !       Prtcl(NOP)%R(:) = Prtcl(NOP)%R(:) + eps * Prtcl(NOP)%V(:)/PrtclV     ! to place particle a minimal distance away from the border
    case (2) ! reflective
@@ -901,7 +932,28 @@ end subroutine flight_time_to_boundary
       tar_ind = Prtcl%in_target     ! use the current target index
    endif
 
-   !print*, 'define_normal_to_surface 2:', Prtcl%in_target, tar_ind
+   ! Sanity check:
+   if (tar_ind < 1) then ! something went wrong
+      print*, 'Error in define_normal_to_surface:', Prtcl%in_target, tar_ind
+      print*, 'R=', Prtcl%R(:), Prtcl%R0(:)
+      print*, 'O=', Prtcl%origin
+      select type (Prtcl)
+         type is (Electron)
+            print *, "Electron"
+         type is (Positron)
+            print *, "Positron"
+         type is (Hole)
+            print *, "Hole"
+         type is (Photon)
+            print *, "Hole"
+         !type is (Positron)
+         !   print *, "Positron"
+         type is (Muon)
+            print *, "Muon"
+        class default
+            print *, "Unknown particle type"
+       end select
+   endif
 
    
    ! 2) Find which surface it is corssing:
@@ -2033,6 +2085,7 @@ subroutine remove_particle_from_MC_array(N_particles, i_remove, Prtcl)
       Prtcl(i)%active = Prtcl(i+1)%active
       Prtcl(i)%generation = Prtcl(i+1)%generation
       Prtcl(i)%in_target = Prtcl(i+1)%in_target
+      Prtcl(i)%origin = Prtcl(i+1)%origin
       Prtcl(i)%Ekin = Prtcl(i+1)%Ekin 
       Prtcl(i)%t0 = Prtcl(i+1)%t0
       Prtcl(i)%ti = Prtcl(i+1)%ti
@@ -2109,6 +2162,7 @@ pure subroutine extend_MC_array_Electrons(Prtcl)
    Prtcl_temp(:)%t_sc = Prtcl(:)%t_sc
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%R(1) = Prtcl(:)%R(1) 
    Prtcl_temp(:)%R(2) = Prtcl(:)%R(2) 
    Prtcl_temp(:)%R(3) = Prtcl(:)%R(3) 
@@ -2149,6 +2203,7 @@ pure subroutine extend_MC_array_Electrons(Prtcl)
    Prtcl(1:siz)%t_sc = Prtcl_temp(1:siz)%t_sc
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%R(1) = Prtcl_temp(1:siz)%R(1)
    Prtcl(1:siz)%R(2) = Prtcl_temp(1:siz)%R(2)
    Prtcl(1:siz)%R(3) = Prtcl_temp(1:siz)%R(3)
@@ -2197,6 +2252,7 @@ pure subroutine extend_MC_array_Photons(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin 
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -2237,6 +2293,7 @@ pure subroutine extend_MC_array_Photons(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin 
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2291,6 +2348,7 @@ pure subroutine extend_MC_array_Holes(Prtcl)
    Prtcl_temp(:)%valent = Prtcl(:)%valent
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin 
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -2334,6 +2392,7 @@ pure subroutine extend_MC_array_Holes(Prtcl)
    Prtcl(1:siz)%valent = Prtcl_temp(1:siz)%valent
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin 
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2389,6 +2448,7 @@ pure subroutine extend_MC_array_Positrons(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin 
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -2429,6 +2489,7 @@ pure subroutine extend_MC_array_Positrons(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin 
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2482,6 +2543,7 @@ pure subroutine extend_MC_array_Muons(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -2522,6 +2584,7 @@ pure subroutine extend_MC_array_Muons(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2575,6 +2638,7 @@ pure subroutine extend_MC_array_Atoms(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin 
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -2615,6 +2679,7 @@ pure subroutine extend_MC_array_Atoms(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin 
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2668,6 +2733,7 @@ pure subroutine extend_MC_array_SHIs(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin 
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti 
@@ -2708,6 +2774,7 @@ pure subroutine extend_MC_array_SHIs(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin 
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2761,6 +2828,7 @@ pure subroutine extend_MC_array_Surface_emission(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -2801,6 +2869,7 @@ pure subroutine extend_MC_array_Surface_emission(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti
@@ -2962,6 +3031,7 @@ subroutine extend_MC_array_poly(Prtcl)
    Prtcl_temp(:)%active = Prtcl(:)%active
    Prtcl_temp(:)%generation = Prtcl(:)%generation
    Prtcl_temp(:)%in_target = Prtcl(:)%in_target
+   Prtcl_temp(:)%origin = Prtcl(:)%origin
    Prtcl_temp(:)%Ekin = Prtcl(:)%Ekin 
    Prtcl_temp(:)%t0 = Prtcl(:)%t0
    Prtcl_temp(:)%ti = Prtcl(:)%ti
@@ -3025,6 +3095,7 @@ subroutine extend_MC_array_poly(Prtcl)
    Prtcl(1:siz)%active = Prtcl_temp(1:siz)%active
    Prtcl(1:siz)%generation = Prtcl_temp(1:siz)%generation
    Prtcl(1:siz)%in_target = Prtcl_temp(1:siz)%in_target
+   Prtcl(1:siz)%origin = Prtcl_temp(1:siz)%origin
    Prtcl(1:siz)%Ekin = Prtcl_temp(1:siz)%Ekin 
    Prtcl(1:siz)%t0 = Prtcl_temp(1:siz)%t0
    Prtcl(1:siz)%ti = Prtcl_temp(1:siz)%ti

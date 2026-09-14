@@ -3,7 +3,7 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2016-2018
+! in 2016-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to deal with files:
 MODULE Dealing_with_files
@@ -60,6 +60,23 @@ subroutine get_file_stat(File_name, device_ID, Inode_number, File_mode, Number_o
    if (present(blocks_allocated)) blocks_allocated = info_array(12) ! Blocksize for file system I/O operations
 end subroutine get_file_stat
 
+
+
+function to_lower(str) result(lower_str)
+    character(len=*), intent(in) :: str
+    character(len=len(str)) :: lower_str
+    integer :: i, code
+
+    do i = 1, len(str)
+        code = ichar(str(i:i))
+        ! ASCII uppercase A–Z are 65–90
+        if (code >= ichar('A') .and. code <= ichar('Z')) then
+            lower_str(i:i) = achar(code + 32)
+        else
+            lower_str(i:i) = str(i:i)
+        end if
+    end do
+end function to_lower
 
 
 subroutine open_file(FN, File_name, Error_descript, status, action)

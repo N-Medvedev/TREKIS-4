@@ -153,7 +153,7 @@ def get_axis_and_cross_section(fname, box_dims):
         return None, None
 
 
-def plot_1d_restored_file(out_folder, fname, box_dims, verbose=False, xscale="auto", yscale="auto"):
+def plot_1d_restored_file(out_folder, fname, box_dims, verbose=False, xscale="auto", yscale="auto", ext="png"):
     axis, cross_section = get_axis_and_cross_section(fname, box_dims)
     if not axis:
         if verbose:
@@ -181,11 +181,11 @@ def plot_1d_restored_file(out_folder, fname, box_dims, verbose=False, xscale="au
         val_type = "Total Energy"
         y_unit = " (eV)"
         y_label = f"Total Energy per Bin{y_unit}"
-        suffix = "total_energy_histogram_plot.png"
+        suffix = f"total_energy_histogram_plot.{ext}"
     else:
         val_type = "Particle Count"
         y_label = "Particle Count per Bin"
-        suffix = "particle_count_histogram_plot.png"
+        suffix = f"particle_count_histogram_plot.{ext}"
 
     base_name = os.path.splitext(fname)[0]
     title_label = f"{base_name.replace('OUTPUT_', '').replace('_', ' ')} ({val_type})"
@@ -246,16 +246,19 @@ def plot_1d_restored_file(out_folder, fname, box_dims, verbose=False, xscale="au
             continue
 
         x_0 = edges[0]
+        x_1 = edges[1]
         x_last = edges[-1]
         x_prev = edges[-2]
+        #x_size =
 
         if x_last > 1e5:
-            calculated_xmax = x_prev * 2.0
+            calculated_xmax = min(x_prev * 2.0, x_last)
             custom_xmax = calculated_xmax if custom_xmax is None else max(custom_xmax, calculated_xmax)
 
-            if x_0 < -1e5:
-                calculated_xmin = -x_prev * 2.0
-                custom_xmin = calculated_xmin if custom_xmin is None else min(custom_xmin, calculated_xmin)
+        if x_0 < -1e5:
+            #calculated_xmin = -x_prev * 2.0
+            calculated_xmin = max( min(-x_prev, x_1), x_0)
+            custom_xmin = calculated_xmin if custom_xmin is None else min(custom_xmin, calculated_xmin)
 
         bin_widths = np.diff(edges)
         bin_volumes = cross_section * bin_widths
@@ -295,7 +298,7 @@ def plot_1d_restored_file(out_folder, fname, box_dims, verbose=False, xscale="au
         print(f"Saved plot to: {out_path}")
 
 
-def process_1d_restored_files(directory_path='.', xscale="auto", yscale="auto"):
+def process_1d_restored_files(directory_path='.', xscale="auto", yscale="auto", ext="png"):
     box_dims = parse_simulation_box(directory_path)
     if not box_dims:
         print("Aborting calculations due to missing box parameters.")
@@ -326,7 +329,8 @@ def process_1d_restored_files(directory_path='.', xscale="auto", yscale="auto"):
     print(f"Found {len(target_files)} 1D file(s) to process:")
     for file_path in target_files:
         fname = os.path.basename(file_path)
-        plot_1d_restored_file(directory_path, fname, box_dims, verbose=True, xscale=xscale, yscale=yscale)
+        plot_1d_restored_file(directory_path, fname, box_dims, verbose=True, xscale=xscale, yscale=yscale, ext=ext)
+
 
 
 if __name__ == "__main__":
@@ -353,6 +357,12 @@ if __name__ == "__main__":
         default="auto",
         help="Y-axis scale ('auto' switches to log if ymax - ymin > 1e4 and values are positive)",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="png",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
     target_dir = os.path.abspath(args.dir)
@@ -361,4 +371,4 @@ if __name__ == "__main__":
         print(f"Error: Directory '{target_dir}' does not exist.")
         sys.exit(1)
 
-    process_1d_restored_files(target_dir, xscale=args.xscale, yscale=args.yscale)
+    process_1d_restored_files(target_dir, xscale=args.xscale, yscale=args.yscale, ext=args.ext)

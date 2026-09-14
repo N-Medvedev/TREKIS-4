@@ -26,6 +26,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter
 from mpl_toolkits.mplot3d import Axes3D
+import argparse
 
 def parse_header(filename):
     """
@@ -145,7 +146,7 @@ def animate_3d_surface(blocks, quantity="front", filename="output.mp4",
 
     plt.close(fig)
 
-def plot_surface_file_3d(filename, output_dir=None):
+def plot_surface_file_3d(filename, output_dir=None, ext="mp4"):
     """
     Processes a single Surface file and outputs two 3D MP4 videos (front and back).
     """
@@ -165,8 +166,8 @@ def plot_surface_file_3d(filename, output_dir=None):
         print(f"No block data found in {filename}.")
         return
 
-    front_outfile = os.path.join(output_dir, f"{base_name}_front_3d.mp4")
-    back_outfile = os.path.join(output_dir, f"{base_name}_back_3d.mp4")
+    front_outfile = os.path.join(output_dir, f"{base_name}_front_3d.{ext}")
+    back_outfile = os.path.join(output_dir, f"{base_name}_back_3d.{ext}")
 
     # Generate 3D animation for Front surface
     animate_3d_surface(
@@ -192,7 +193,9 @@ def plot_surface_file_3d(filename, output_dir=None):
     )
     print(f"Saved: {back_outfile}")
 
-def process_directory(directory_path='.'):
+
+
+def process_directory(directory_path='.', out_ext=".mp4"):
     """
     Finds all 'OUTPUT_*Surface*.dat' files in the given directory and plots them in 3D.
     """
@@ -206,11 +209,46 @@ def process_directory(directory_path='.'):
     print(f"Found {len(target_files)} file(s) matching 'OUTPUT_*Surface*.dat':")
     for file_path in target_files:
         print(f"\nProcessing 3D surface: {os.path.basename(file_path)}")
-        plot_surface_file_3d(file_path, output_dir=directory_path)
+        plot_surface_file_3d(file_path, output_dir=directory_path, ext=out_ext)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Parse TREKIS-4 3D surface files and generate animated videos.",
+        epilog="""Examples:
+                python trekis_surface_3d.py
+                    -> Process current directory, save videos as MP4
+
+                python trekis_surface_3d.py --dir ./PyTREKIS_OUTPUT/run1 --ext .avi
+                    -> Process run1 folder, save videos as AVI
+
+                python trekis_surface_3d.py --dir ./data --ext .mp4
+                    -> Process ./data, save videos as MP4
+                """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        "--dir", "-d",
+        type=str,
+        default=".",
+        help="Directory to scan for OUTPUT_*Surface*.dat files (default: current directory)."
+    )
+    parser.add_argument(
+        "--ext", "-ext",
+        type=str,
+        default=".mp4",
+        help="Output video file extension (default: .mp4)."
+    )
+
+    args = parser.parse_args()
+
+    target_dir = os.path.abspath(args.dir)
+    if not os.path.isdir(target_dir):
+        print(f"Error: Directory '{target_dir}' does not exist.")
+        return
+
+    process_directory(directory_path=target_dir, out_ext=args.ext)
 
 if __name__ == "__main__":
-    import sys
-
-    # Allow passing directory via command line argument, defaulting to current folder
-    target_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
-    process_directory(target_dir)
+    main()

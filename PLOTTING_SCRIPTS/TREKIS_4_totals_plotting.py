@@ -26,6 +26,7 @@ import re
 from itertools import cycle
 import pandas as pd
 import matplotlib.pyplot as plt
+import argparse
 
 # Mapping dictionary for translating column headers to full descriptive names in legends
 COLUMN_LABELS = {
@@ -105,7 +106,9 @@ def parse_total_file(file_path):
     
     return df, unit_dict
 
-def plot_total_file(file_path, output_dir=None):
+
+
+def plot_total_file(file_path, output_dir=None, out_ext=".png"):
     """
     Generates two plots (Numbers and Energies) for a given total data file.
     """
@@ -113,8 +116,6 @@ def plot_total_file(file_path, output_dir=None):
         output_dir = os.path.dirname(file_path) or '.'
 
     base_name = os.path.basename(file_path).replace('.dat', '')
-    
-    # Extract modifier (e.g., "above cutoff") for title display
     modifier = get_total_modifier(file_path)
     title_suffix = f" ({modifier})" if modifier else ""
 
@@ -124,64 +125,47 @@ def plot_total_file(file_path, output_dir=None):
         print(f"Error reading {file_path}: {e}")
         return
 
-    time_col = df.columns[0]  # Usually 'Time'
+    time_col = df.columns[0]
     time_unit = units.get(time_col, 'fs')
-    
-    # Separate columns into particle counts (N*) and energies (E*)
     number_cols = [col for col in df.columns if col.startswith('N')]
     energy_cols = [col for col in df.columns if col.startswith('E')]
-
     linestyles = ['-', '--', '-.', ':']
 
-    # 1. Plot Particle Numbers
+    # Particle Numbers
     if number_cols:
         plt.figure(figsize=(5, 4))
         style_cycler = cycle(linestyles)
-        
         for col in number_cols:
-            unit_str = f" ({units[col]})" if col in units else ""
             label_name = COLUMN_LABELS.get(col, col)
-            #plt.plot(df[time_col], df[col], label=f"{col}{unit_str}", linestyle=next(style_cycler))
-            plt.plot(df[time_col], df[col], label=f"{label_name}", linestyle=next(style_cycler))
-        
+            plt.plot(df[time_col], df[col], label=label_name, linestyle=next(style_cycler))
         plt.xlabel(f"{time_col} ({time_unit})")
         plt.ylabel("Particle (1/incident)")
         plt.title(f"Particle Numbers vs Time{title_suffix}")
-        
         plt.legend(loc='best', frameon=True)
-        plt.grid(False)
         plt.tight_layout()
-        
-        num_out_path = os.path.join(output_dir, f"{base_name}_numbers.png")
+        num_out_path = os.path.join(output_dir, f"{base_name}_numbers{out_ext}")
         plt.savefig(num_out_path, dpi=300)
         plt.close()
         print(f"Saved: {num_out_path}")
 
-    # 2. Plot Energies
+    # Energies
     if energy_cols:
         plt.figure(figsize=(5, 4))
         style_cycler = cycle(linestyles)
-        
         for col in energy_cols:
-            unit_str = f" ({units[col]})" if col in units else ""
             label_name = COLUMN_LABELS.get(col, col)
-            #plt.plot(df[time_col], df[col], label=f"{col}{unit_str}", linestyle=next(style_cycler))
-            plt.plot(df[time_col], df[col], label=f"{label_name}", linestyle=next(style_cycler))
-        
+            plt.plot(df[time_col], df[col], label=label_name, linestyle=next(style_cycler))
         plt.xlabel(f"{time_col} ({time_unit})")
         plt.ylabel("Energy (eV)")
         plt.title(f"Energies vs Time{title_suffix}")
-        
         plt.legend(loc='best', frameon=True)
-        plt.grid(False)
         plt.tight_layout()
-        
-        energy_out_path = os.path.join(output_dir, f"{base_name}_energies.png")
+        energy_out_path = os.path.join(output_dir, f"{base_name}_energies{out_ext}")
         plt.savefig(energy_out_path, dpi=300)
         plt.close()
         print(f"Saved: {energy_out_path}")
 
-def process_directory(directory_path='.'):
+def process_directory(directory_path='.', out_ext=".png"):
     """
     Finds all 'OUTPUT_total*.dat' files in the given directory and plots them.
     """
@@ -195,10 +179,44 @@ def process_directory(directory_path='.'):
     print(f"Found {len(target_files)} file(s) matching 'OUTPUT_total*.dat':")
     for file_path in target_files:
         print(f"\nProcessing: {os.path.basename(file_path)}")
-        plot_total_file(file_path, output_dir=directory_path)
+        plot_total_file(file_path, output_dir=directory_path, out_ext=out_ext)
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Parse TREKIS-4 totals files and generate plots.",
+        epilog="""Examples:
+            python trekis_totals_plot.py
+                -> Process current directory, save plots as PNG
+
+            python trekis_totals_plot.py --dir ./PyTREKIS_OUTPUT/run1 --ext .pdf
+                -> Process run1 folder, save plots as PDF
+
+            python trekis_totals_plot.py --dir ./data --ext .svg
+                -> Process ./data, save plots as SVG
+            """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        "--dir", "-d",
+        type=str,
+        default=".",
+        help="Directory to scan for OUTPUT_total*.dat files (default: current directory)."
+    )
+    parser.add_argument(
+        "--ext", "-ext",
+        type=str,
+        default=".png",
+        help="Output file extension (default: .png)."
+    )
+
+    args = parser.parse_args()
+    target_dir = os.path.abspath(args.dir)
+    if not os.path.isdir(target_dir):
+        print(f"Error: Directory '{target_dir}' does not exist.")
+        return
+
+    process_directory(directory_path=target_dir, out_ext=args.ext)
 
 if __name__ == "__main__":
-    import sys
-    
-    target_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
-    process_directory(target_dir)
+    main()

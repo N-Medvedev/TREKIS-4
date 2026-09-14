@@ -196,7 +196,8 @@ subroutine event_photon_pair_production(used_target, numpar, MC, NOP, MD_supce, 
       call extend_MC_array(MC%MC_Electrons)   ! module "MC_general_tools"
    endif
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ee, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin=2, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 4) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -220,7 +221,8 @@ subroutine event_photon_pair_production(used_target, numpar, MC, NOP, MD_supce, 
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_p > size(MC%MC_Positrons)) call extend_MC_array(MC%MC_Positrons)   ! module "MC_general_tools"
    call make_new_particle(MC%MC_Positrons(MC%N_p), Ekin=Epos, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin=2, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new positrons time of the next event:
    call get_positron_flight_time(used_target, numpar, MC%MC_Positrons(MC%N_p))  ! module "MC_general_tools"
@@ -408,7 +410,8 @@ subroutine event_photon_Compton(used_target, numpar, MC, NOP,  MD_supce, E_e, E_
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_e > size(MC%MC_Electrons)) call extend_MC_array(MC%MC_Electrons)    ! module "MC_general_tools"
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin = 10, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -437,7 +440,8 @@ subroutine event_photon_Compton(used_target, numpar, MC, NOP,  MD_supce, E_e, E_
     ! in case we have more particles than spaces in the array, extend the array:
     if (MC%N_h > size(MC%MC_Holes)) call extend_MC_array(MC%MC_Holes)   ! module "MC_general_tools"
     call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=abs(E_DOS), t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
+                                      generation=Prtcl%generation+1, origin = 10, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
                                       KOA = KOA, Sh = NSH, valent = valent )    ! module "Objects"
    
    if ( Prtcl%Ekin - (Ekin_new+Ekin+abs(E_DOS)+Epot) > 1.0d-10) then
@@ -797,7 +801,8 @@ subroutine event_photoabsorption(used_target, numpar, MC, NOP, MD_supce, E_e, E_
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_e > size(MC%MC_Electrons)) call extend_MC_array(MC%MC_Electrons)   ! module "MC_general_tools"
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin = 1, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new electron's time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -831,7 +836,8 @@ subroutine event_photoabsorption(used_target, numpar, MC, NOP, MD_supce, E_e, E_
     ! in case we have more particles than spaces in the array, extend the array:
     if (MC%N_h > size(MC%MC_Holes)) call extend_MC_array(MC%MC_Holes)   ! module "MC_general_tools"
     call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=abs(E_DOS), t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e, &
+                                      generation=Prtcl%generation+1, origin = 1, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_e, &
                                       KOA = KOA, Sh = NSH, valent = valent )    ! module "Objects"
 
    ! 8) Get new hole's time of the next event:

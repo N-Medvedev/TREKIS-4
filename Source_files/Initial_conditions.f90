@@ -115,6 +115,8 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%N_ph = MC(iter)%N_ph + 1 ! one more photon among incoming particles
       MC(iter)%MC_Photons(MC(iter)%N_ph)%active = .true.
       MC(iter)%MC_Photons(MC(iter)%N_ph)%generation = 0 ! incomming particle
+      MC(iter)%MC_Photons(MC(iter)%N_ph)%origin = 0     ! incident particle
+
       ! Sample energy around the given one according to gaussian shape:
       MC(iter)%MC_Photons(MC(iter)%N_ph)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
       ! Sample arrival time around the given one according to gaussian shape:
@@ -135,6 +137,8 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%N_e = MC(iter)%N_e + 1 ! one more electron among incoming particles
       MC(iter)%MC_Electrons(MC(iter)%N_e)%active = .true.
       MC(iter)%MC_Electrons(MC(iter)%N_e)%generation = 0 ! incomming particle
+      MC(iter)%MC_Electrons(MC(iter)%N_e)%origin = 0     ! incident particle
+
       ! Sample energy around the given one according to gaussian shape:
       MC(iter)%MC_Electrons(MC(iter)%N_e)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
       ! Sample arrival time around the given one according to gaussian shape:
@@ -166,6 +170,8 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%N_p = MC(iter)%N_p + 1 ! one more positron among incoming particles
       MC(iter)%MC_Positrons(MC(iter)%N_p)%active = .true.
       MC(iter)%MC_Positrons(MC(iter)%N_p)%generation = 0 ! incomming particle
+      MC(iter)%MC_Positrons(MC(iter)%N_p)%origin = 0     ! incident particle
+
       ! Sample energy around the given one according to gaussian shape:
       MC(iter)%MC_Positrons(MC(iter)%N_p)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
       ! Sample arrival time around the given one according to gaussian shape:
@@ -188,6 +194,8 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%N_SHI = MC(iter)%N_SHI + 1 ! one more SHI among incoming particles
       MC(iter)%MC_SHIs(MC(iter)%N_SHI)%active = .true.
       MC(iter)%MC_SHIs(MC(iter)%N_SHI)%generation = 0 ! incomming particle
+      MC(iter)%MC_SHIs(MC(iter)%N_SHI)%origin = 0     ! incident particle
+
       ! Sample energy around the given one according to gaussian shape:
       MC(iter)%MC_SHIs(MC(iter)%N_SHI)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
       ! Sample arrival time around the given one according to gaussian shape:
@@ -233,6 +241,8 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%N_h = MC(iter)%N_h + 1 ! one more hole among incoming particles
       MC(iter)%MC_Holes(MC(iter)%N_h)%active = .true.
       MC(iter)%MC_Holes(MC(iter)%N_h)%generation = 0 ! incomming particle
+      MC(iter)%MC_Holes(MC(iter)%N_h)%origin = 0     ! incident particle
+
       ! Sample energy around the given one according to gaussian shape:
       MC(iter)%MC_Holes(MC(iter)%N_h)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
       ! Sample arrival time around the given one according to gaussian shape:
@@ -257,6 +267,8 @@ subroutine define_projectile(numpar, used_target, bunch, MC, iter, ibunch, ipart
       MC(iter)%N_mu = MC(iter)%N_mu + 1 ! one more muon among incoming particles
       MC(iter)%MC_Muons(MC(iter)%N_mu)%active = .true.
       MC(iter)%MC_Muons(MC(iter)%N_mu)%generation = 0 ! incomming particle
+      MC(iter)%MC_Muons(MC(iter)%N_mu)%origin = 0     ! incident particle
+
       ! Sample energy around the given one according to gaussian shape:
       MC(iter)%MC_Muons(MC(iter)%N_mu)%Ekin = sample_Gaussian(bunch(ibunch)%E, bunch(ibunch)%E_spread)    ! module "Little_subroutines"
       ! Sample arrival time around the given one according to gaussian shape:

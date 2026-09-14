@@ -213,7 +213,7 @@ endif
 
 ! Reset starting time of simulation, if needed:
 g_numpar%t_start = set_starting_time(g_bunch, g_numpar%t_start)   ! module "Initial_conditions"
-g_numpar%i_dt_printout = 1  ! to start with
+g_numpar%i_dt_printout = 0  ! to start with
 g_dt_save = 0.0d0    ! just to start
 g_time = g_numpar%t_start         ! just to start
 ! Check the time of printout:
@@ -257,7 +257,10 @@ TP:do while (g_time+g_numpar%dt_MD <= g_numpar%t_total)
    !oooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
    ! Write current data into output files:
    ! If it's time to printout data (or, always printout the last step):
-   if ( (g_dt_save >= g_dt_out) .or. (g_time+g_numpar%dt_MD >= g_numpar%t_total) ) then
+   if ( (g_dt_save >= g_dt_out) .or. (g_time+g_numpar%dt_MD*0.5 >= g_numpar%t_total) ) then
+      ! test:
+      !print*, "What step:", g_time, g_dt_save, (g_dt_save >= g_dt_out), (g_time+g_numpar%dt_MD >= g_numpar%t_total)
+
       ! Print out the curent time-step
       call print_time_step('Simulation time (out):', g_time, msec=.true.)   ! module "Little_subroutines"
       ! Collect printable output data from raw MC data:
@@ -292,6 +295,8 @@ write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
 
 ! Execute all gnuplot scripts to plot the data user requested to:
 if (g_numpar%gnupl%do_gnuplot) call execute_all_gnuplots(g_numpar) ! module "Output"
+! All call for python plotting scripts:
+call execute_all_pythons(g_numpar) ! module "Output"
 
 !--------------------------------------------------------------
 ! Finilize simulation run:
@@ -351,24 +356,46 @@ pure subroutine reset_dt_out(numpar, dt_out)
 
    ! Check, if it's time to printout data into file:
    if (allocated(numpar%dt_out_grid)) then  ! only if a file with time grid was provided
-      if (numpar%i_dt_printout <= size(numpar%dt_out_grid)) then    ! if didn't reach the end of file
+      if (.not.allocated(numpar%dt_reset_grid)) then ! just the time grid, no resetting dt:
+
+         numpar%i_dt_printout = numpar%i_dt_printout + 1    ! next point on the time grid for next time
+
+         if (numpar%i_dt_printout > size(numpar%dt_out_grid)) then
+            return ! cannot change time step anymore
+         endif
+
          if (numpar%i_dt_printout > 1) then   ! not the first step:
             dt_out = numpar%dt_out_grid(numpar%i_dt_printout) - numpar%dt_out_grid(numpar%i_dt_printout-1) - est ! next step
          else   ! the first one
             dt_out = numpar%dt_out_grid(numpar%i_dt_printout) - est
          endif
-         ! Check if the user requested to change the simulation step:
-         if (allocated(numpar%dt_reset_grid)) then
-            numpar%dt_MD = numpar%dt_reset_grid(numpar%i_dt_printout)   ! reset the MD time step according to the one from the file
-            if (numpar%dt_MD > dt_out) numpar%dt_MD = dt_out    ! in case of inconsistency, set it equal to the printout step
+         do while (dt_out + 2.0*est < numpar%dt_MD)  ! cannot be smaller than the MD step:
+            numpar%i_dt_printout = numpar%i_dt_printout + 1    ! next point on the time grid for next time
+            dt_out = numpar%dt_out_grid(numpar%i_dt_printout) - est
+         enddo
+         !print*, "reset_dt_out=", numpar%i_dt_printout
+         !print*, "step=", numpar%dt_out_grid(numpar%i_dt_printout)
+      else ! (.not.allocated(numpar%dt_reset_grid))
+         ! If dt resetting is defined:
+         if (numpar%i_dt_printout <= size(numpar%dt_out_grid)) then    ! if didn't reach the end of file
+            if (numpar%i_dt_printout > 1) then   ! not the first step:
+               dt_out = numpar%dt_out_grid(numpar%i_dt_printout) - numpar%dt_out_grid(numpar%i_dt_printout-1) - est ! next step
+            else   ! the first one
+               dt_out = numpar%dt_out_grid(numpar%i_dt_printout) - est
+            endif
+            ! Check if the user requested to change the simulation step:
+            if (allocated(numpar%dt_reset_grid)) then
+               numpar%dt_MD = numpar%dt_reset_grid(numpar%i_dt_printout)   ! reset the MD time step according to the one from the file
+               if (numpar%dt_MD > dt_out) numpar%dt_MD = dt_out    ! in case of inconsistency, set it equal to the printout step
+            endif
+            numpar%i_dt_printout = numpar%i_dt_printout + 1    ! next point on the time grid for next time
+         else  ! end of the grid reached
+            dt_out = numpar%t_total - numpar%dt_out_grid(size(numpar%dt_out_grid)) - est ! print the last point
          endif
-         numpar%i_dt_printout = numpar%i_dt_printout + 1    ! next point on the time grid for next time
-      else  ! end of the grid reached
-         dt_out = numpar%t_total - numpar%dt_out_grid(size(numpar%dt_out_grid)) - est ! print the last point
-      endif
+      endif ! (.not.allocated(numpar%dt_reset_grid))
    else ! given number:
       dt_out = numpar%dt_printout - est  ! next point on the equidistant grid with the constant step provided in NUMERICAL_PARAMETERS file
-   endif
+   endif ! (allocated(numpar%dt_out_grid))
 !    print*, 'dt_out', dt_out
 end subroutine reset_dt_out
 

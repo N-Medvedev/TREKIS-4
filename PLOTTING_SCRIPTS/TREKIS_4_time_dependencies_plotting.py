@@ -64,7 +64,7 @@ def parse_0d_block_file(file_path):
     return df, col_names, col_units
 
 
-def plot_0d_file(out_folder, fname, verbose=False, xscale="auto", yscale="auto"):
+def plot_0d_file(out_folder, fname, verbose=False, xscale="auto", yscale="auto", ext="png"):
     file_path = os.path.join(out_folder, fname)
     df, col_names, col_units = parse_0d_block_file(file_path)
 
@@ -142,7 +142,7 @@ def plot_0d_file(out_folder, fname, verbose=False, xscale="auto", yscale="auto")
     plt.title(title_label)
     plt.tight_layout()
 
-    out_path = os.path.join(out_folder, f"{base_name}_plot.png")
+    out_path = os.path.join(out_folder, f"{base_name}_plot.{ext}")
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
 
@@ -150,7 +150,7 @@ def plot_0d_file(out_folder, fname, verbose=False, xscale="auto", yscale="auto")
         print(f"Saved 0D plot to: {out_path}")
 
 
-def process_0d_directory(directory_path='.', xscale="auto", yscale="auto"):
+def process_0d_directory(directory_path='.', xscale="auto", yscale="auto", ext="png"):
     all_dat_files = glob.glob(os.path.join(directory_path, "*.dat"))
     target_files = []
 
@@ -176,7 +176,7 @@ def process_0d_directory(directory_path='.', xscale="auto", yscale="auto"):
     print(f"Found {len(target_files)} 0D .dat file(s) to process:")
     for file_path in target_files:
         fname = os.path.basename(file_path)
-        plot_0d_file(directory_path, fname, verbose=True, xscale=xscale, yscale=yscale)
+        plot_0d_file(directory_path, fname, verbose=True, xscale=xscale, yscale=yscale, ext=ext)
 
 
 if __name__ == "__main__":
@@ -203,6 +203,12 @@ if __name__ == "__main__":
         default="auto",
         help="Y-axis scale ('auto' switches to log if ymax - ymin > 1e4 and values are positive)",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="png",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
     target_dir = os.path.abspath(args.dir)
@@ -211,4 +217,4 @@ if __name__ == "__main__":
         print(f"Error: Directory '{target_dir}' does not exist.")
         sys.exit(1)
 
-    process_0d_directory(target_dir, xscale=args.xscale, yscale=args.yscale)
+    process_0d_directory(target_dir, xscale=args.xscale, yscale=args.yscale, ext=args.ext)

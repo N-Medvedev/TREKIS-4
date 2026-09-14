@@ -145,7 +145,7 @@ def get_axis_and_cross_section(fname, box_dims):
         return None, None
 
 
-def animate_1d_histogram_file(out_folder, fname, box_dims, fps=10, verbose=False, xscale="auto", yscale="auto"):
+def animate_1d_histogram_file(out_folder, fname, box_dims, fps=10, verbose=False, xscale="auto", yscale="auto", ext="mp4"):
     axis, cross_section = get_axis_and_cross_section(fname, box_dims)
     if not axis:
         if verbose:
@@ -179,6 +179,7 @@ def animate_1d_histogram_file(out_folder, fname, box_dims, fps=10, verbose=False
         else:
             adjusted_unit = "eV/incident"
         y_label = f"Total Energy per Bin ({adjusted_unit})"
+        suffix = f"total_energy_histogram_anim.{ext}"
     else:
         val_type = "Particle Count"
         if "A^3" in raw_y_unit or "A3" in raw_y_unit:
@@ -186,6 +187,7 @@ def animate_1d_histogram_file(out_folder, fname, box_dims, fps=10, verbose=False
         else:
             adjusted_unit = "1/incident"
         y_label = f"Particle Count per Bin ({adjusted_unit})"
+        suffix = f"particle_count_histogram_anim.{ext}"
 
     base_name = os.path.splitext(fname)[0]
     title_label = f"{base_name.replace('OUTPUT_', '').replace('_', ' ')} ({val_type})"
@@ -296,7 +298,8 @@ def animate_1d_histogram_file(out_folder, fname, box_dims, fps=10, verbose=False
         frames=len(processed_frames), interval=1000 // fps, blit=False
     )
 
-    out_path = os.path.join(out_folder, f"{base_name}_histogram_anim.mp4")
+    #out_path = os.path.join(out_folder, f"{base_name}_histogram_anim.{ext}")
+    out_path = os.path.join(out_folder, f"{base_name}_{suffix}")
 
     try:
         writer = animation.FFMpegWriter(fps=fps, metadata=dict(artist='Matplotlib'), bitrate=3000)
@@ -304,12 +307,12 @@ def animate_1d_histogram_file(out_folder, fname, box_dims, fps=10, verbose=False
         if verbose:
             print(f"Saved HD 1D animation to: {out_path}")
     except Exception as e:
-        print(f"Error saving MP4 for {fname}: {e}")
+        print(f"Error saving {ext} for {fname}: {e}")
     finally:
         plt.close()
 
 
-def process_1d_directory_animations(directory_path='.', fps=10, xscale="auto", yscale="auto"):
+def process_1d_directory_animations(directory_path='.', fps=10, xscale="auto", yscale="auto", ext="mp4"):
     box_dims = parse_simulation_box(directory_path)
     if not box_dims:
         print("Aborting animation creation due to missing simulation box parameters.")
@@ -338,7 +341,7 @@ def process_1d_directory_animations(directory_path='.', fps=10, xscale="auto", y
     print(f"Found {len(target_files)} 1D density/energy .dat file(s) to animate:")
     for file_path in target_files:
         fname = os.path.basename(file_path)
-        animate_1d_histogram_file(directory_path, fname, box_dims, fps=fps, verbose=True, xscale=xscale, yscale=yscale)
+        animate_1d_histogram_file(directory_path, fname, box_dims, fps=fps, verbose=True, xscale=xscale, yscale=yscale, ext=ext)
 
 
 if __name__ == "__main__":
@@ -371,6 +374,12 @@ if __name__ == "__main__":
         default="auto",
         help="Y-axis scale ('auto' switches to log if ymax - ymin > 1e4 and values are positive)",
     )
+    parser.add_argument(
+        "-ext", "--ext", "--extension",
+        type=str,
+        default="mp4",
+        help="Extension of the plots to be created",
+    )
 
     args = parser.parse_args()
     target_dir = os.path.abspath(args.dir)
@@ -379,4 +388,4 @@ if __name__ == "__main__":
         print(f"Error: Directory '{target_dir}' does not exist.")
         sys.exit(1)
 
-    process_1d_directory_animations(target_dir, fps=args.fps, xscale=args.xscale, yscale=args.yscale)
+    process_1d_directory_animations(target_dir, fps=args.fps, xscale=args.xscale, yscale=args.yscale, ext=args.ext)

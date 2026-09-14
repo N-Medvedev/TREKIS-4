@@ -3,14 +3,14 @@
 ! available at: https://github.com/N-Medvedev/TREKIS-4
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
-! in 2018-2020
+! in 2018-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module contains subroutines to read input files:
 
 MODULE Read_numerical_parameters
 use Universal_constants
 use Objects
-use Dealing_with_files, only: read_file, close_file, Count_lines_in_file, Count_columns_in_file
+use Dealing_with_files, only: read_file, close_file, Count_lines_in_file, Count_columns_in_file, to_lower
 use Little_subroutines, only: create_grid
 
 
@@ -45,7 +45,7 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
    type(Error_handling), intent(inout) :: Err	! error log
    !----------------------
    integer :: Reason, count_lines, i, N_rp, temp
-   character(200) :: Error_descript, temp_ch
+   character(200) :: Error_descript, temp_ch, temp_ch3(3)
    logical :: read_well
    
    count_lines = 0	! to start counting lines in the file
@@ -720,13 +720,15 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
    endif
    
    ! Which format to use for gnuplot figures:
-   read(FN,*,IOSTAT=Reason) numpar%gnupl%gnu_extension
+   read(FN,'(a)',IOSTAT=Reason) temp_ch
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then
       write(Error_descript,'(a,i3)') 'In the file '//trim(adjustl(File_name))//' could not read line ', count_lines
       call Save_error_details(Err, 2, Error_descript)	! module "Objects"
       goto 9998
    endif
+   ! Interprete the plotting flags:
+   call interprete_gnu_vs_py(temp_ch, numpar.gnupl, numpar.py_plot)   ! below
    
    ! Does user require to printout DOS of materials?
    read(FN,*,IOSTAT=Reason) numpar%printout_DOS
@@ -760,6 +762,138 @@ subroutine read_num_pars(FN, File_name, numpar, Err)
    
 9998 continue
 end subroutine read_num_pars
+
+
+
+
+subroutine interprete_gnu_vs_py(read_string, gnupl, py_plot)
+   character(*), intent(in) :: read_string     ! string read from file
+   type(gnu_par), intent(inout) :: gnupl       ! parameters for gnuplotting
+   type(py_par), intent(inout) :: py_plot      ! parameters for python plotting
+   !-------------------------------
+   integer :: count_lines, REASON
+   character(5) :: temp_ch3(3)
+   logical :: read_well
+
+   ! Defaults:
+   gnupl%do_gnuplot = .false.
+   gnupl%gnu_extension = "png"
+   gnupl%gnu_terminal = "pngcairo"
+   py_plot%do_python_figs = .true.
+   py_plot%do_python_videos = .true.
+   py_plot%fig_extension = "png"
+   py_plot%video_extension = "mp4"
+   ! Now, attempt to read it:
+
+   count_lines = 0 ! to start with
+   temp_ch3(1:3) = '' ! to start with
+   read(read_string, *,IOSTAT=Reason) temp_ch3(1:3)
+   if (REASON /= 0) then ! try reading 2 arguments
+      read(read_string, *,IOSTAT=Reason) temp_ch3(1:2)
+      temp_ch3(3) = "mp4"   ! default
+   endif
+   if (REASON /= 0) then ! try reading 1 argument
+      read(read_string, *,IOSTAT=Reason) temp_ch3(1)
+      temp_ch3(2) = "png"   ! default
+      temp_ch3(3) = "mp4"   ! default
+   endif
+
+   call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
+
+   if (.not. read_well) then
+      print*, "Error in reading plotting option (gnuplot, python)"
+      print*, "using default instead: python plotting (png, mp4)"
+      ! Default:
+      gnupl%do_gnuplot = .false.
+      gnupl%gnu_extension = "png"
+      gnupl%gnu_terminal = "pngcairo"
+      py_plot%do_python_figs = .true.
+      py_plot%do_python_videos = .true.
+      py_plot%fig_extension = "png"
+      py_plot%video_extension = "mp4"
+      return ! nothing more to do
+   endif
+   !print*, 'var:', trim(adjustl(temp_ch3(1)))//' : '//trim(adjustl(temp_ch3(2)))//" : "//trim(adjustl(temp_ch3(3)))
+
+   select case (trim(adjustl(temp_ch3(1))))
+   case ('0', 'NO', 'No', 'no') ! no plots at all:
+      gnupl%do_gnuplot = .false.
+      py_plot%do_python_figs = .false.
+      py_plot%do_python_videos = .false.
+
+   case ('eps', 'jpeg', 'jpg', 'gif', 'png', 'pdf') ! legacy format: gnuplot
+      gnupl%do_gnuplot = .true.
+      gnupl%gnu_extension = trim(adjustl(temp_ch3(1)))
+      gnupl%gnu_terminal = trim(adjustl(temp_ch3(1)))
+      if (gnupl%gnu_terminal == 'png') gnupl%gnu_terminal = 'pngcairo'
+      py_plot%do_python_figs = .false.
+      py_plot%do_python_videos = .false.
+
+   case('gnu', 'GNU', 'Gnu')    ! gnuplot
+      gnupl%do_gnuplot = .true.
+      py_plot%do_python_figs = .false.
+      py_plot%do_python_videos = .false.
+      select case (trim(adjustl(temp_ch3(2))))
+      case ('0', 'NO', 'No', 'no')
+         gnupl%do_gnuplot = .false.
+      case default
+         gnupl%do_gnuplot = .true.
+         gnupl%gnu_extension = to_lower(trim(adjustl(temp_ch3(2))))   ! module "Dealing_with_files"
+      endselect
+
+      ! Check if the extensions are allowed:
+      select case (trim(adjustl(gnupl%gnu_extension)))
+      case ('eps', 'jpeg', 'jpg', 'gif', 'png', 'pdf') ! allowed extensions
+         ! all good
+      case default
+         py_plot%fig_extension = "png"
+      end select
+
+      gnupl%gnu_terminal = gnupl%gnu_extension
+      if (gnupl%gnu_terminal == 'png') gnupl%gnu_terminal = 'pngcairo'
+
+   case ('py', 'PY', 'Py')  ! python
+      gnupl%do_gnuplot = .false.
+
+      select case (trim(adjustl(temp_ch3(3))))
+      Case ('0', 'NO', 'No', 'no')
+         py_plot%do_python_videos = .false.
+      case default
+         py_plot%do_python_videos = .true.
+         py_plot%video_extension = to_lower(trim(adjustl(temp_ch3(3)))) ! module "Dealing_with_files"
+      endselect
+
+      select case (trim(adjustl(temp_ch3(2))))
+      Case ('0', 'NO', 'No', 'no')
+         py_plot%do_python_figs = .false.
+      case default
+         py_plot%do_python_figs = .true.
+         py_plot%fig_extension = to_lower(trim(adjustl(temp_ch3(2))))   ! module "Dealing_with_files"
+      endselect
+
+      ! Check if the extensions are allowed:
+      select case (trim(adjustl(py_plot%fig_extension)))
+      case ('png', 'pdf', 'svg', 'eps', 'ps', 'jpeg', 'jpg', 'tiff', 'raw', 'rgba', 'pgf') ! allowed extensions
+         ! all good
+      case default
+         py_plot%fig_extension = "png"
+      end select
+
+      select case (trim(adjustl(py_plot%video_extension)))
+      case ('mp4', 'avi', 'mov', 'mkv', 'webm', 'gif') ! allowed extensions
+         ! all good
+      case default
+         py_plot%video_extension = "mp4"
+      end select
+   endselect
+
+   !print*, 'Gnu=', gnupl%do_gnuplot, gnupl%gnu_extension, gnupl%gnu_terminal, &
+   ! 'Py=', py_plot%do_python_figs, py_plot%do_python_videos, py_plot%fig_extension, py_plot%video_extension
+   !pause "interprete_gnu_vs_py"
+end subroutine interprete_gnu_vs_py
+
+
+
 
 
 

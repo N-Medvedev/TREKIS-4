@@ -416,6 +416,11 @@ type gnu_par
    character(100) :: gnu_terminal
 end type gnu_par
 
+type py_par
+   logical :: do_python_figs, do_python_videos
+   character(10) :: fig_extension, video_extension
+end type py_par
+
 
 
 !==============================================
@@ -600,6 +605,7 @@ type Num_par
 
    ! OUTPUT PRINTOUT:
    type(gnu_par) :: gnupl       ! parameters for gnuplotting
+   type(py_par) :: py_plot      ! parameters for python plotting
    logical :: printout_DOS      ! user defines to printout analyzed DOS and related parameters or not
    logical :: printout_MFPs     ! user defines to printout analytical particles mean free paths or not
    logical :: printout_ranges   ! user defines to printout analytical particles ranges or not
@@ -734,6 +740,30 @@ type :: Particle    ! basic class for all particles
    real(8) :: t_sc  ! time of the next scattering event (excluding a possibility of a border crossing)
    integer :: generation    ! which generation it belongs: 0=incomming, 1=created by incomming ones, 2=secondary generated... etc.
    integer :: in_target     ! in which target this particle is now
+   integer :: origin        ! The phollowing encoding is used:
+   ! -1 = undefined
+   ! 0 = incident
+   ! 1 = photo-absorption ionized
+   ! 2 = photon pair creation
+   ! 4 = positron annihilation
+   ! 10 = photo-Compton ionized (inelastic)
+   ! 11 = electron-impact ionized (inelastic)
+   ! 12 = hole-impact-ionized (inelastic)
+   ! 13 = SHI-impact ionized (inelastic)
+   ! 14 = positron-impact ionized (inelastic)
+   ! 15 = muon-impact-ionized (inelastic)
+   ! 20 = Auger
+   ! 21 = radiative
+   ! 31 = electron bremssrahlung-emitted
+   ! 34 = positron bremssrahlung-emitted
+   ! 35 = muon bremssrahlung-emitted
+   ! 40 = photon Rayleigh / Thomson
+   ! 41 = electron elastic-collision
+   ! 42 = hole elastic-collision
+   ! 43 = SHI elastic collision
+   ! 44 = positron elastic-collision
+   ! 45 = muon elastic-collision
+
    ! coordinates and velosities:
    real(8), dimension(3) :: R	! [A] coordinates (x,y,z)
    real(8), dimension(3) :: S	! [a.u.] relative coordinates (sx, sy, sz)
@@ -932,7 +962,7 @@ pure subroutine set_default_particle_array(Prtcl, typ, siz)
 end subroutine set_default_particle_array
 
 
-pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, in_target, R, S, V, SV, R0, S0, V0, SV0, &
+pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, in_target, origin, R, S, V, SV, R0, S0, V0, SV0, &
                                     Force, KOA, Sh, valent, Z, Name, Zeff, Meff, surface)
    class(Particle), intent(inout) :: Prtcl	! undefined particle as an object
    real(8), intent(in), optional :: Ekin      ! [eV] kinetic energy
@@ -942,6 +972,7 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
    real(8), intent(in), optional :: t_sc  ! time of the next scattering event (excluding a possibility of a border crossing)
    integer, intent(in), optional :: generation    ! which generation it belongs: 0=incomming, 1=created by incomming ones, 2=secondary generated... etc.
    integer, intent(in), optional :: in_target      ! in which target this particle is now
+   integer, intent(in), optional :: origin          ! index of origin
    real(8), dimension(3), intent(in), optional :: R		! [A] coordinates (x,y,z)
    real(8), dimension(3), intent(in), optional :: S		! [a.u.] relative coordinates (sx, sy, sz)
    real(8), dimension(3), intent(in), optional :: V		! [A/fs] velosities (Vx, Vy, Vz)
@@ -971,6 +1002,7 @@ pure subroutine make_new_particle(Prtcl, Ekin, Mass, t0, ti, t_sc, generation, i
    if (present(t_sc)) Prtcl%t_sc = t_sc
    if (present(generation)) Prtcl%generation = generation
    if (present(in_target)) Prtcl%in_target = in_target
+   if (present(origin)) Prtcl%origin = origin
    if (present(R)) Prtcl%R = R
    if (present(S)) Prtcl%S = S
    if (present(V)) Prtcl%V = V
@@ -1026,6 +1058,7 @@ pure subroutine set_default_particle(Prtcl)
    Prtcl%active = .false.   ! by default, a particle is excluded from simulations
    Prtcl%generation = -1    ! has not been generated yet
    Prtcl%in_target = 0      ! by default, let it be in vacuum
+   Prtcl%origin = -1        ! undefined origin before creation
    Prtcl%Ekin = 0.0d0     ! [eV] kinetic energy
    Prtcl%t0 = 0.0d0         ! [fs] starting time
    Prtcl%ti = 1.0d22        ! [fs] time of next event (scattering, decay, etc.)
