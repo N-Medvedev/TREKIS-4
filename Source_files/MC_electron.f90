@@ -122,10 +122,11 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    logical :: transmit
    type(Emission_barrier), pointer :: Em_Barr
    
-   ! Find whether an electron crosses the boundary or reflects back:
    ! 1) Kinetic energy towards crossing the boundary:
    call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, &
                                  'event_electron_target_boundary', INFO=INFO, surf_ind=surf_ind)    ! module "MC_general_tools"
+
+
    if ( (INFO /=0) .or. &
         (isnan(Prtcl%R(1))) .or. &
         (isnan(Prtcl%R(2))) .or. &
@@ -212,7 +213,8 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       ! Update particle's material index according to the new material it enters:
       call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
 
-      !print*, 'Inside target 2#', Prtcl%in_target
+      !Test:
+      !print*, 'Electron inside target 2#', Prtcl%in_target, Prtcl%origin, Prtcl%R(:)
          
       ! 6.a) Shift electron just across the border (along the direction of velocity):
       !Vabs = SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) )
@@ -323,7 +325,8 @@ subroutine save_surface_emission_data(numpar, MC, Prtcl, surf_ind)
 
       ! Save the data for the surface emission event:
       call make_new_particle(MC%MC_Surface_emission_events(i_em), Ekin=Prtcl%Ekin, Mass=Prtcl%Mass, t0=Prtcl%t0, &
-            ti=Prtcl%ti, t_sc=Prtcl%t_sc, generation=Prtcl%generation, in_target=Prtcl%in_target, R=Prtcl%R, R0=Prtcl%R0, &
+            ti=Prtcl%ti, t_sc=Prtcl%t_sc, generation=Prtcl%generation, origin=Prtcl%origin, &
+            in_target=Prtcl%in_target, R=Prtcl%R, R0=Prtcl%R0, &
             V=Prtcl%V, V0=Prtcl%V0, surface=surf_ind)    ! module "Objects"
    endif
 end subroutine save_surface_emission_data
@@ -450,7 +453,8 @@ subroutine event_electron_Bremsstrahlung(used_target, numpar, MC, NOP, MD_supce,
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_ph > size(MC%MC_Photons)) call extend_MC_array(MC%MC_Photons)   ! module "MC_general_tools"
    call make_new_particle(MC%MC_Photons(MC%N_ph), Ekin=dE, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_ph)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin = 31, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_ph)    ! module "Objects"
    ! 7d) Define the next photon scattering event:
    call get_photon_flight_time(used_target, numpar, MC%MC_Photons(MC%N_ph))  ! module "MC_general_tools"
    
@@ -609,7 +613,8 @@ subroutine event_electron_inelastic(used_target, numpar, MC, NOP, MD_supce, E_e,
       matter => used_target%Material(Prtcl%in_target)
    endif
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin = 11, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -643,7 +648,8 @@ subroutine event_electron_inelastic(used_target, numpar, MC, NOP, MD_supce, E_e,
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_h > size(MC%MC_Holes)) call extend_MC_array(MC%MC_Holes)    ! module "MC_general_tools"
    call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=-(E_DOS), t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
+                                      generation=Prtcl%generation+1, origin = 11, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
                                       KOA = KOA, Sh = NSH, valent = valent )    ! module "Objects"
    
    if (.not.valent .and. (KOA == 0)) then ! inconsistency found
@@ -847,7 +853,8 @@ subroutine event_electron_elastic(used_target, numpar, MC, NOP, MD_supce, E_e, E
    if (MC%N_at_nrg > size(MC%MC_Atoms_events)) call extend_MC_array(MC%MC_Atoms_events)    ! module "MC_general_tools"
    ! Save the parameters of this collision (ONLY ENERGY TRANSFER IS SAVED, MOMENTUM NOT DONE YET!)
    call make_new_particle(MC%MC_Atoms_events(MC%N_at_nrg), Ekin=dE, t0=Prtcl%t0, KOA = KOA, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R)    ! module "Objects"
+                                      generation=Prtcl%generation+1, origin = 41, &
+                                      in_target=Prtcl%in_target, R=Prtcl%R)    ! module "Objects"
    
    ! Save the energy to pass to MD module, if needed:
    if (numpar%DO_MD) then   ! if user requested MD at all

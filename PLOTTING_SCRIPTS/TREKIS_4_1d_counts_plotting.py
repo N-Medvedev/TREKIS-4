@@ -246,16 +246,19 @@ def plot_1d_restored_file(out_folder, fname, box_dims, verbose=False, xscale="au
             continue
 
         x_0 = edges[0]
+        x_1 = edges[1]
         x_last = edges[-1]
         x_prev = edges[-2]
+        #x_size =
 
         if x_last > 1e5:
-            calculated_xmax = x_prev * 2.0
+            calculated_xmax = min(x_prev * 2.0, x_last)
             custom_xmax = calculated_xmax if custom_xmax is None else max(custom_xmax, calculated_xmax)
 
-            if x_0 < -1e5:
-                calculated_xmin = -x_prev * 2.0
-                custom_xmin = calculated_xmin if custom_xmin is None else min(custom_xmin, calculated_xmin)
+        if x_0 < -1e5:
+            #calculated_xmin = -x_prev * 2.0
+            calculated_xmin = max( min(-x_prev, x_1), x_0)
+            custom_xmin = calculated_xmin if custom_xmin is None else min(custom_xmin, calculated_xmin)
 
         bin_widths = np.diff(edges)
         bin_volumes = cross_section * bin_widths

@@ -272,7 +272,8 @@ subroutine event_muon_Bremsstrahlung(used_target, numpar, MC, NOP)
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_ph > size(MC%MC_Photons)) call extend_MC_array(MC%MC_Photons)    ! module "MC_general_tools"
    call make_new_particle(MC%MC_Photons(MC%N_ph), Ekin=dE, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_ph)    ! module "Objects"
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 35, &
+                                      R=Prtcl%R, V=V_ph)    ! module "Objects"
    ! 7d) Define the next photon scattering event:
    call get_photon_flight_time(used_target, numpar, MC%MC_Photons(MC%N_ph))  ! module "MC_general_tools"
    ! Save the data for the last step:
@@ -372,7 +373,8 @@ subroutine event_muon_inelastic(used_target, numpar, MC, NOP, MD_supce, E_e, E_h
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_e > size(MC%MC_Electrons)) call extend_MC_array(MC%MC_Electrons)   ! module "MC_general_tools"
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 15, &
+                                      R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -401,7 +403,8 @@ subroutine event_muon_inelastic(used_target, numpar, MC, NOP, MD_supce, E_e, E_h
     ! in case we have more particles than spaces in the array, extend the array:
     if (MC%N_h > size(MC%MC_Holes)) call extend_MC_array(MC%MC_Holes)   ! module "MC_general_tools"
     call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=abs(E_DOS), t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 15, &
+                                      R=Prtcl%R, V=V_h, &
                                       KOA = KOA, Sh = NSH, valent = valent )    ! module "Objects"
 
    ! 8) Get new holes time of the next event:
@@ -561,7 +564,8 @@ subroutine event_muon_elastic(used_target, numpar, MC, NOP, MD_supce, E_mu_at)
    if (MC%N_at_nrg > size(MC%MC_Atoms_events)) call extend_MC_array(MC%MC_Atoms_events)    ! module "MC_general_tools"
    ! Save the parameters of this collision (ONLY ENERGY TRANSFER IS SAVED, MOMENTUM NOT DONE YET!)
    call make_new_particle(MC%MC_Atoms_events(MC%N_at_nrg), Ekin=dE, t0=Prtcl%t0,  KOA = KOA, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=a)    ! module "Objects"
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 45, &
+                                      R=Prtcl%R, V=a)    ! module "Objects"
    
    ! Save the energy to pass to MD module, if needed:
    if (numpar%DO_MD) then   ! if user requested MD at all

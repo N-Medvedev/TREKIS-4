@@ -241,8 +241,9 @@ subroutine event_SHI_inelastic(used_target, numpar, bunch, MC, NOP, MD_supce, E_
    MC%N_e = MC%N_e + 1
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_e > size(MC%MC_Electrons)) call extend_MC_array(MC%MC_Electrons)    ! module "MC_general_tools"
-   call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+   call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, generation=Prtcl%generation+1, &
+                              in_target=Prtcl%in_target, origin = 13, &
+                              R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -294,7 +295,8 @@ subroutine event_SHI_inelastic(used_target, numpar, bunch, MC, NOP, MD_supce, E_
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_h > size(MC%MC_Holes)) call extend_MC_array(MC%MC_Holes)    ! module "MC_general_tools"
    call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=abs(E_DOS), t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 13, &
+                                      R=Prtcl%R, V=V_h, &
                                       KOA = KOA, Sh = NSH, valent = valent )    ! module "Objects"
 
    ! 8) Get new holes time of the next event:

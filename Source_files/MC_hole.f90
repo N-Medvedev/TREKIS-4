@@ -140,6 +140,7 @@ subroutine event_hole_target_boundary(used_target, numpar, Prtcl, NOP, INFO, MD_
       print*, 'Inside target #', Prtcl%in_target
       print*, 'n to surface:', norm_to_surf
    endif
+   !print*, 'event_hole_target_boundary-a:', NOP, Prtcl%V(:)
    
    ! Change velosity according to reflection from the surface with given normal:
    call reflection_from_surface(Prtcl%V, norm_to_surf)   ! module "MC_general_tools"
@@ -150,9 +151,11 @@ subroutine event_hole_target_boundary(used_target, numpar, Prtcl, NOP, INFO, MD_
       !Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/Vabs
       Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps * Prtcl%V(:)/abs(Prtcl%V(:))
    else 
-      print*, 'Hole has zero velosity'
+      print*, 'Note: event_hole_target_boundary: Hole has zero velosity'
       Prtcl%R(:) = Prtcl%R(:) + m_tollerance_eps
    endif
+
+   !print*, 'event_hole_target_boundary-b:', NOP, Prtcl%V(:)
    
    ! Find next scattering event on the boundary (but keep old (in-)elastic scattering time):
    call get_hole_flight_time(used_target, numpar, Prtcl, MD_supce, E_h, no_scatternig=.true.)  ! module "MC_general_tools"
@@ -283,7 +286,8 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_e > size(MC%MC_Electrons)) call extend_MC_array(MC%MC_Electrons)    ! module "Objects"
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ee, t0=Prtcl%t0, &
-             generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+             generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 20, &
+             R=Prtcl%R, V=V_e)    ! module "Objects"
    ! 2e) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
    
@@ -342,7 +346,8 @@ subroutine Auger_decay(used_target, numpar, MC, NOP, MD_supce, E_e, E_h)
    endif
    ! Save parameters of the new particles into array:
    call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=abs(E_DOS_2), t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 20, &
+                                      R=Prtcl%R, V=V_h, &
                                       !KOA = KOA, Sh = sh_selected_2, valent = Element%valent(sh_selected_2) )    ! module "Objects"
                                       KOA = KOA_in, Sh = sh_selected_2_in, valent = Element%valent(sh_selected_2) )    ! module "Objects"
    ! 3b) Get new holes time of the next event:
@@ -455,7 +460,8 @@ subroutine radiative_decay(used_target, numpar, MC, NOP, MD_supce, E_h)
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_ph > size(MC%MC_Photons)) call extend_MC_array(MC%MC_Photons)     ! module "MC_general_tools"
    call make_new_particle(MC%MC_Photons(MC%N_ph), Ekin=Eph, t0=Prtcl%t0, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_ph)    ! module "Objects"
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 21, &
+                                      R=Prtcl%R, V=V_ph)    ! module "Objects"
    ! 2e) Define the next photon scattering event:
    call get_photon_flight_time(used_target, numpar, MC%MC_Photons(MC%N_ph))  ! module "MC_general_tools"
    
@@ -578,7 +584,8 @@ subroutine event_hole_inelastic(used_target, numpar, MC, NOP, MD_supce, E_e, E_h
    ! in case we have more particles than spaces in the array, extend the array:
    if (MC%N_e > size(MC%MC_Electrons)) call extend_MC_array(MC%MC_Electrons)     ! module "MC_general_tools"
    call make_new_particle(MC%MC_Electrons(MC%N_e), Ekin=Ekin, t0=Prtcl%t0, &
-             generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_e)    ! module "Objects"
+             generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 12, &
+             R=Prtcl%R, V=V_e)    ! module "Objects"
    
    ! 6) Get new electrons time of the next event:
    call get_electron_flight_time(used_target, numpar, MC%MC_Electrons(MC%N_e), MD_supce, E_e)  ! module "MC_general_tools"
@@ -624,7 +631,8 @@ subroutine event_hole_inelastic(used_target, numpar, MC, NOP, MD_supce, E_e, E_h
       matter => used_target%Material(Prtcl%in_target)
    endif
    call make_new_particle(MC%MC_Holes(MC%N_h), Ekin=abs(E_DOS), t0=Prtcl%t0, &
-                          generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R, V=V_h, &
+                          generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 12, &
+                          R=Prtcl%R, V=V_h, &
                           KOA = 0, Sh = 0, valent = valent )    ! module "Objects"
 
    ! 8) Get new hole's time of the next event:
@@ -737,7 +745,8 @@ subroutine event_hole_elastic(used_target, numpar, MC, NOP, MD_supce, E_h, E_h_a
    if (MC%N_at_nrg > size(MC%MC_Atoms_events)) call extend_MC_array(MC%MC_Atoms_events)    ! module "MC_general_tools"
    ! Save the parameters of this collision (ONLY ENERGY TRANSFER IS SAVED, MOMENTUM NOT DONE YET!)
    call make_new_particle(MC%MC_Atoms_events(MC%N_at_nrg), Ekin=dE, t0=Prtcl%t0, KOA = KOA, &
-                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, R=Prtcl%R)    ! module "Objects"
+                                      generation=Prtcl%generation+1, in_target=Prtcl%in_target, origin = 42, &
+                                      R=Prtcl%R)    ! module "Objects"
 
    ! Save the energy to pass to MD module, if needed:
    if (numpar%DO_MD) then   ! if user requested MD at all
