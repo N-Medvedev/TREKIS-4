@@ -1888,12 +1888,12 @@ subroutine sort_holes_cartesian(used_target, N_prtcl, MC_Prtcl, numpar, tim, Dis
          ! Include only active particles:
          if (MC_Prtcl(i)%active) then
 
-            if ( MC_Prtcl(i)%R(3) <= 0.0 ) then
-                 print*, 'Hole outside the material:'
-                 print*, 'R=', MC_Prtcl(i)%R(:)
-                 print*, 'T=', MC_Prtcl(i)%in_target
-                 print*, 'O=', MC_Prtcl(i)%origin
-            endif
+!             if ( MC_Prtcl(i)%R(3) <= 0.0 ) then
+!                  print*, 'Hole outside the material:'
+!                  print*, 'R=', MC_Prtcl(i)%R(:)
+!                  print*, 'T=', MC_Prtcl(i)%in_target
+!                  print*, 'O=', MC_Prtcl(i)%origin
+!             endif
 
             ! Find to which array to add this hole, according to its element and shell:
             N_arr = hole_number_in_array(used_target, MC_Prtcl(i)%in_target, MC_Prtcl(i)%KOA, MC_Prtcl(i)%Sh)     ! below
@@ -3967,22 +3967,45 @@ subroutine allocate_surface_data_arrays(Nsiz_surf, Nsiz_surf2, &
             Dens_e_Surface_Xb, Dens_e_Surface_Yb, Dens_e_Surface_Zb, &
             E_Dens_e_Surface_Xb, E_Dens_e_Surface_Yb, E_Dens_e_Surface_Zb
    !-----------------------
-   ! Front surface:
-   allocate(Dens_e_Surface_X(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
-   allocate(Dens_e_Surface_Y(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
-   allocate(Dens_e_Surface_Z(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
-   allocate(E_Dens_e_Surface_X(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
-   allocate(E_Dens_e_Surface_Y(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
-   allocate(E_Dens_e_Surface_Z(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
-   ! Back surface:
-   allocate(Dens_e_Surface_Xb(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
-   allocate(Dens_e_Surface_Yb(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
-   allocate(Dens_e_Surface_Zb(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
-   allocate(E_Dens_e_Surface_Xb(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
-   allocate(E_Dens_e_Surface_Yb(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
-   allocate(E_Dens_e_Surface_Zb(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
+   integer :: size_1, size_2
 
-   !print*, size(Dens_e_Surface_Z,1), size(Dens_e_Surface_Z,2)
+   !allocate(Dens_e_Surface_X(Nsiz_surf(1), Nsiz_surf2(1)), source = 0.0d0)
+   size_1 = max(Nsiz_surf(1), 1)
+   size_2 = max(Nsiz_surf2(1), 1)
+   allocate(Dens_e_Surface_X(size_1, size_2), source = 0.0d0)           ! Front surface
+   allocate(E_Dens_e_Surface_X(size_1, size_2), source = 0.0d0)         ! Front surface
+   allocate(Dens_e_Surface_Xb(size_1, size_2), source = 0.0d0)          ! Back surface
+   allocate(E_Dens_e_Surface_Xb(size_1, size_2), source = 0.0d0)        ! Back surface
+
+   !allocate(Dens_e_Surface_Y(Nsiz_surf(2), Nsiz_surf2(2)), source = 0.0d0)
+   size_1 = max(Nsiz_surf(2), 1)
+   size_2 = max(Nsiz_surf2(2), 1)
+   allocate(Dens_e_Surface_Y(size_1, size_2), source = 0.0d0)           ! Front surface
+   allocate(E_Dens_e_Surface_Y(size_1, size_2), source = 0.0d0)         ! Front surface
+   allocate(Dens_e_Surface_Yb(size_1, size_2), source = 0.0d0)          ! Back surface
+   allocate(E_Dens_e_Surface_Yb(size_1, size_2), source = 0.0d0)        ! Back surface
+
+   !allocate(Dens_e_Surface_Z(Nsiz_surf(3), Nsiz_surf2(3)), source = 0.0d0)
+   size_1 = max(Nsiz_surf(3), 1)
+   size_2 = max(Nsiz_surf2(3), 1)
+   allocate(Dens_e_Surface_Z(size_1, size_2), source = 0.0d0)           ! Front surface
+   allocate(E_Dens_e_Surface_Z(size_1, size_2), source = 0.0d0)         ! Front surface
+   allocate(Dens_e_Surface_Zb(size_1, size_2), source = 0.0d0)          ! Back surface
+   allocate(E_Dens_e_Surface_Zb(size_1, size_2), source = 0.0d0)        ! Back surface
+
+
+!    print*, 'SURFACE ARRAY X:', size(Dens_e_Surface_X,1), size(Dens_e_Surface_X,2)
+!    print*, 'SURFACE ARRAY Y:', size(Dens_e_Surface_Y,1), size(Dens_e_Surface_Y,2)
+!    print*, 'SURFACE ARRAY Z:', size(Dens_e_Surface_Z,1), size(Dens_e_Surface_Z,2)
+!    print*, 'SURFACE ARRAY EX:', size(E_Dens_e_Surface_X,1), size(E_Dens_e_Surface_X,2)
+!    print*, 'SURFACE ARRAY EY:', size(E_Dens_e_Surface_Y,1), size(E_Dens_e_Surface_Y,2)
+!    print*, 'SURFACE ARRAY EZ:', size(E_Dens_e_Surface_Z,1), size(E_Dens_e_Surface_Z,2)
+!    print*, 'SURFACE ARRAY Xb:', size(Dens_e_Surface_Xb,1), size(Dens_e_Surface_Xb,2)
+!    print*, 'SURFACE ARRAY Yb:', size(Dens_e_Surface_Yb,1), size(Dens_e_Surface_Yb,2)
+!    print*, 'SURFACE ARRAY Zb:', size(Dens_e_Surface_Zb,1), size(Dens_e_Surface_Zb,2)
+!    print*, 'SURFACE ARRAY EXb:', size(E_Dens_e_Surface_Xb,1), size(E_Dens_e_Surface_Xb,2)
+!    print*, 'SURFACE ARRAY EYb:', size(E_Dens_e_Surface_Yb,1), size(E_Dens_e_Surface_Yb,2)
+!    print*, 'SURFACE ARRAY EZb:', size(E_Dens_e_Surface_Zb,1), size(E_Dens_e_Surface_Zb,2)
    !print*, Nsiz_surf(:)
    !print*, Nsiz_surf2(:)
    !pause 'allocate_surface_data_arrays'

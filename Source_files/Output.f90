@@ -98,7 +98,7 @@ character(100) ::   m_python_MFP, m_python_Se, &
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 13.09.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 16.09.2026)'
 
 
 ! All output file names:
@@ -3388,7 +3388,7 @@ subroutine printout_Se_and_ranges(used_target, numpar, bunch)
          end select
 
          ! Positron inelastic Se and range:
-         Filename_gnu= trim(adjustl(m_output_Se))//trim(adjustl(used_target%Material(i)%Name))//'_posiron'//trim(adjustl(Model_name))//'.dat'
+         Filename_gnu= trim(adjustl(m_output_Se))//trim(adjustl(used_target%Material(i)%Name))//'_positron'//trim(adjustl(Model_name))//'.dat'
          Filename = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(Filename_gnu))
          open(newunit = FN, FILE = trim(adjustl(Filename)))
          write(FN,'(a)') '#Energy(eV)    Se(eV/A)   Range(A)'
@@ -5084,6 +5084,13 @@ subroutine Print_title(print_to, used_target, numpar, bunch, MD_atoms, MD_supce,
    !write(print_to,'(a)') '*      TREKIS: Time-Resolved Kinetics in Irradiated Solids       *'
    !write(print_to,'(a)') trim(adjustl(m_starline))
    !**********************************************
+
+
+   if (numpar%verbose) then
+      write(print_to,'(a)') " verbose option is on, TREKIS-4 is going to be a chatterbox..."
+      write(print_to,'(a)') trim(adjustl(m_starline))
+   endif
+
    if (numpar%new_input_format) then ! new format used
       write(print_to,'(a)') ' Input read from the file: '//trim(adjustl(m_input_minimal))
    else
