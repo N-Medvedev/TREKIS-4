@@ -1568,6 +1568,7 @@ subroutine get_surface_data_2d_Cartesian(used_target, MC, numpar, tim, &
    ! Check if there is any active particle:
    anything_to_do = any(MC%MC_Surface_emission_events(:)%active)
    if (.not. anything_to_do) return ! there are particles to distribute, just exit the subroutine
+   Cell_area = 0.0d0
 
    !print*, 'Test get_surface_data_2d_Cartesian:', anything_to_do, MC%N_surf_emission
 
@@ -1640,22 +1641,25 @@ subroutine get_surface_data_2d_Cartesian(used_target, MC, numpar, tim, &
                   endif ! Second axis
                endif ! First axis
 
-               ! Make sure it is not too small:
-               if (Cell_area < 1.0d-10) Cell_area = 1.0d-10 ! [A^2]
 
                !print*, 'get_surface_data_2d_Cartesian 3:', i, MC_Prtcl%surface, Cell_area
 
                ! Add the particle and its energy to the output arrays:
-               if ((i_arr > 0) .and. (j_arr > 0)) then ! it is within the grid
+
+               !if (Cell_area < 1.0d-10) Cell_area = 1.0d-10 ! [A^2]                    ! Make sure it is not too small:
+
+               if (Cell_area > 1.0d-12) then ! only add if particle is within the grid; ignor otherwise
+                if ((i_arr > 0) .and. (j_arr > 0)) then ! it is within the grid
                   if (MC_Prtcl%surface > 0) then ! front surface
                      Dens_e_Surface(i_arr, j_arr) = Dens_e_Surface(i_arr, j_arr) + 1.0d0/Cell_area    ! [1/A^2]
                      E_Dens_e_Surface(i_arr, j_arr) = E_Dens_e_Surface(i_arr, j_arr) + MC_Prtcl%Ekin/Cell_area    ! [eV/A^2]
                   else ! back surface
                      Dens_e_Surface_b(i_arr, j_arr) = Dens_e_Surface_b(i_arr, j_arr) + 1.0d0/Cell_area    ! [1/A^2]
                      E_Dens_e_Surface_b(i_arr, j_arr) = E_Dens_e_Surface_b(i_arr, j_arr) + MC_Prtcl%Ekin/Cell_area    ! [eV/A^2]
-                  endif
+                  endif ! (MC_Prtcl%surface > 0)
                   !print*, 'get_surface_data_2d_Cartesian 3.5:', i, Dens_e_Surface_b(i_arr, j_arr)
-               endif
+                endif ! i_arr
+               endif ! Cell_area
 
                !print*, 'get_surface_data_2d_Cartesian 4:', i, i_arr, j_arr
 
