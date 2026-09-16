@@ -66,6 +66,7 @@ call print_time('Start at', ind=0)  ! module "Little_subroutines"
 !--------------------------------------------------------------
 ! 1) Read input files:
 call Read_input(g_target, g_numpar, g_bunch, g_Err)     ! module "Read_input_data"
+if (g_numpar%verbose) write(*,'(a)') " Completed Read_input"
 if (g_Err%Err) goto 9999    ! if an error occured while reading input files, terminate the program
 
 ! In case user provided time-grid, conform the MD-step parameters to it:
@@ -79,12 +80,16 @@ call set_OMP_number(g_numpar%NOMP, g_numpar%verbose, 6)    ! module "Output"
 
 ! Set default values:
 call Set_defaults_MC(g_numpar, g_bunch, g_MC)  ! module "Initial_conditions"
+if (g_numpar%verbose) write(*,'(a)') " Completed Set_defaults_MC"
+
 ! Interprete the target names, and get the material parameters accordingly:
 call Get_targets_parameters(g_target, g_numpar, g_Err)  ! module "Read_input_data"
+if (g_numpar%verbose) write(*,'(a)') " Completed Get_targets_parameters"
 
 if (g_Err%Err) goto 9999    ! if an error occured while reading input files, terminate the program
 ! Read DOS for the target material:
 call read_DOS_files(g_target, g_numpar, g_Err)    ! module "Dealing_with_DOS"
+if (g_numpar%verbose) write(*,'(a)') " Completed read_DOS_files"
 if (g_Err%Err) goto 9999    ! if an error occured while reading input files, terminate the program
 ! Set the surface barrier parameters:
 call set_all_barriers_parameters(g_target)  ! module "MC_general_tools"
@@ -92,21 +97,26 @@ call set_all_barriers_parameters(g_target)  ! module "MC_general_tools"
 ! Get MD parameters, if user runs MD simulation, such as
 ! supercell parameters, atomic coordinates and velocities, MD potentials:
 call Read_MD_input(g_target, g_numpar, g_MD_atoms, g_MD_supce, g_MD_pots, g_Err) ! module "Read_input_data"
+if (g_numpar%verbose) write(*,'(a)') " Completed Read_MD_input"
 if (g_Err%Err) goto 9999    ! if an error occured while reading input files, terminate the program
 
 !--------------------------------------------------------------
 ! 2) Create output directory:
 call make_output_folder(g_target, g_numpar, g_bunch)    ! module "Output"
+if (g_numpar%verbose) write(*,'(a)') " Completed make_output_folder"
 
 ! Save DOS parameters if required:
 call printout_DOS(g_target, g_numpar)  ! module "Output"
+if (g_numpar%verbose) write(*,'(a)') " Completed printout_DOS"
 
 !--------------------------------------------------------------
 ! 3) Set initial parameters:
 call Set_initial_parameters(g_numpar, g_target, g_bunch, g_MC)  ! module "Initial_conditions"
+if (g_numpar%verbose) write(*,'(a)') " Completed Set_initial_parameters"
 
 ! 3.a) Find within which target each incident particle is:
 call Find_starting_targets(g_target, g_numpar, g_bunch, g_MC)  ! module "MC_general_tools"
+if (g_numpar%verbose) write(*,'(a)') " Completed Find_starting_targets"
 
 !--------------------------------------------------------------
 ! Printout the title of the program on the screen:
@@ -122,6 +132,7 @@ call Print_atomic_parameters(g_numpar%FN_parameters, g_target)  ! module "Output
 
 ! 3a) Prepare arrays for output distributions from MC:
 call allocate_output(g_target, g_numpar, g_output)  ! module "MC_data_analysis"
+if (g_numpar%verbose) write(*,'(a)') " Completed allocate_output"
 
 !--------------------------------------------------------------
 ! 4) Prepare cross sections (and mean free paths):
@@ -133,6 +144,7 @@ call get_CDF(g_numpar, g_target, g_Err) ! module "CDF_get_from_data"
 call renormalize_alpha_CDF(g_numpar, g_target%Material) ! module "CS_electrons_inelastic"
 ! and the same for all kinds of SHI:
 call renormalize_alpha_SHI_CDF(g_numpar, g_target%Material, g_bunch) ! module "CS_ions_inelastic"
+if (g_numpar%verbose) write(*,'(a)') " Completed get_CDF, renormalize_alpha_CDF, renormalize_alpha_SHI_CDF"
 
 !--------------------------------------------------------------
 ! Save CDF parameters into the output file:
@@ -145,6 +157,7 @@ call get_photon_Compton(g_target%Material, g_numpar, g_Err)     ! module "CS_pho
 call get_photon_pair_creation(g_target%Material, g_numpar, g_Err)   ! module "CS_photons"
 ! a.4) cross sections of coherent (aka elastic, aka Rayleigh, aka Thomson) scattering:
 call get_photon_Rayleigh(g_target%Material, g_numpar, g_Err)    ! module "CS_photons"
+if (g_numpar%verbose) write(*,'(a)') " Completed photon mean free paths"
 
 ! b) electrons:
 ! b.1) Inelastic:
@@ -153,12 +166,14 @@ call get_electron_IMFP(g_target%Material, g_numpar, g_Err)  ! module "CS_electro
 call get_electron_EMFP(g_target%Material, g_numpar, g_Err)  ! module "CS_electrons_elastic"
 ! b.3) Bremsstrahlung:
 call get_electron_Brems(g_target%Material, g_numpar, g_Err) ! module "CS_electrons_Bremsstrahlung"
+if (g_numpar%verbose) write(*,'(a)') " Completed electron mean free paths"
 
 ! c) SHI:
 ! c.1) Inelastic scattering:
 call get_ion_IMFP(g_target%Material, g_numpar, g_bunch, g_MC, g_Err)	! module "CS_ion_inelastic"
 ! c.2) Elastic scattering:
 ! Not ready yet...
+if (g_numpar%verbose) write(*,'(a)') " Completed ion mean free paths"
 
 ! d) Positron:
 ! d.1) Inelastic:
@@ -169,12 +184,14 @@ call get_positron_EMFP(g_target%Material, g_numpar, g_Err)	! module "CS_positron
 call get_positron_Brems(g_target%Material, g_numpar, g_Err)	! module "CS_positrons_Bremsstrahlung"
 ! d.4) Annihilation:
 call get_positron_annihilation(g_target%Material, g_numpar, g_Err)	! module "CS_positrons_annihilation"
+if (g_numpar%verbose) write(*,'(a)') " Completed positron mean free paths"
 
 ! e) Valence hole:
 ! e.1) Inelastic scattering:
 call get_hole_IMFP(g_target%Material, g_numpar, g_Err)  ! module "CS_holes_inelastic"
 ! e.2) Elastic scattering:
 call get_holes_EMFP(g_target%Material, g_numpar, g_Err)  ! module "CS_holes_elastic"
+if (g_numpar%verbose) write(*,'(a)') " Completed VB-hole mean free paths"
 
 ! f) Muon:
 ! f.1) Inelastic:
@@ -185,6 +202,7 @@ call get_muon_EMFP(g_target%Material, g_numpar, g_Err)	! module "CS_muon_elastic
 call get_muon_Brems(g_target%Material, g_numpar, g_Err)	! module "CS_muon_Bremsstrahlung"
 ! f.4) Pair creation:
 ! NOT READY
+if (g_numpar%verbose) write(*,'(a)') " Completed muon mean free paths"
 
 
 !--------------------------------------------------------------
@@ -201,9 +219,11 @@ write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
 
 ! Sample the MC particles first free flight distance from the surface to the first event:
 call prepare_MC_run(g_target, g_MC, g_numpar, g_MD_supce, g_MD_supce%E_e_from_MC, g_MD_supce%E_h_from_MC)   ! module "MC"
+if (g_numpar%verbose) write(*,'(a)') " Completed prepare_MC_run"
 
 ! Prepare for MD run - potential and forces before the start:
 call prepare_MD_run(g_MD_atoms, g_MD_supce, g_MD_pots, g_numpar)    ! module "MD"
+if (g_numpar%verbose) write(*,'(a)') " Completed prepare_MD_run"
 
 ! If the user requested to calculated cohesive energy instead of full run:
 if (g_numpar%do_cohesive) then
@@ -222,21 +242,28 @@ call print_time_step('Simulation time start:', g_time, msec=.true.)   ! module "
 
 ! Collect printable output data from raw MC and MD data:
 call analyze_MC_output_data(g_target, g_numpar, g_MC, g_output, g_time)    ! module "MC_data_analysis"
+if (g_numpar%verbose) write(*,'(a)') " Completed analyze_MC_output_data"
 
 call analyze_MD_output_data(g_numpar, g_MD_supce, g_MD_pots, g_MD_atoms, g_output)       ! module "MD_data_analysis"
+if (g_numpar%verbose) write(*,'(a)') " Completed analyze_MD_output_data"
 
 
 ! Save the first output data:
 call write_output_files(g_target, g_numpar, g_output, g_MD_atoms, g_MD_supce, g_MD_pots, g_time)    ! module "Output"
+if (g_numpar%verbose) write(*,'(a)') " Completed write_output_files"
 
 !SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
 ! Start time propagation:
+
+if (g_numpar%verbose) write(*,'(a)') " Starting time cycle"
 TP:do while (g_time+g_numpar%dt_MD <= g_numpar%t_total)
    ! In case the user provided time-grid, reset the time-step if required:
    call reset_dt(g_numpar, g_time)  ! below
 
    ! 1) High-energy electron kinetics (Monte Carlo):
    call MC_step(g_time, g_numpar%dt_MD, g_MC, g_target, g_numpar, g_bunch, g_MD_supce) ! module "MC"
+   if (g_numpar%verbose) write(*,'(a,f)') " Completed MC_step,", g_time
+
 
 !    print*, 'TEST 2'
 
@@ -247,6 +274,7 @@ TP:do while (g_time+g_numpar%dt_MD <= g_numpar%t_total)
    !--------------------------------------------------------------
    ! 3) Atomic system (Molecular Dynamics):
    call MD_step(g_MD_atoms, g_MD_supce, g_MD_pots, g_numpar, g_time, g_numpar%dt_MD)  ! module "MD"
+   if (g_numpar%verbose) write(*,'(a,f)') " Completed MD_step,", g_time
 
    !--------------------------------------------------------------
    ! Prepare for the next timestep:
@@ -295,8 +323,11 @@ write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
 
 ! Execute all gnuplot scripts to plot the data user requested to:
 if (g_numpar%gnupl%do_gnuplot) call execute_all_gnuplots(g_numpar) ! module "Output"
+if (g_numpar%verbose) write(*,'(a)') " Completed execute_all_gnuplots"
+
 ! All call for python plotting scripts:
 call execute_all_pythons(g_numpar) ! module "Output"
+if (g_numpar%verbose) write(*,'(a)') " Completed execute_all_pythons"
 
 !--------------------------------------------------------------
 ! Finilize simulation run:
