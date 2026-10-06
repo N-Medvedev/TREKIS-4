@@ -14,7 +14,7 @@ MODULE CDF_Ritchi
 use Universal_constants
 use Little_subroutines, only: find_in_array_monoton, interpolate_data_single
 use Relativity, only: kinetic_energy_from_momentum
-use Objects, only: Target_atoms, Num_par, Recon_CDF
+use Objects, only: Matter, Target_atoms, Num_par, Recon_CDF
 
 implicit none
 
@@ -24,6 +24,42 @@ parameter (m_one_third = 1.0d0/3.0d0)
 parameter (m_two_third = 2.0d0/3.0d0)
 
  contains
+
+
+
+subroutine Get_total_copmlex_CDF(used_target, numpar, tar_ind, hw, hq, complex_CDF, photon, Shell_CDF)
+   type(Matter), intent(in), target :: used_target   ! parameters of the target
+   type(Num_par), intent(in) :: numpar   ! all numerical parameters
+   integer, intent(in) :: tar_ind ! index of the target
+   real(8), intent(in) ::  hw    ! transferred energy [eV]
+   real(8), intent(in) ::  hq    ! transferred momentum [sqrt(eV/J)/m] (not [kg*m/s] !)
+   complex(8), intent(out) :: complex_CDF ! constructed CDF
+   logical, intent(in), optional :: photon
+   type(Recon_CDF), dimension(:), allocatable, intent(inout), optional :: Shell_CDF   ! shell-resolved CDFs
+   !------------------------------------------------------
+   logical :: it_is_photon
+
+   if (tar_ind <= 0) then ! vacuum CDF
+      complex_CDF = cmplx(1.0d0, 0.0d0)
+      return ! nothing else to do
+   endif ! (tar_ind <= 0)
+
+   ! if it's not vacuum:
+   if (present(photon)) then ! it may be a photon
+      it_is_photon = photon
+   elseif (abs(hq) < 1.0d-6) then ! close enough to be a photon
+      it_is_photon = .true.
+   else ! by default, it is not a photon
+      it_is_photon = .false.
+   endif
+
+   if (present(Shell_CDF)) then
+      call Total_copmlex_CDF(used_target%Material(tar_ind), numpar, hw, hq, complex_CDF, it_is_photon, Shell_CDF) ! below
+   else
+      call Total_copmlex_CDF(used_target%Material(tar_ind), numpar, hw, hq, complex_CDF, it_is_photon) ! below
+   endif
+
+end subroutine Get_total_copmlex_CDF
 
 
 
@@ -64,9 +100,9 @@ subroutine Total_copmlex_CDF(Material, numpar, hw, hq, complex_CDF, photon, Shel
 
 
    ! valence band, if defined and used:
-   if (allocated(Material%CDF_valence%A)) then ! core shell
+   if (allocated(Material%CDF_valence%A)) then ! valence band
       call construct_CDF(Part_CDF, Material, Mass, 0, 0, hw, hq, &
-                         Material%DOS%v_f, E0_model, photon=it_is_photon, ReL=ReE, ImL=ImE) ! below
+                         Material%DOS%v_f, E0_model, photon=it_is_photon, ReL=ReL, ImL=ImL) ! below
 
       ! Save individual shell CDF:
       if (present(Shell_CDF)) then ! save for each shell separately
@@ -81,6 +117,10 @@ subroutine Total_copmlex_CDF(Material, numpar, hw, hq, complex_CDF, photon, Shel
             Shell_CDF(Nat+1)%CDF(1) = dcmplx(1.0d0, 0.0d0)
          endif
       endif
+
+      ! Sum them up:
+      ReE = ReE + (1.0d0 + ReL)  ! without unity, to be added later to the total CDF
+      ImE = ImE + ImL            ! complete
    endif
 
 
@@ -95,7 +135,7 @@ subroutine Total_copmlex_CDF(Material, numpar, hw, hq, complex_CDF, photon, Shel
             ! Get CDF corresponding to Ritchie-Howie loss function for this shell:
             ! 1) Get real and imaginary parts of the loss function:
             call construct_CDF(Part_CDF, Material, Mass, i, j, hw, hq, &
-                            Material%DOS%v_f, E0_model, photon=it_is_photon, ReL=ReE, ImL=ImE) ! below
+                            Material%DOS%v_f, E0_model, photon=it_is_photon, ReL=ReL, ImL=ImL) ! below
 
             ! Save individual shell CDF:
             if (present(Shell_CDF)) then ! save for each shell separately
@@ -146,7 +186,7 @@ subroutine Total_copmlex_CDF(Material, numpar, hw, hq, complex_CDF, photon, Shel
    ReE = -(1.0d0 - ReE)
    den = ReE**2 + ImE**2   ! denominator in both, real and imaginary parts
    if (abs(den) > 1.0d-12) then
-      complex_CDF = dcmplx(-ReE/den, ImE/den)   ! partial complex CDF for this shell, reconstructed from Ritchie-Howie loss function
+      complex_CDF = dcmplx(-ReE/den, ImE/den)   ! partial complex CDF reconstructed from Ritchie-Howie loss function
    else  ! no CDF
       complex_CDF = dcmplx(1.0d0, 0.0d0)
    endif
