@@ -178,7 +178,7 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    barr_type = min(Em_Barr2%barr_type, Em_Barr1%barr_type)
 
    ! Use average parameters between the targets:
-   work_function = ( Em_Barr1%Work_func + Em_Barr2%Work_func ) * 0.5d0
+   work_function = abs( Em_Barr1%Work_func - Em_Barr2%Work_func )
    bar_height = ( Em_Barr1%Bar_height + Em_Barr2%Bar_height ) * 0.5d0
    Surf_bar = ( Em_Barr1%Surf_bar + Em_Barr2%Surf_bar ) * 0.5d0
    ! Get the coefficients:
