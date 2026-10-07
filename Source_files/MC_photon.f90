@@ -14,13 +14,14 @@ use Universal_constants
 use Objects
 use Geometries ! ,only: m_tollerance_eps
 use MC_general_tools, only: flight_time_to_boundary, out_of_simulation_box, particle_cross_box_boundary, check_shell, check_element, &
-                                            deflect_velosity, get_electron_flight_time, get_positron_flight_time, get_hole_flight_time, get_photon_flight_time, &
-                                            sample_phi, sample_theta, remove_particle_from_MC_array, extend_MC_array, &
-                                            put_back_into_box, find_the_target
+                  deflect_velosity, get_electron_flight_time, get_positron_flight_time, get_hole_flight_time, get_photon_flight_time, &
+                  sample_phi, sample_theta, remove_particle_from_MC_array, extend_MC_array, &
+                  put_back_into_box, find_the_target, define_normal_to_surface, reflection_from_surface
 use CS_general_tools, only: total_CS_from_chennels, MFP_from_sigma, Time_from_MFP, find_type_of_scattering, find_valence_hole_mass
 use CS_photons_Rayleigh, only: get_Rayleigh_CS
 use CS_photons_Compton, only: Compton_CS, Compton_Ec, Compton_mu_from_Ec
 use CS_photons_pair_creation, only: Pair_CS
+use CDF_Ritchi, only: Get_total_copmlex_CDF
 use Little_subroutines, only: sample_Poisson, interpolate_data_single
 use Relativity, only: velosity_from_kinetic_energy, rest_energy, beta_factor, gamma_factor
 use Dealing_with_DOS, only: select_energy_DOS
@@ -102,25 +103,159 @@ subroutine event_photon_target_boundary(used_target, numpar, Prtcl)
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
    type(Photon), intent(inout) :: Prtcl        ! electron as an object
    !------------------------------------------------------
-   real(8), dimension(3)  :: R_shift
-   real(8) :: PrtclV
-   integer :: target_ind
+   real(8), dimension(3)  :: R_shift, norm_to_surf, V_ph
+   real(8) :: PrtclV, Rs, Rp, theta_t, R, T, RN
+   integer :: target_ind, INFO, surf_ind
+   complex(8) :: cCDF_old, cCDF_new, n_old, n_new
+   logical :: transmit
    
    ! Find into which target this photon enters:
    ! 1) Find which target's boundary the particle is crossing:
    !R_shift = 1.0d-7 * Prtcl%V(:)     ! to place particle inside of the material
    PrtclV = max( SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) ), m_tollerance_eps) ! exclude zero
    R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
-   ! Update particle's material index according to the new material it enters:
-   call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
+
+   ! Check if the photon reflects or transmits:
+   call find_the_target(used_target, Prtcl, R_shift, tar_ind=target_ind) ! module "MC_general_tools"
+
+   ! Get the CDF for both targets:
+   call Get_total_copmlex_CDF(used_target, numpar, Prtcl%in_target, Prtcl%Ekin, 0.0d0, cCDF_old, photon=.true.) ! module "CDF_Ritchi"
+
+   ! Get the CDF for both targets:
+   call Get_total_copmlex_CDF(used_target, numpar, target_ind, Prtcl%Ekin, 0.0d0, cCDF_new, photon=.true.) ! module "CDF_Ritchi"
+
+   ! convert the cCDFs into complex refractive indices:
+   n_old = sqrt(cCDF_old)
+   n_new = sqrt(cCDF_new)
+
+   ! Get transmission coefficient via Fresnel law:
+   ! First, construct the normal to the surface:
+   call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, &
+                                 'event_photon_target_boundary', INFO=INFO, surf_ind=surf_ind)    ! module "MC_general_tools"
+   ! Vector of the photon motion:
+   V_ph(:) = Prtcl%V(:)/g_c_Afs   ! normalized to 1
+
+   ! Use Fresnel law:
+   call fresnel_coefficients(n_old, n_new, V_ph, norm_to_surf, Rs, Rp, theta_t)
+
+   !print*, "In target:", Prtcl%in_target, target_ind, Prtcl%R(3), Prtcl%R0(3), Rs, Rp, theta_t
+   !print*, 'Normal   :', norm_to_surf(:), V_ph(:)
+
+
+   ! Assuming unpolarized photon: average reflectance
+   R = 0.5 * (Rs + Rp)        ! average reflectance
+   T = 1.0 - R                ! transmittance
+
+
+   ! Sample transmission vs. reflection:
+   transmit = .true.   ! to start with, assume transmission
+   RN = 0.0d0
+   if (T < 0.99999d0) then   ! reflection is plausible:
+      call random_number(RN)
+      if (RN > T) transmit = .false.    ! it will be reflection
+   endif
+
+   ! Model reflection or transmission:
+   if (transmit) then   ! transmission into another target:
+      ! Update particle's material index according to the new material it enters:
+      Prtcl%R0(:) = Prtcl%R(:)
+      Prtcl%R(:) = Prtcl%R0(:) + R_shift     ! place it inside the new target
+      call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
+   else ! reflection back:
+      Prtcl%R0(:) = Prtcl%R(:)
+      Prtcl%R(:) = Prtcl%R0(:) - R_shift     ! place it inside the old target
+      ! Change velosity according to reflection from the surface with given normal:
+      call reflection_from_surface(Prtcl%V, norm_to_surf)   ! module "MC_general_tools"
+   endif
    
+   if ( (isnan(Prtcl%R(1))) .or. &
+        (isnan(Prtcl%R(2))) .or. &
+        (isnan(Prtcl%R(3))) ) then   !some error occured
+      print*, 'ERROR in event_photon_target_boundary failed for Prtcl: Photon (end)'
+      print*, 'R=', Prtcl%R(:)
+      print*, 'R0', Prtcl%R0(:)
+      print*, 'V=', Prtcl%V(:)
+      print*, 'V0', Prtcl%V0(:)
+      print*, 'target:', Prtcl%in_target
+   endif
+
 !    print*, 'ph target_ind', Prtcl%in_target
-   
-   ! Test case (assume vacuum):
-!    Prtcl%in_target = 0   ! vacuum
+
+   ! Update the mean free flight time:
    call get_photon_flight_time(used_target, numpar, Prtcl)  ! module "MC_general_tools"
 
 end subroutine event_photon_target_boundary
+
+
+
+
+!SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+subroutine fresnel_coefficients(n_old, n_new, k_vec, boundary_normal, Rs, Rp, theta_t)
+    complex(8), intent(in) :: n_old, n_new      ! complex refraction index
+    real(8),    intent(in) :: k_vec(3), boundary_normal(3)  ! k-vector and normal to surface
+    real(8),    intent(out) :: Rs, Rp, theta_t  ! reflectivities, theta angle
+    !--------------------------
+    real(8) :: n_hat(3)
+    real(8) :: k_hat(3)
+    real(8) :: cos_theta_i, theta_i
+    real(8) :: sin_theta_t
+    real(8) :: norm_k, norm_n
+    complex(8) :: n_old_cos, n_new_cos
+    complex(8) :: rs_amp, rp_amp
+
+    ! Normalize vectors:
+    norm_k = sqrt(sum(k_vec**2))
+    norm_n = sqrt(sum(boundary_normal**2))
+
+    k_hat = k_vec / norm_k
+    n_hat = boundary_normal / norm_n
+
+    ! Incidence angle:
+    cos_theta_i = abs(dot_product(k_hat, n_hat))
+    cos_theta_i = min(1.0d0, max(0.0d0, cos_theta_i))
+
+    theta_i = acos(cos_theta_i)
+
+    ! Snell's law:
+    sin_theta_t = real(n_old) * sin(theta_i) / real(n_new)
+
+    ! Total internal reflection:
+    if (abs(sin_theta_t) > 1.0d0) then
+        Rs = 1.0d0
+        Rp = 1.0d0
+        theta_t = 0.0d0
+        return
+    end if
+
+    ! Angle:
+    theta_t = asin(sin_theta_t)
+
+    ! Fresnel amplitude coefficients:
+    !rs_amp = ( n_old*cos(theta_i) - n_new*cos(theta_t) ) / &
+    !         ( n_old*cos(theta_i) + n_new*cos(theta_t) )
+    !rp_amp = ( n_new*cos(theta_i) - n_old*cos(theta_t) ) / &
+    !         ( n_new*cos(theta_i) + n_old*cos(theta_t) )
+
+    n_old_cos = n_old*cos_theta_i
+    n_new_cos = n_new*cos(theta_t)
+    rs_amp = ( n_old_cos - n_new_cos ) / ( n_old_cos + n_new_cos )
+
+    n_old_cos = n_old*cos(theta_t)
+    n_new_cos = n_new*cos_theta_i
+    rp_amp = ( n_new_cos - n_old_cos ) / ( n_new_cos + n_old_cos )
+
+    ! Intensity reflectances:
+    Rs = abs(rs_amp)**2
+    Rp = abs(rp_amp)**2
+
+    !print*, 'fresnel_coefficients:', theta_i, theta_t, rs_amp, rp_amp, n_old, n_new
+    !print*, 'Rs, Rp :', Rs, Rp
+end subroutine fresnel_coefficients
+
+
+
+
+
 
 
 !PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP

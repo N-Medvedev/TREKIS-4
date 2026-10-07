@@ -1476,7 +1476,7 @@ subroutine read_optional_CDF_numerics(FN, File_name, numpar, count_lines, read_w
       return
    endif
 
-    ! Flag to use for target atoms Zeff (set 0), or Z=1 (set 1):
+   ! Flag to use for target atoms Zeff (set 0), or Z=1 (set 1):
    read(FN,*,IOSTAT=Reason) numpar%CDF_elast_Zeff
    call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
    if (.not. read_well) then

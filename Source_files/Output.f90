@@ -98,7 +98,7 @@ character(100) ::   m_python_MFP, m_python_Se, &
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 16.09.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 07.10.2026)'
 
 
 ! All output file names:
