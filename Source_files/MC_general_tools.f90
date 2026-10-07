@@ -352,8 +352,10 @@ end subroutine set_all_barriers_parameters
 
 
 ! Parameters of the barrier for charged particle barrier crossing:
-pure subroutine get_barrier_parameters(Surface_barrier)
+pure subroutine get_barrier_parameters(Surface_barrier, Em_E1_out, Em_gamma_out)
    type(Emission_barrier), intent(inout) :: Surface_barrier    ! Parameters of the surface barier for a particle emission from the surface of the material
+   real(8), intent(out), optional :: Em_E1_out, Em_gamma_out
+   !---------------------
    real(8) :: work_function, bar_height, Em_L, Em_B, Em_ksi, Em_bb, Em_delta
    real(8) :: Em_E1, Em_gam1, Em_gam2, Em_gamma, arg
    real(8) :: eps
@@ -392,6 +394,57 @@ pure subroutine get_barrier_parameters(Surface_barrier)
    Surface_barrier%E1 = Em_E1
    Surface_barrier%gamma = Em_gamma
 end subroutine get_barrier_parameters
+
+
+
+
+! Parameters of the barrier for charged particle barrier crossing:
+pure subroutine get_barrier_parameters_mix(work_function, bar_height_in, Surf_bar, E1_out, gamma_out)
+   real(8), intent(in)  :: work_function, bar_height_in, Surf_bar
+   real(8), intent(out) :: E1_out, gamma_out
+   !---------------------
+   real(8) :: Em_L, Em_B, Em_ksi, Em_bb, Em_delta, bar_height
+   real(8) :: Em_E1, Em_gam1, Em_gam2, Em_gamma, arg
+   real(8) :: eps
+   !eps = 1.0d-10
+   eps = 1.0d-3*m_tollerance_eps   ! module "Geometries"
+
+   ! Consistency enforced:
+   if (bar_height_in < work_function) then
+      bar_height = work_function
+   else
+      bar_height = bar_height_in
+   endif
+
+   Em_L = Surf_bar*1.0d-10     ! Barrier length     [m]
+   Em_B = 2.0d0*bar_height - work_function + 2.0d0*sqrt(bar_height*(bar_height - work_function))   ! Eq.(5) [2]
+
+   arg = 8.0d0*g_me*Em_L*Em_L*Em_B*g_e/(g_2Pih*g_2Pih)-1.0d0
+   if (arg < 0.0d0) then      ! barrier too low
+      arg = 0.0d0
+   endif
+   !Em_ksi = 0.5d0*sqrt(8.0d0*g_me*Em_L*Em_L*Em_B*g_e/(g_2Pih*g_2Pih)-1.0d0)     ! Eq.(5) [2]
+   Em_ksi = 0.5d0*sqrt(arg)     ! Eq.(5) [2]
+
+   Em_bb = cosh(g_2Pi*Em_ksi)
+   !Em_delta = g_2Pi*Em_L*sqrt(2.0d0*g_me*g_e)/(g_2Pih)
+   Em_delta = Em_L*sqrt(2.0d0*g_me*g_e)/g_h     ! under Eq.(7) [2]
+   if (abs(Em_delta) < 1.0d-23)then  ! consistency check
+      Em_delta = 1.0d-15 * sqrt(2.0d0*g_me*g_e)/g_h
+   endif
+
+   ! Coefficients E1 and gamma from Eqs.(7) in [2]:
+   Em_E1 = bar_height + 2.0d0*sqrt(bar_height*(bar_height - work_function))*(acosh(Em_bb)/(Em_delta*(sqrt(bar_height) + sqrt(bar_height - work_function)))-1.0d0)
+   Em_gam1 = Em_delta*(sqrt(Em_E1) + sqrt(Em_E1 - work_function))
+   Em_gam2 = Em_delta*(sqrt(Em_E1) - sqrt(Em_E1 - work_function))
+   if ((Em_E1 - work_function) < eps) Em_E1 = work_function + eps
+   Em_gamma = (Em_gam1*sinh(Em_gam1) + 2.0d0*Em_gam2*sinh(Em_gam2))/(sqrt(Em_E1*(Em_E1 - work_function))*(Em_bb + cosh(Em_gam1)))
+
+   E1_out = Em_E1
+   gamma_out = Em_gamma
+end subroutine get_barrier_parameters_mix
+
+
 
 
 ! Place all particles back inside the simulation box:
@@ -1161,7 +1214,7 @@ end subroutine find_closest_boundary
 
 subroutine reflection_from_surface(V, n)
    real(8), dimension(3), intent(inout) :: V    ! velosity
-   real(8), dimension(3), intent(in) :: n    ! normal defining the surface at the point of scattering
+   real(8), dimension(3), intent(in) :: n       ! normal defining the surface at the point of scattering
    real(8) :: Vabs0, Vabs1, eps
    real(8), dimension(3) :: Vn, V_save
    eps = 1.0d-10

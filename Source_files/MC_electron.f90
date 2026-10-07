@@ -16,7 +16,7 @@ use MC_general_tools, only: flight_time_to_boundary, out_of_simulation_box, part
                                 sample_phi, sample_theta, transfered_E_from_theta, cos_theta_from_W, cos_recoil_from_W, check_phi, &
                                 get_photon_flight_time, remove_particle_from_MC_array, extend_MC_array, find_the_target, &
                                 define_normal_to_surface, electron_transmission_probability, reflection_from_surface, &
-                                electron_transmission_probability_step, add_energy_into_MD_array
+                                electron_transmission_probability_step, add_energy_into_MD_array, get_barrier_parameters_mix
 use CS_electrons_elastic, only: get_el_elastic_CS, Mott_sample_mu
 use CS_electrons_inelastic, only: get_inelastic_energy_transfer, get_integral_inelastic_CS, CDF_total_CS_nonrel
 use CS_electrons_Bremsstrahlung, only: sample_Bremsstrahlung_theta, get_energy_transfer_Bremsstrahlung, sample_Bremsstrahlung_electron_angles
@@ -118,9 +118,11 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    !------------------------------------------------------
    real(8), dimension(3)  :: R_shift, norm_to_surf, V_perp, V
    real(8) :: Vnorm, Ekin_norm, T, RN, Vabs, Z, PrtclV
-   integer :: target_ind, i, surf_ind, tar_ind
+   real(8) :: work_function, bar_height, Surf_bar
+   real(8) :: Em_E1, Em_gamma
+   integer :: target_ind, i, surf_ind, tar_ind1, tar_ind2, barr_type
    logical :: transmit
-   type(Emission_barrier), pointer :: Em_Barr
+   type(Emission_barrier), pointer :: Em_Barr1, Em_Barr2
    
    ! 1) Kinetic energy towards crossing the boundary:
    call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, &
@@ -152,31 +154,52 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    Ekin_norm = kinetic_energy_from_velosity(Vnorm, g_me)    ! module "Relativity"
    
    ! 4) Get the probability of boundary crossing:
-   if (Prtcl%in_target == 0) then ! particle coming from vacuum, find which material it enters:
-      PrtclV = max(SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) ), m_tollerance_eps) ! exclude zero
-      R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
-      ! Find the material index according to the new material it enters:
-      call find_the_target(used_target, Prtcl, R_shift, tar_ind=tar_ind) ! module "MC_general_tools"
-   else
-      tar_ind = Prtcl%in_target     ! use the current target index
-   endif
+   tar_ind1 = Prtcl%in_target ! old target
+   ! new target:
+   PrtclV = max(SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) ), m_tollerance_eps) ! exclude zero
+   R_shift = m_tollerance_eps * Prtcl%V(:)/PrtclV     ! to place particle inside of the material
+   ! Find the material index according to the new material it enters:
+   call find_the_target(used_target, Prtcl, R_shift, tar_ind=tar_ind2) ! module "MC_general_tools"
+
    ! Use the barrier of the target:
-   Em_Barr => used_target%Material(tar_ind)%Surface_barrier
+   if (tar_ind1 == 0) then ! vacuum
+      Em_Barr1 => used_target%Material(tar_ind2)%Surface_barrier  ! use 2d target
+   else
+      Em_Barr1 => used_target%Material(tar_ind1)%Surface_barrier  ! use 1st target
+   endif
+
+   if (tar_ind2 == 0) then ! vacuum
+      Em_Barr2 => used_target%Material(tar_ind1)%Surface_barrier  ! use 1st target
+   else
+      Em_Barr2 => used_target%Material(tar_ind2)%Surface_barrier  ! use 2d target
+   endif
+
+   ! Use the simplest barrier type among specified (inhomogeneous not allowed):
+   barr_type = min(Em_Barr2%barr_type, Em_Barr1%barr_type)
+
+   ! Use average parameters between the targets:
+   work_function = ( Em_Barr1%Work_func + Em_Barr2%Work_func ) * 0.5d0
+   bar_height = ( Em_Barr1%Bar_height + Em_Barr2%Bar_height ) * 0.5d0
+   Surf_bar = ( Em_Barr1%Surf_bar + Em_Barr2%Surf_bar ) * 0.5d0
+   ! Get the coefficients:
+   call get_barrier_parameters_mix(work_function, bar_height, Surf_bar, Em_E1, Em_gamma) ! module "MC_general_tools"
 
 
    ! Projection of energy on the normal to use to calculate transmission probability:
    ! Total kinetic energy to use to calculate transmission probability:
-   select case(Em_Barr%barr_type)
+   select case(barr_type)
    case (1) ! Eckart-type barrier
-      T = electron_transmission_probability(Em_Barr%Work_func, Em_Barr%gamma, Em_Barr%E1, Prtcl%Ekin)     ! module "MC_general_tools"
+      !T = electron_transmission_probability(Em_Barr%Work_func, Em_Barr%gamma, Em_Barr%E1, Prtcl%Ekin)     ! module "MC_general_tools"
+      T = electron_transmission_probability(work_function, Em_gamma, Em_E1, Ekin_norm)     ! module "MC_general_tools"
    case default ! step barrier
-      T = electron_transmission_probability_step(Em_Barr%Work_func, Ekin_norm) ! module "MC_general_tools"
+      !T = electron_transmission_probability_step(Em_Barr%Work_func, Ekin_norm) ! module "MC_general_tools"
+      T = electron_transmission_probability_step(work_function, Ekin_norm) ! module "MC_general_tools"
    end select
 
    ! 5) Sample transmission vs. reflection:
    transmit = .true.   ! to start with, assume transmission
    RN = 0.0d0
-   if (T < 0.99999999d0) then   ! reflection is plausible:
+   if (T < 0.999999d0) then   ! reflection is plausible:
       call random_number(RN)
       if (RN > T) transmit = .false.    ! it will be reflection
    endif
@@ -282,8 +305,8 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       print*, 'ERROR in define_normal_to_surface failed for Prtcl: Electron (end)'
       print*, 'R=', Prtcl%R(:)
       print*, 'R0', Prtcl%R0(:)
-      print*, 'V=', Prtcl%V
-      print*, 'V0', Prtcl%V
+      print*, 'V=', Prtcl%V(:)
+      print*, 'V0', Prtcl%V0(:)
       print*, 'Vnorm=', Vnorm
       print*, 'Ekin_norm=', Ekin_norm
       print*, 'target:', Prtcl%in_target
@@ -295,7 +318,7 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
 !     print*, 'Flight time:', Prtcl%ti, Prtcl%t_sc
 ! !    pause
    
-   nullify(Em_Barr)
+   nullify(Em_Barr1, Em_Barr2)
 end subroutine event_electron_target_boundary
 
 

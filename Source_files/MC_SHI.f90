@@ -94,9 +94,12 @@ subroutine event_SHI_target_boundary(used_target, numpar, Prtcl)
    else
       R_shift = m_tollerance_eps     ! to place particle inside of the material
    endif
+
    ! Update particle's material index according to the new material it enters:
+   Prtcl%R0(:) = Prtcl%R(:)
+   Prtcl%R(:) = Prtcl%R0(:) + R_shift     ! place it inside the new target
    call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
-   
+
 !    print*, 'SHI target_ind', target_ind
    
    ! Test case (assume vacuum):

@@ -16,7 +16,7 @@ use Geometries ! ,only: m_tollerance_eps
 use MC_general_tools, only: flight_time_to_boundary, out_of_simulation_box, particle_cross_box_boundary, check_shell, check_element, &
                   deflect_velosity, get_electron_flight_time, get_positron_flight_time, get_hole_flight_time, get_photon_flight_time, &
                   sample_phi, sample_theta, remove_particle_from_MC_array, extend_MC_array, &
-                  put_back_into_box, find_the_target, define_normal_to_surface
+                  put_back_into_box, find_the_target, define_normal_to_surface, reflection_from_surface
 use CS_general_tools, only: total_CS_from_chennels, MFP_from_sigma, Time_from_MFP, find_type_of_scattering, find_valence_hole_mass
 use CS_photons_Rayleigh, only: get_Rayleigh_CS
 use CS_photons_Compton, only: Compton_CS, Compton_Ec, Compton_mu_from_Ec
@@ -104,9 +104,10 @@ subroutine event_photon_target_boundary(used_target, numpar, Prtcl)
    type(Photon), intent(inout) :: Prtcl        ! electron as an object
    !------------------------------------------------------
    real(8), dimension(3)  :: R_shift, norm_to_surf, V_ph
-   real(8) :: PrtclV, Rs, Rp, theta_t, R, T
+   real(8) :: PrtclV, Rs, Rp, theta_t, R, T, RN
    integer :: target_ind, INFO, surf_ind
    complex(8) :: cCDF_old, cCDF_new, n_old, n_new
+   logical :: transmit
    
    ! Find into which target this photon enters:
    ! 1) Find which target's boundary the particle is crossing:
@@ -145,16 +146,42 @@ subroutine event_photon_target_boundary(used_target, numpar, Prtcl)
    R = 0.5 * (Rs + Rp)        ! average reflectance
    T = 1.0 - R                ! transmittance
 
-   ! Update particle's material index according to the new material it enters:
-   Prtcl%R0(:) = Prtcl%R(:)
-   Prtcl%R(:) = Prtcl%R0(:) + R_shift     ! place it inside the new target
 
-   call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
+   ! Sample transmission vs. reflection:
+   transmit = .true.   ! to start with, assume transmission
+   RN = 0.0d0
+   if (T < 0.99999d0) then   ! reflection is plausible:
+      call random_number(RN)
+      if (RN > T) transmit = .false.    ! it will be reflection
+   endif
+
+   ! Model reflection or transmission:
+   if (transmit) then   ! transmission into another target:
+      ! Update particle's material index according to the new material it enters:
+      Prtcl%R0(:) = Prtcl%R(:)
+      Prtcl%R(:) = Prtcl%R0(:) + R_shift     ! place it inside the new target
+      call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
+   else ! reflection back:
+      Prtcl%R0(:) = Prtcl%R(:)
+      Prtcl%R(:) = Prtcl%R0(:) - R_shift     ! place it inside the old target
+      ! Change velosity according to reflection from the surface with given normal:
+      call reflection_from_surface(Prtcl%V, norm_to_surf)   ! module "MC_general_tools"
+   endif
    
+   if ( (isnan(Prtcl%R(1))) .or. &
+        (isnan(Prtcl%R(2))) .or. &
+        (isnan(Prtcl%R(3))) ) then   !some error occured
+      print*, 'ERROR in event_photon_target_boundary failed for Prtcl: Photon (end)'
+      print*, 'R=', Prtcl%R(:)
+      print*, 'R0', Prtcl%R0(:)
+      print*, 'V=', Prtcl%V(:)
+      print*, 'V0', Prtcl%V0(:)
+      print*, 'target:', Prtcl%in_target
+   endif
+
 !    print*, 'ph target_ind', Prtcl%in_target
-   
-   ! Test case (assume vacuum):
-!    Prtcl%in_target = 0   ! vacuum
+
+   ! Update the mean free flight time:
    call get_photon_flight_time(used_target, numpar, Prtcl)  ! module "MC_general_tools"
 
 end subroutine event_photon_target_boundary
