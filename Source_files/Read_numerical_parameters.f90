@@ -1767,10 +1767,11 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
          case ('rl', 'RL', 'Rl', 'lr', 'LR', 'Lr')      ! only along Radius and Length (Cylindric)
             i_ax = 11    ! index for this type of printout
             
-            grid_par => numpar%grid_par(i_ax)   ! just to access easier
-            grid_par%along_axis = .true.     ! the user whats to printout the data along this axes
-            
-            !Reading grid for the firts dimension - R
+            grid_par => numpar%grid_par(i_ax)   ! pointer for access
+            grid_par%along_axis = .true.        ! printout along these axes
+
+            !Reading grid parameters for both axes:
+            ! 1) R (Radius, cylindrical):
             read(FN,*,IOSTAT=Reason) temp_ch2   ! Read the grid parameter: either file name with the grid, or its type
             call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
             grid_ind = 1        ! R
@@ -1780,9 +1781,9 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                write(6,'(a)') ' Using default R-grid instead'
 
                backspace ( FN ) ! to read the line again from the file into a proper variable
-               ! Read the parameters of the grid:
+               ! Read the parameters of the grid:   Last three parameters are:   grid_type, grid_dim, grid_ind
                call read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 1, 1, grid_ind)  ! below
-               
+
                ! Create grid:
                if (grid_par%log_scale(grid_ind)) then   ! log-scale grid along Z
                   call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(grid_ind), grid_par%gridstep(grid_ind), numpar%grids(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
@@ -1794,22 +1795,19 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                ! Check the grid was not read from the file:
                if (.not.grid_created) then   ! create a default grid
                   backspace ( FN ) ! to read the line again from the file into a proper variable
-                  ! Read the parameters of the grid:
-                  call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 1, 1, 1)  ! below
-                  !Last three parameters are:   grid_type, grid_dim, grid_ind
-                  
+                  ! Read the parameters of the grid, last three parameters are:   grid_type, grid_dim, grid_ind
+                  call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 1, 1, grid_ind)  ! below
+
                   ! Create grid:
                   if (grid_par%log_scale(grid_ind)) then   ! log-scale grid along R
                      call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(grid_ind), grid_par%gridstep(grid_ind), numpar%grids(i_ax)%spatial_grid1, 1)  ! module "Little_subroutines"
                   else    ! linear scale along R
                      call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(grid_ind), grid_par%gridstep(grid_ind), numpar%grids(i_ax)%spatial_grid1, 0)  ! module "Little_subroutines"
                   endif
-!                   print*, 'TEST READING:', grid_ind, allocated(numpar%grids(i_ax)%spatial_grid1)
-!                   pause 'create_grid'
-               endif    ! (.not.grid_created) 
+               endif    ! (.not.grid_created)
             endif   ! (.not. read_well)
-            
-            !Reading grid along second dimension - L
+
+            ! 2) L (Depth, cylindrical):
             read(FN,*,IOSTAT=Reason) temp_ch2   ! Read the grid parameter: either file name with the grid, or its type
             call read_file(Reason, count_lines, read_well)	! module "Dealing_with_files"
             grid_ind = 2    ! L
@@ -1819,9 +1817,9 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                write(6,'(a)') ' Using default L-grid instead'
 
                backspace ( FN ) ! to read the line again from the file into a proper variable
-               ! Read the parameters of the grid:
+               ! Read the parameters of the grid:   Last three parameters are:   grid_type, grid_dim, grid_ind
                call read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 1, 1, grid_ind)  ! below
-               
+
                ! Create grid:
                if (grid_par%log_scale(grid_ind)) then   ! log-scale grid along L
                   call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(grid_ind), grid_par%gridstep(grid_ind), numpar%grids(i_ax)%spatial_grid2, 1)  ! module "Little_subroutines"
@@ -1835,14 +1833,14 @@ subroutine read_output_grid_coord(FN, File_name, numpar, Err, count_lines)
                   backspace ( FN ) ! to read the line again from the file into a proper variable
                   ! Read the parameters of the grid:    Last three parameters are:   grid_type, grid_dim, grid_ind
                   call  read_grid_parameters(FN, File_name, count_lines, grid_par, read_well, 1, 1, grid_ind)  ! below
-                  
+
                   ! Create grid:
                   if (grid_par%log_scale(grid_ind)) then   ! log-scale grid along L
                      call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(grid_ind), grid_par%gridstep(grid_ind), numpar%grids(i_ax)%spatial_grid2, 1)  ! module "Little_subroutines"
                   else    ! linear scale along L
                      call create_grid(grid_par%gridstart(grid_ind), grid_par%gridend(grid_ind), grid_par%gridstep(grid_ind), numpar%grids(i_ax)%spatial_grid2, 0)  ! module "Little_subroutines"
                   endif
-               endif    ! (.not.grid_created) 
+               endif    ! (.not.grid_created)
             endif   ! (.not. read_well)
             
          case ('rtheta', 'RTHETA', 'RTheta', 'Rtheta', 'thetar', 'THETAR', 'THETAr')      ! only along Radius and Theta (Cylindric)

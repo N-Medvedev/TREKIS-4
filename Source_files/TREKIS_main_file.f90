@@ -210,7 +210,7 @@ if (g_numpar%verbose) write(*,'(a)') " Completed muon mean free paths"
 call print_MFPs(g_target, g_numpar, g_bunch)  ! module "Output"
 
 ! Create gnuplot scripts:
-if (g_numpar%gnupl%do_gnuplot) call create_gnuplot_files(g_target, g_MD_pots, g_numpar)  ! module "Output"
+if (g_numpar%gnupl%do_gnuplot) call create_gnuplot_files(g_target, g_MD_pots, g_numpar)  ! module "Output_gnuplot"
 
 !--------------------------------------------------------------
 ! Simulation run:
