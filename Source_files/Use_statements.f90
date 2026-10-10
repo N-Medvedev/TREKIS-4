@@ -46,6 +46,7 @@ use  CS_holes_inelastic
 use  CS_muon_inelastic
 use  CS_muon_elastic
 use  CS_muon_Bremsstrahlung
+use  Output_gnuplot
 use  Output 
 use  MC_general_tools 
 use  MC_data_analysis 

@@ -2064,7 +2064,8 @@ subroutine sort_holes_radially(used_target, N_prtcl, MC_Prtcl, numpar, tim, Dist
    endif ACTPAR
 end subroutine sort_holes_radially
 
-    
+
+
 subroutine sort_holes_RL(used_target, N_prtcl, MC_Prtcl, numpar, tim, Distr_h_RL, E_Distr_h_RL)
    type(Matter), intent(in), target :: used_target   ! parameters of the target
    integer, intent(in) :: N_prtcl   ! number of particles of a given kind
@@ -2354,7 +2355,7 @@ subroutine sort_radially(N_prtcl, MC_Prtcl, numpar, tim, Distr_R, E_Distr_R, val
 end subroutine sort_radially
 
     
-    
+
 subroutine sort_RL(N_prtcl, MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, valent, neutral)
    integer, intent(in) :: N_prtcl   ! number of particles of a given kind
    class(Particle), dimension(:), intent(in) :: MC_Prtcl      ! MC array for all particles in one iteration
@@ -2662,6 +2663,7 @@ subroutine add_RL_particle(MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, neutral)
    !-----------------------------
    integer :: i_arr, j_arr, i_ax, N_siz, N_sizj
    real(8) :: R, dR2, dV, Rcur(3), dL, L
+   character(10) :: text_prtcl
    
    i_ax = 11
    N_siz = size(numpar%grids(i_ax)%spatial_grid1)
@@ -2677,12 +2679,8 @@ subroutine add_RL_particle(MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, neutral)
    R = SQRT( Rcur(1)*Rcur(1) + Rcur(2)*Rcur(2) )  ! [A]
    ! Depth L:
    L = Rcur(3) ! [A]
-   if(L .LT. 0) then
-       print*, 'L = ', L
-       pause 'Error in subroutine add_RL_particle, module MC_data_analysis'
-   endif    
+
    ! Find where it is on the grid:
-!    call Find_in_array_monoton(numpar%grids(i_ax)%spatial_grid1(:), R, i_arr)  ! module "Little_subroutines"
    if (R < numpar%grids(i_ax)%spatial_grid1(1)) then   ! R below lower limit
       i_arr = 1
       dR2 = numpar%grids(i_ax)%spatial_grid1(1) * numpar%grids(i_ax)%spatial_grid1(1)
@@ -2697,12 +2695,6 @@ subroutine add_RL_particle(MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, neutral)
             numpar%grids(i_ax)%spatial_grid1(i_arr-1)*numpar%grids(i_ax)%spatial_grid1(i_arr-1)
    endif
    
-   
-   ! Include only particles inside borders of L grid:
-   !if ((L < numpar%grids(i_ax)%spatial_grid2(1)) .AND. &
-   !    (L > numpar%grids(i_ax)%spatial_grid2(size(numpar%grids(i_ax)%spatial_grid2)))) then
-       ! Find where it is on the grid:
-        !call Find_in_array_monoton(numpar%grids(i_ax)%spatial_grid2(:), L, j_arr)  ! module "Little_subroutines"
    ! Find where it is on the grid:
    if (L < numpar%grids(i_ax)%spatial_grid2(1)) then   ! L below lower limit
       j_arr = 1
@@ -2716,26 +2708,32 @@ subroutine add_RL_particle(MC_Prtcl, numpar, tim, Distr_RL, E_Distr_RL, neutral)
       dL = numpar%grids(i_ax)%spatial_grid2(j_arr) - numpar%grids(i_ax)%spatial_grid2(j_arr-1)
    endif
    !endif
-        
-!    ! Define the thickness of the cylindrical layer of the grid:
-!    if (i_arr == N_siz) then   ! the last point on the grid
-!       dR2 = numpar%grids(i_ax)%spatial_grid1(i_arr)*numpar%grids(i_ax)%spatial_grid1(i_arr) - &
-!             numpar%grids(i_ax)%spatial_grid1(i_arr-1)*numpar%grids(i_ax)%spatial_grid1(i_arr-1)
-!    else if (i_arr == 1) then    ! the first point, assuming it starts from zero
-!       dR2 = numpar%grids(i_ax)%spatial_grid1(1)*numpar%grids(i_ax)%spatial_grid1(1)
-!    else
-!       dR2 = numpar%grids(i_ax)%spatial_grid1(i_arr+1)*numpar%grids(i_ax)%spatial_grid1(i_arr+1) - &
-!          numpar%grids(i_ax)%spatial_grid1(i_arr)*numpar%grids(i_ax)%spatial_grid1(i_arr)
-!    endif
-!    !Define the thickness of the depth layer
-!    if (j_arr == size(numpar%grids(i_ax)%spatial_grid2)) then        
-!         dL = numpar%grids(i_ax)%spatial_grid2(j_arr) - numpar%grids(i_ax)%spatial_grid2(j_arr-1)
-!    else
-!         dL = numpar%grids(i_ax)%spatial_grid2(j_arr+1) - numpar%grids(i_ax)%spatial_grid2(j_arr)
-!    endif
+
 
    ! Define volume:
    dV = g_Pi*dR2*dL
+
+   if ((MC_Prtcl%Ekin < 0.0d0) .or. (dV < 0.0d0)) then
+      print*, 'Problem in (add_RL_particle):'
+      select type(MC_Prtcl)
+      type is (Photon)
+         text_prtcl = 'Photon'
+      type is (Electron)
+         text_prtcl = 'Electron'
+      type is (Hole)    ! it must be hole, only then attribute "valent" exists
+         text_prtcl = 'Hole'
+      type is (SHI)
+         text_prtcl = 'SHI'
+      end select
+      print*, trim(adjustl(text_prtcl))//' with negative energy found: ', MC_Prtcl%Ekin
+      print*, MC_Prtcl%active
+      print*, MC_Prtcl%R(:)
+      print*, MC_Prtcl%R0(:)
+      print*, MC_Prtcl%V(:)
+      print*, MC_Prtcl%V0(:)
+      print*, MC_Prtcl%ti - MC_Prtcl%t0, MC_Prtcl%ti, MC_Prtcl%t0
+   endif
+
    ! Add particle into the distribution, normalized per volume to get density:
    Distr_RL(i_arr, j_arr) = Distr_RL(i_arr, j_arr) + 1.0d0/dV    ! add a particle into this array [1/A^3]
    ! And corresponding energy density:

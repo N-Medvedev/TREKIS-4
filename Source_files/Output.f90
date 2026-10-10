@@ -21,7 +21,15 @@ use Universal_constants
 use Dealing_with_files, only: copy_file, close_file, get_file_stat, Count_lines_in_file, read_file
 use Dealing_with_XYZ_files, only: write_XYZ
 use Dealing_with_LAMMPS, only: Write_LAMMPS_input_file
-use Gnuplotting
+use Gnuplotting, only : cmd_vs_sh
+use Output_gnuplot, only: create_Se_gnuplot, create_Range_gnuplot, create_Se_vs_Range_gnuplot, create_MFPs_gnuplot, &
+                        gnuplot_DOS, gnuplot_DOS_k, gnuplot_DOS_m_eff, m_output_DOS, &
+                        m_output_MD_energies, m_output_MD_cell_params, m_output_MD_displacements, &
+                        m_output_MD_E_gnu, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_total, m_output_total_cutoff, &
+                        m_output_N_gnu, m_output_E_gnu, m_output_MD, &
+                        m_folder_MFP, m_output_Compton, m_output_Rayleigh, m_output_pair, m_output_absorb, m_output_MFP, m_output_IMFP, &
+                        m_output_EMFP, m_output_Brems, m_output_annihil, m_output_Range, m_output_Se, m_output_Se_vs_range
+
 use Little_subroutines, only: print_time, find_order_of_number, print_energy, order_of_energy, m_starline, m_dashline, call_python
 use Read_input_data, only: m_input_minimal, m_input_data, m_numerical_parameters, m_input_folder, m_databases, &
                            m_EADL, m_EPDL
@@ -32,13 +40,7 @@ use CS_general_tools, only: get_ranges_from_Se
 implicit none
 
 ! In this module, all output file names are collected:
-character(100) :: m_output_parameters, m_communication, m_output_DOS, m_output_DOS_k, m_output_DOS_effm
-character(100) :: m_folder_MFP, m_output_MFP, m_output_IMFP, m_output_EMFP, m_output_Brems, m_output_annihil
-character(100) :: m_output_Compton, m_output_Rayleigh, m_output_pair, m_output_absorb
-character(100) :: m_output_Se, m_output_Range, m_output_Se_vs_range
-
-character(100) :: m_output_total, m_output_N_gnu, m_output_E_gnu, m_output_total_cutoff
-character(100) :: m_output_MD, m_output_MD_T_gnu, m_output_MD_MSD_gnu, m_output_MD_E_gnu
+character(100) :: m_output_parameters, m_communication
 character(100) :: m_output_spectrum_ph, m_output_spectrum_e, m_output_spectrum_h, m_output_spectrum_p, m_output_spectrum_SHI, m_output_spectrum_mu
 character(100) :: m_output_spectrum_ph_1d, m_output_spectrum_e_1d, m_output_spectrum_h_1d, m_output_spectrum_p_1d, m_output_spectrum_SHI_1d, &
                   m_output_spectrum_mu_1d
@@ -78,13 +80,13 @@ character(100) :: m_output_cylindric_2d_RL_E_ph, m_output_cylindric_2d_RL_E_e, m
 character(100) :: m_output_cylindric_2d_RL_E_h, m_output_cylindric_2d_RL_E_SHI, m_output_cylindric_2d_RL_E_a
 
 ! MD output
-character(100) :: m_output_MD_energies
-character(100) :: m_output_MD_cell_params
+
+
 character(100) :: m_output_MD_coordinates
 character(100) :: m_output_MD_velocities
 character(100) :: m_output_MCMD
 character(100) :: m_output_MD_LAMMPS
-character(100) :: m_output_MD_displacements
+
 
 
 ! Python plotting script names:
@@ -94,24 +96,20 @@ character(100) ::   m_python_MFP, m_python_Se, &
                     m_python_1d_density_fig, m_python_1d_density_vid, &
                     m_python_1d_spectra_fig, m_python_1d_spectra_vid, &
                     m_python_surface_3d, m_python_surface_colormap, &
-                    m_python_time_dependencies_fig, m_python_time_dependencies_video
+                    m_python_time_dependencies_fig, m_python_time_dependencies_video, &
+                    m_python_2d_density_vid
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 07.10.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 09.10.2026)'
 
 
 ! All output file names:
 parameter (m_output_parameters = '!OUTPUT_parameters.txt')
 parameter (m_communication = 'Communication.txt')
 !dddddddddddddddddddddddddddddddddddddddddddd
-parameter (m_output_DOS = 'OUTPUT_DOS_of_')
-parameter (m_output_DOS_k = 'OUTPUT_DOS_k_vector_of_')
-parameter (m_output_DOS_effm = 'OUTPUT_DOS_effective_mass_of_')
+
 !mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
-parameter (m_output_MD_energies = 'OUTPUT_MD_energies.txt')
-parameter (m_output_MD_cell_params = 'OUTPUT_MD_average_parameters.txt')
-parameter (m_output_MD_displacements = 'OUTPUT_MD_mean_displacements.txt')
 parameter (m_output_MD_coordinates = 'OUTPUT_MD_coordinates.xyz')
 parameter (m_output_MD_velocities = 'OUTPUT_MD_velocities.xyz')
 parameter (m_output_MCMD = 'OUTPUT_MCMD_energy_transfer.txt')
@@ -192,7 +190,7 @@ parameter (m_output_cartesian_1d_X_E_mu = 'OUTPUT_muon_energy_1d_X_')
 parameter (m_output_cartesian_1d_Y_E_mu = 'OUTPUT_muon_energy_1d_Y_')
 parameter (m_output_cartesian_1d_Z_E_mu = 'OUTPUT_muon_energy_1d_Z_')
 !dddddddddddddddddddddddddddddddddddddddddddd
-! Cyllindrical:
+! Cylindrical:
 ! 1-dimensional
 parameter (m_output_cylindric_1d_R_ph = 'OUTPUT_photon_density_1d_R_')
 parameter (m_output_cylindric_1d_R_e = 'OUTPUT_electron_density_1d_R_')
@@ -208,7 +206,7 @@ parameter (m_output_cylindric_1d_R_E_h = 'OUTPUT_holes_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_SHI = 'OUTPUT_SHI_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_a = 'OUTPUT_atomic_energy_1d_R_')
 parameter (m_output_cylindric_1d_R_E_mu = 'OUTPUT_muon_energy_1d_R_')
-!2-dimensional
+! 2-dimensional
 parameter (m_output_cylindric_2d_RL_ph = 'OUTPUT_photon_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_e = 'OUTPUT_electron_density_2d_RL_')
 parameter (m_output_cylindric_2d_RL_p = 'OUTPUT_positron_density_2d_RL_')
@@ -224,29 +222,9 @@ parameter (m_output_cylindric_2d_RL_E_SHI = 'OUTPUT_SHI_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_a = 'OUTPUT_atomic_energy_2d_RL_')
 parameter (m_output_cylindric_2d_RL_E_mu = 'OUTPUT_muon_energy_2d_RL_')
 !ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
-parameter (m_output_total = 'OUTPUT_total_')
-parameter (m_output_total_cutoff = 'OUTPUT_total_above_cutoff_')
-parameter (m_output_N_gnu = 'OUTPUT_total_numbers_')
-parameter (m_output_E_gnu = 'OUTPUT_total_energies_')
-parameter (m_output_MD = 'OUTPUT_MD_')
-parameter (m_output_MD_E_gnu = 'OUTPUT_MD_energies_')
-parameter (m_output_MD_T_gnu = 'OUTPUT_MD_temperature_')
-parameter (m_output_MD_MSD_gnu = 'OUTPUT_MD_displacements_')
-!rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr
-parameter (m_folder_MFP = 'MFPs_and_Ranges_in_')
-parameter (m_output_Compton = 'OUTPUT_Compton_')
-parameter (m_output_Rayleigh = 'OUTPUT_Rayleigh_')
-parameter (m_output_pair = 'OUTPUT_pair_')
-parameter (m_output_absorb = 'OUTPUT_absorption_')
-parameter (m_output_MFP = 'OUTPUT_MFPs_')
-parameter (m_output_IMFP = 'OUTPUT_IMFPs_')
-parameter (m_output_EMFP = 'OUTPUT_EMFPs_')
-parameter (m_output_Brems = 'OUTPUT_Brems_MFPs_')
-parameter (m_output_annihil = 'OUTPUT_Annihilation_MFPs_')
-parameter (m_output_Range = 'OUTPUT_Ranges_')
-parameter (m_output_Se = 'OUTPUT_Stopping_')
-parameter (m_output_Se_vs_range = 'OUTPUT_Se_vs_range_')
+
 !ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+! Python scripts in the directory PLOTTING_SCRIPTS:
 parameter (m_python_MFP = 'TREKIS_4_mean_free_paths_plotting.py')
 parameter (m_python_Se = 'TREKIS_4_stopping_and_range.py')
 parameter (m_python_DOS = 'TREKIS_4_DOS_plotting.py')
@@ -261,7 +239,7 @@ parameter (m_python_surface_3d = 'TREKIS_4_Surface_3d_surface_plotting.py')
 parameter (m_python_surface_colormap = 'TREKIS_4_Surface_color_map_plotting.py')
 parameter (m_python_time_dependencies_fig = 'TREKIS_4_time_dependencies_plotting.py')
 parameter (m_python_time_dependencies_video = 'TREKIS_4_time_dependencies_video.py')
-
+parameter (m_python_2d_density_vid = 'TREKIS_4_2d_density_video.py')
 
 
 
@@ -751,7 +729,7 @@ subroutine printout_cartesian_1d_particle(FN, FN_E, Part_file_name_D, Part_file_
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(Part_file_name_D))//trim(adjustl(used_target%Name))//'.dat'
@@ -795,7 +773,7 @@ subroutine printout_cartesian_1d_particle(FN, FN_E, Part_file_name_D, Part_file_
 
       ! Write data with energy densities into this file:
       call printout_data_on_1d_grid(FN_E, numpar%grids(grid_ind)%spatial_grid1(:), Distr_E(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cartesian_1d_particle
 
 
@@ -924,7 +902,7 @@ subroutine printout_cylindric_1d_ph(used_target, numpar, out_data, tim)  ! photo
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_1d_R_ph))//trim(adjustl(used_target%Name))//'.dat'
@@ -952,7 +930,7 @@ subroutine printout_cylindric_1d_ph(used_target, numpar, out_data, tim)  ! photo
       FN = numpar%FN_cyl_1d_R_E_ph ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_ph_R(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_1d_ph
 
 
@@ -967,7 +945,7 @@ subroutine printout_cylindric_1d_e(used_target, numpar, out_data, tim)  ! electr
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_1d_R_e))//trim(adjustl(used_target%Name))//'.dat'
@@ -995,7 +973,7 @@ subroutine printout_cylindric_1d_e(used_target, numpar, out_data, tim)  ! electr
       FN = numpar%FN_cyl_1d_R_E_e ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_e_R(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_1d_e
 
 
@@ -1010,7 +988,7 @@ subroutine printout_cylindric_1d_p(used_target, numpar, out_data, tim)  ! positr
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_1d_R_p))//trim(adjustl(used_target%Name))//'.dat'
@@ -1038,7 +1016,7 @@ subroutine printout_cylindric_1d_p(used_target, numpar, out_data, tim)  ! positr
       FN = numpar%FN_cyl_1d_R_E_p ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_p_R(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_1d_p
 
 
@@ -1053,7 +1031,7 @@ subroutine printout_cylindric_1d_mu(used_target, numpar, out_data, tim)  ! muons
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_1d_R_mu))//trim(adjustl(used_target%Name))//'.dat'
@@ -1081,7 +1059,7 @@ subroutine printout_cylindric_1d_mu(used_target, numpar, out_data, tim)  ! muons
       FN = numpar%FN_cyl_1d_R_E_mu ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_mu_R(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_1d_mu
 
 
@@ -1168,7 +1146,7 @@ subroutine printout_cylindric_1d_SHI(used_target, numpar, out_data, tim)  ! SHI
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                      trim(adjustl(m_output_cylindric_1d_R_SHI))//trim(adjustl(used_target%Name))//'.dat'
@@ -1197,7 +1175,7 @@ subroutine printout_cylindric_1d_SHI(used_target, numpar, out_data, tim)  ! SHI
       ! Write data with energy densities into this file:
 !       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_e_R(:), tim)    ! below
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_SHI_R(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_1d_SHI
 
 
@@ -1212,7 +1190,7 @@ subroutine printout_cylindric_1d_a(used_target, numpar, out_data, tim)  ! atomic
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                      trim(adjustl(m_output_cylindric_1d_R_a))//trim(adjustl(used_target%Name))//'.dat'
@@ -1240,7 +1218,7 @@ subroutine printout_cylindric_1d_a(used_target, numpar, out_data, tim)  ! atomic
       FN = numpar%FN_cyl_1d_R_E_a ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_1d_grid(FN, numpar%grids(8)%spatial_grid1(:), out_data%E_Distr_a_R(:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_1d_a
 
 
@@ -1280,15 +1258,16 @@ subroutine printout_cylindric_2d_RL_ph(used_target, numpar, out_data, tim)  ! ph
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_2d_RL_ph))//trim(adjustl(used_target%Name))//'.dat'
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_ph, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_ph,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_ph,'(a)') '#fs    A   1/A^3'
+         !write(numpar%FN_cyl_2d_RL_ph,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_ph,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_ph,'(a)') '#[A] [A] [1/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_ph ! just set a number
       ! Write data with densities into this file:
@@ -1301,14 +1280,15 @@ subroutine printout_cylindric_2d_RL_ph(used_target, numpar, out_data, tim)  ! ph
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_E_ph, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_E_ph,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_E_ph,'(a)') '#fs    A   eV/A^3'
+         !write(numpar%FN_cyl_2d_RL_E_ph,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_E_ph,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_E_ph,'(a)') '#[A] [A] [1/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_E_ph ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
                                     out_data%E_Distr_ph_RL(:,:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_2d_RL_ph
 
 
@@ -1322,7 +1302,7 @@ subroutine printout_cylindric_2d_RL_e(used_target, numpar, out_data, tim)  ! ele
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_2d_RL_e))//trim(adjustl(used_target%Name))//'.dat'
@@ -1330,8 +1310,9 @@ subroutine printout_cylindric_2d_RL_e(used_target, numpar, out_data, tim)  ! ele
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_e, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_e,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_e,'(a)') '#fs    A   1/A^3'
+         !write(numpar%FN_cyl_2d_RL_e,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_e,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_e,'(a)') '#[A] [A] [1/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_e ! just set a number
       ! Write data with densities into this file:
@@ -1345,14 +1326,15 @@ subroutine printout_cylindric_2d_RL_e(used_target, numpar, out_data, tim)  ! ele
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_E_e, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_E_e,'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_E_e,'(a)') '#fs    A   eV/A^3'
+         !write(numpar%FN_cyl_2d_RL_E_e,'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_E_e,'(a)') '#R   L   Energy_density'
+         write(numpar%FN_cyl_2d_RL_E_e,'(a)') '#[A] [A] [eV/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_E_e ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
                                     out_data%E_Distr_e_RL(:,:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_2d_RL_e
 
 
@@ -1366,7 +1348,7 @@ subroutine printout_cylindric_2d_RL_p(used_target, numpar, out_data, tim)  ! pos
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_2d_RL_p))//trim(adjustl(used_target%Name))//'.dat'
@@ -1374,8 +1356,9 @@ subroutine printout_cylindric_2d_RL_p(used_target, numpar, out_data, tim)  ! pos
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_p, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_p,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_p,'(a)') '#fs    A   1/A^3'
+         !write(numpar%FN_cyl_2d_RL_p,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_p,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_p,'(a)') '#[A] [A] [1/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_p ! just set a number
       ! Write data with densities into this file:
@@ -1389,14 +1372,15 @@ subroutine printout_cylindric_2d_RL_p(used_target, numpar, out_data, tim)  ! pos
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_E_p, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_E_p,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_E_p,'(a)') '#fs    A   eV/A^3'
+         !write(numpar%FN_cyl_2d_RL_E_p,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_E_p,'(a)') '#R   L   Energy_density'
+         write(numpar%FN_cyl_2d_RL_E_p,'(a)') '#[A] [A] [eV/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_E_p ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
                                     out_data%E_Distr_p_RL(:,:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_2d_RL_p
 
 
@@ -1411,7 +1395,7 @@ subroutine printout_cylindric_2d_RL_mu(used_target, numpar, out_data, tim)  ! mu
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                     trim(adjustl(m_output_cylindric_2d_RL_mu))//trim(adjustl(used_target%Name))//'.dat'
@@ -1419,8 +1403,9 @@ subroutine printout_cylindric_2d_RL_mu(used_target, numpar, out_data, tim)  ! mu
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_mu, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_mu,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_mu,'(a)') '#fs    A   1/A^3'
+         !write(numpar%FN_cyl_2d_RL_mu,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_mu,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_mu,'(a)') '#[A] [A] [1/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_mu ! just set a number
       ! Write data with densities into this file:
@@ -1434,14 +1419,16 @@ subroutine printout_cylindric_2d_RL_mu(used_target, numpar, out_data, tim)  ! mu
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_E_mu, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
+         !write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#R[A]:L[A]:Energy [eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#R   L   Energy_density'
+         write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#[A] [A] [eV/A^3]'
          !write(numpar%FN_cyl_2d_RL_E_mu,'(a)') '#fs    A   eV/A^3'
       endif
       FN = numpar%FN_cyl_2d_RL_E_mu ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
                                     out_data%E_Distr_mu_RL(:,:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_2d_RL_mu
 
 
@@ -1494,8 +1481,9 @@ subroutine printout_cylindric_2d_RL_h_single_shell(File_name_part, used_target, 
    inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
    if (.not. file_exist) then   ! it's the first time, create file and write the header
       open(newunit = numpar%FN_cyl_2d_RL_h(Narr), FILE = trim(adjustl(File_name)))
-      write(numpar%FN_cyl_2d_RL_h(Narr),'(a)') '#R[A]:L[A]:Density[eV/A^3]'
-      !write(numpar%FN_cyl_2d_RL_h(Narr),'(a)') '#fs    A   1/A^3'
+      !write(numpar%FN_cyl_2d_RL_h(Narr),'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+      write(numpar%FN_cyl_2d_RL_h(Narr),'(a)') '#R   L   Density'
+      write(numpar%FN_cyl_2d_RL_h(Narr),'(a)') '#[A] [A] [1/A^3]'
    endif
    FN = numpar%FN_cyl_2d_RL_h(Narr) ! just set a number
    ! Write data with densities into this file:
@@ -1508,8 +1496,9 @@ subroutine printout_cylindric_2d_RL_h_single_shell(File_name_part, used_target, 
    inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
    if (.not. file_exist) then   ! it's the first time, create file and write the header
       open(newunit = numpar%FN_cyl_2d_RL_E_h(Narr), FILE = trim(adjustl(File_name)))
-      write(numpar%FN_cyl_2d_RL_E_h(Narr),'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
-      !write(numpar%FN_cyl_2d_RL_E_h(Narr),'(a)') '#fs    A   eV/A^3'
+      !write(numpar%FN_cyl_2d_RL_E_h(Narr),'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
+      write(numpar%FN_cyl_2d_RL_E_h(Narr),'(a)') '#R   L   Energy_density'
+      write(numpar%FN_cyl_2d_RL_E_h(Narr),'(a)') '#[A] [A] [eV/A^3]'
    endif
    FN = numpar%FN_cyl_2d_RL_E_h(Narr) ! just set a number
    ! Write data with energy densities into this file:
@@ -1528,15 +1517,16 @@ subroutine printout_cylindric_2d_RL_SHI(used_target, numpar, out_data, tim)  ! S
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                      trim(adjustl(m_output_cylindric_2d_RL_SHI))//trim(adjustl(used_target%Name))//'.dat'
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_SHI, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_SHI,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
-         !write(numpar%FN_cyl_2d_RL_SHI,'(a)') '#fs    A   1/A^3'
+         !write(numpar%FN_cyl_2d_RL_SHI,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_SHI,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_SHI,'(a)') '#[A] [A] [1/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_SHI ! just set a number
       ! Write data with densities into this file:
@@ -1549,14 +1539,15 @@ subroutine printout_cylindric_2d_RL_SHI(used_target, numpar, out_data, tim)  ! S
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_E_SHI, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_E_SHI,'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
-!         write(numpar%FN_cyl_2d_RL_E_SHI,'(a)') '#fs    A   eV/A^3'
+         !write(numpar%FN_cyl_2d_RL_E_SHI,'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_E_SHI,'(a)') '#R   L   Energy_density'
+         write(numpar%FN_cyl_2d_RL_E_SHI,'(a)') '#[A] [A] [eV/A^3]'
       endif
       FN = numpar%FN_cyl_2d_RL_E_SHI ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
                                     out_data%E_Distr_e_RL(:,:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_2d_RL_SHI
 
 
@@ -1571,14 +1562,15 @@ subroutine printout_cylindric_2d_RL_a(used_target, numpar, out_data, tim)  ! ato
    character(300) :: File_name
    logical :: file_exist
    ! Printout electron distribution in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create file with density:
       File_name = trim(adjustl(numpar%output_path))//numpar%path_sep// &
                      trim(adjustl(m_output_cylindric_2d_RL_a))//trim(adjustl(used_target%Name))//'.dat'
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_a, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_a,'(a)') '#R[A]:L[A]:Density[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_a,'(a)') '#R   L   Density'
+         write(numpar%FN_cyl_2d_RL_a,'(a)') '#[A] [A] [1/A^3]'
          !write(numpar%FN_cyl_2d_RL_a,'(a)') '#fs    A   1/A^3'
       endif
       FN = numpar%FN_cyl_2d_RL_a ! just set a number
@@ -1593,14 +1585,17 @@ subroutine printout_cylindric_2d_RL_a(used_target, numpar, out_data, tim)  ! ato
       inquire(file=trim(adjustl(File_name)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_cyl_2d_RL_E_a, FILE = trim(adjustl(File_name)))
-         write(numpar%FN_cyl_2d_RL_E_a,'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
+         !write(numpar%FN_cyl_2d_RL_E_a,'(a)') '#R[A]:L[A]:Energy[eV/A^3]'
+         write(numpar%FN_cyl_2d_RL_E_a,'(a)') '#R   L   Energy_density'
+         write(numpar%FN_cyl_2d_RL_E_a,'(a)') '#[A] [A] [eV/A^3]'
+
          !write(numpar%FN_cyl_2d_RL_E_a,'(a)') '#fs    A   eV/A^3'
       endif
       FN = numpar%FN_cyl_2d_RL_E_a ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
                                     out_data%E_Distr_a_RL(:,:), tim)    ! below
-   enddo TRGT
+   !enddo TRGT
 end subroutine printout_cylindric_2d_RL_a
 
 
@@ -1622,7 +1617,48 @@ subroutine printout_data_on_1d_grid(FN, grid_array, data_array, tim)
    endif
 end subroutine printout_data_on_1d_grid
 
+
+
+
+
+
 subroutine printout_data_on_2d_grid(FN, grid_array1, grid_array2, data_array, tim)
+   integer, intent(in) :: FN    ! file number (file must be already open!)
+   real(8), dimension(:), intent(in) :: grid_array1, grid_array2  ! array with the grid
+   real(8), dimension(:,:), intent(in) :: data_array  ! 1d array with the data to printout
+   real(8), intent(in) :: tim   ! [fs] current time step to print out
+   !------------------------------
+   integer :: Nsiz1, Nsiz2, i, j
+
+   Nsiz1 = size(grid_array1)
+   if (Nsiz1 /= size(data_array, 1)) then           ! make sure the sizes match
+      write(6,'(a)') 'Error in printout_data_on_2d_grid: size of grid1 does not match size of data array'
+      return ! nothing else to do
+   endif
+
+   Nsiz2 = size(grid_array2)
+   if (Nsiz2 /= size(data_array, 2)) then      ! make sure the sizes match
+      write(6,'(a)') 'Error in printout_data_on_2d_grid: size of grid2 does not match size of data array'
+      return ! nothing else to do
+   endif
+
+   ! Time stamp:
+   write(FN,'(a, f16.6, a)') '#', tim, ' fs'   ! time stamp at the start of the block
+
+   !Printout first row with grid_array vaues
+   do i = 1, Nsiz1  ! grid points along first axis (R)
+      do j = 1, Nsiz2 ! grid points along the other axis (L)
+         write(FN,'(3es24.16)'), grid_array1(i), grid_array2(j), data_array(i,j)
+      enddo ! j
+   enddo ! i
+
+   write(FN,'(a)') ! empty line between blocks
+end subroutine printout_data_on_2d_grid
+
+
+
+
+subroutine printout_data_on_2d_grid_OLD(FN, grid_array1, grid_array2, data_array, tim)
    integer, intent(in) :: FN    ! file number (file must be already open!)
    real(8), dimension(:), intent(in) :: grid_array1, grid_array2  ! array with the grid
    real(8), dimension(:,:), intent(in) :: data_array  ! 1d array with the data to printout
@@ -1655,7 +1691,9 @@ subroutine printout_data_on_2d_grid(FN, grid_array1, grid_array2, data_array, ti
    else ! something is wrong
       write(6,'(a)') 'Error in printout_data_on_2d_grid: size of grid1 does not match size of data array'
    endif
-end subroutine printout_data_on_2d_grid
+end subroutine printout_data_on_2d_grid_OLD
+
+
 
 
 subroutine energy_spectra(used_target, numpar, out_data, tim)
@@ -1758,563 +1796,6 @@ subroutine total_values(used_target, numpar, out_data, tim)
       endif ! (do_high)
    !enddo TRGT
 end subroutine total_values
-
-
-
-subroutine create_gnuplot_files(used_target, MD_pots, numpar)
-   type(Matter), intent(in) :: used_target      ! parameters of the target
-   type(MD_potential), dimension(:,:), allocatable, intent(in) :: MD_pots    ! MD potentials
-   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
-   !---------------------------------
-   ! Create gnuplot scripts for plotting total numbers and energies:
-   call gnuplot_total_values(used_target, numpar)  ! below
-
-   ! Create gnuplot for MD part:
-   if (numpar%DO_MD) then
-      call gnuplot_MD_values(used_target, MD_pots, numpar)  ! below
-   endif
-end subroutine create_gnuplot_files
-
-
-
-subroutine gnuplot_MD_values(used_target, MD_pots, numpar)
-   type(Matter), intent(in) :: used_target      ! parameters of the target
-   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
-   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
-   !---------------------------------
-   integer :: i_tar
-   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
-   i_tar = 1    ! for global target only, not each material
-      ! Create a file for atomic temperature:
-      call create_MD_energies_gnuplot(used_target%Material(i_tar), numpar, &
-      trim(adjustl(m_output_MD_energies)), numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-
-      ! Create a file for atomic temperature:
-      call create_MD_temperature_gnuplot(used_target%Material(i_tar), numpar, &
-      trim(adjustl(m_output_MD_cell_params)), numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-
-      ! Create a file for atomic displacements:
-      call create_MD_displacement_gnuplot(MD_pots, used_target%Material(i_tar), numpar, &
-      trim(adjustl(m_output_MD_displacements)), numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-
-!    enddo TRGT
-end subroutine gnuplot_MD_values
-
-
-
-subroutine create_MD_energies_gnuplot(Material, numpar, Datafile, x_start, x_end, log_x)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end
-   logical, intent(in), optional :: log_x
-   !------------------------
-   character(200) :: File_script, Out_file
-   character(50) :: Title, temp, temp2
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   logical :: logx
-   integer :: FN_gnu, i_first, Reason
-   real(8) :: tics, ord
-
-   if (present(log_x)) then
-      if (log_x) then   ! user set it to make x-axis logscale
-         logx = .true.
-      else  ! x axis linear
-         logx = .false.
-      endif
-   else ! x axis linear
-      logx = .false.
-   endif
-
-   ! Set the grid step on the plots:
-   if (logx) then
-      tics = 10.0d0
-   else
-      ord = dble( find_order_of_number( abs(x_start-x_end) ) - 2 )   ! module "Little_subroutines"
-
-      !tics = 10.0d0**ord
-      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
-      temp = trim(adjustl(temp2))
-      read(temp(1:1),*,IOSTAT=Reason) i_first
-
-      if (i_first < 3) then
-         tics = 10.0d0**ord
-      else
-         tics = 10.0d0**(ord+1)
-      endif
-   endif
-
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-
-   ! Printout total values in each target:
-   ! Get the paths and file names:
-   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_MD_E_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_MD_E_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Energies vs Time", "Time (fs)", "Energy (eV/atom)", &
-      trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0, &
-      logx=logx, logy=.false.)  ! module "Gnuplotting"
-
-   ! Create the plotting part:
-   write(Title, '(a)') ' Total'
-   write(col_y, '(i4)') 4   ! in this column there is Etot
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Potential'
-   write(col_y, '(i4)') 3   ! in this column there is Eph
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-
-   call close_file('save',FN=FN_gnu)
-end subroutine create_MD_energies_gnuplot
-
-
-
-
-subroutine create_MD_temperature_gnuplot(Material, numpar, Datafile, x_start, x_end, log_x)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end
-   logical, intent(in), optional :: log_x
-   !------------------------
-   character(200) :: File_script, Out_file
-   character(50) :: Title, temp, temp2
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   logical :: logx
-   integer :: FN_gnu, i_first, Reason
-   real(8) :: tics, ord
-
-   if (present(log_x)) then
-      if (log_x) then   ! user set it to make x-axis logscale
-         logx = .true.
-      else  ! x axis linear
-         logx = .false.
-      endif
-   else ! x axis linear
-      logx = .false.
-   endif
-
-   ! Set the grid step on the plots:
-   if (logx) then
-      tics = 10.0d0
-   else
-      ord = dble(find_order_of_number( abs(x_start-x_end) ) - 2)   ! module "Little_subroutines"
-      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
-      temp = trim(adjustl(temp2))
-      read(temp(1:1),*,IOSTAT=Reason) i_first
-      if (i_first < 3) then
-         tics = 10.0d0**ord
-      else
-         tics = 10.0d0**(ord+1)
-      endif
-   endif
-
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-
-   ! Printout total values in each target:
-   ! Get the paths and file names:
-   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_MD_T_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_MD_T_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Temperature vs Time", "Time (fs)", "Temperature (K)", &
-                  trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, &
-                  setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
-
-   ! Create the plotting part:
-   write(Title, '(a)') ' Atoms'
-   write(col_y, '(i4)') 2   ! in this column there is mean atomic temperature
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-
-   call close_file('save',FN=FN_gnu)
-end subroutine create_MD_temperature_gnuplot
-
-
-
-subroutine create_MD_displacement_gnuplot(MD_pots, Material, numpar, Datafile, x_start, x_end, log_x)
-   type(MD_potential), dimension(:,:), intent(in) :: MD_pots    ! MD potentials for each kind of atom-atom interactions
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end
-   logical, intent(in), optional :: log_x
-   !------------------------
-   character(200) :: File_script, Out_file
-   character(50) :: Title, temp, temp2
-   character(10) :: units, chtemp
-   character(5) ::  call_slash, sh_cmd, col_y
-   logical :: logx
-   integer :: FN_gnu, i_first, Reason, N_KOA, i
-   real(8) :: tics, ord
-
-   ! Number of different kinds of atoms (defined by different potentials):
-   N_KOA = size(MD_pots,1)
-
-   if (present(log_x)) then
-      if (log_x) then   ! user set it to make x-axis logscale
-         logx = .true.
-      else  ! x axis linear
-         logx = .false.
-      endif
-   else ! x axis linear
-      logx = .false.
-   endif
-
-   ! Set the grid step on the plots:
-   if (logx) then
-      tics = 10.0d0
-   else
-      ord = dble(find_order_of_number( abs(x_start-x_end) ) - 2)   ! module "Little_subroutines"
-      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
-      temp = trim(adjustl(temp2))
-      read(temp(1:1),*,IOSTAT=Reason) i_first
-      if (i_first < 3) then
-         tics = 10.0d0**ord
-      else
-         tics = 10.0d0**(ord+1)
-      endif
-   endif
-
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-
-   ! Printout total values in each target:
-   ! Get the paths and file names:
-   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_MD_MSD_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_MD_MSD_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-
-   ! Create the gnuplot-script header:
-   if (numpar%n_MSD /= 1) then
-      write(chtemp,'(i2)') numpar%n_MSD
-      call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Displacement vs Time", "Time (fs)", &
-                  "Displacement (A^"//trim(adjustl(chtemp))//')', &
-                  trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, &
-                  setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
-   else
-      call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Displacement vs Time", "Time (fs)", "Displacement (A)", &
-                  trim(adjustl(Out_file)), trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, &
-                  setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
-   endif
-
-   ! Create the plotting part:
-   if (N_KOA > 1) then ! many kinds of atoms
-      write(Title, '(a)') ' Average'
-      write(col_y, '(i4)') 2   ! in this column there is mean atomic temperature
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-      else
-         call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-      endif
-      do i = 3, (2+N_KOA)-1 ! for all kinds of atoms
-         write(Title, '(a)') trim(adjustl(MD_pots(i-2,i-2)%El1))
-         write(col_y, '(i4)') i   ! in this column there is mean atomic temperature
-         if (numpar%path_sep == '\') then	! if it is Windows
-            call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-               x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-         else
-            call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-               x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-         endif
-      enddo
-      write(Title, '(a)') trim(adjustl(MD_pots(N_KOA,N_KOA)%El1))
-      write(col_y, '(i4)') 2+N_KOA   ! in this column there is mean atomic temperature
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-      else
-         call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-      endif
-   else ! only one kind of atoms
-      write(Title, '(a)') ' Average'
-      write(col_y, '(i4)') 2   ! in this column there is mean atomic temperature
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-      else
-         call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-      endif
-   endif ! (N_KOA > 1)
-
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-
-   call close_file('save',FN=FN_gnu)
-end subroutine create_MD_displacement_gnuplot
-
-
-
-
-subroutine gnuplot_total_values(used_target, numpar)
-   type(Matter), intent(in) :: used_target      ! parameters of the target
-   type(Num_par), intent(inout), target :: numpar    ! all numerical parameters
-   !---------------------------------
-   integer :: i_tar
-   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
-   i_tar = 1    ! for global target only, not each material
-      ! Create a file for total numbers:
-      call create_total_numbers_gnuplot(used_target%Material(i_tar), numpar, &
-      trim(adjustl(m_output_total))//'all.dat', numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-      !trim(adjustl(m_output_total))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat', numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-
-
-      ! Create a file for total eneries:
-      call create_total_energies_gnuplot(used_target%Material(i_tar), numpar, &
-      trim(adjustl(m_output_total))//'all.dat', numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-      !trim(adjustl(m_output_total))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat', numpar%t_start, numpar%t_total, log_x = .false.)   ! below
-!    enddo TRGT
-end subroutine gnuplot_total_values
-
-
-
-
-subroutine create_total_numbers_gnuplot(Material, numpar, Datafile, x_start, x_end, log_x)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end
-   logical, intent(in), optional :: log_x
-   !------------------------
-   character(200) :: File_script, Out_file
-   character(50) :: Title, temp, temp2
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   logical :: logx
-   integer :: FN_gnu, i_first, Reason
-   real(8) :: tics, ord
-   
-   if (present(log_x)) then
-      if (log_x) then   ! user set it to make x-axis logscale
-         logx = .true.
-      else  ! x axis linear
-         logx = .false.
-      endif
-   else ! x axis linear
-      logx = .false.
-   endif
-   
-   ! Set the grid step on the plots:
-   if (logx) then
-      tics = 10.0d0
-   else
-      ord = dble(find_order_of_number( abs(x_start-x_end) ) - 2)   ! module "Little_subroutines"
-      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
-      temp = trim(adjustl(temp2))
-      read(temp(1:1),*,IOSTAT=Reason) i_first
-!       print*, 'CHECK', i_first
-!       pause 'Check'
-      if (i_first < 3) then
-         tics = 10.0d0**ord
-      else
-         tics = 10.0d0**(ord+1)
-      endif
-   endif
-   
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-   
-   ! Printout total values in each target:
-   ! Get the paths and file names:
-   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_N_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_N_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-   
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Numbers vs Time", "Time (fs)", "Numbers (arb. units)", trim(adjustl(Out_file)), &
-            trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=2, logx=logx, logy=.false.)  ! module "Gnuplotting"
-   
-   ! Create the plotting part:
-   write(Title, '(a)') ' Photons'
-   write(col_y, '(i4)') 2   ! in this column there is Nph
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif  
-   write(Title, '(a)') ' Electrons'
-   write(col_y, '(i4)') 3   ! in this column there is Nph
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, &
-                 lw=3, title=trim(adjustl(Title)), additional_info = 'lt -1')  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, &
-                 lw=3, title=trim(adjustl(Title)), additional_info = 'lt -1', linux_s =.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' All holes'
-   write(col_y, '(i4)') 4   ! in this column there is Nph
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, &
-               lw=1, title=trim(adjustl(Title)) )  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, &
-               lw=1, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Positrons'
-   write(col_y, '(i4)') 5   ! in this column there is Nph
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-   
-   call close_file('save',FN=FN_gnu)
-end subroutine create_total_numbers_gnuplot
-
-
-
-
-subroutine create_total_energies_gnuplot(Material, numpar, Datafile, x_start, x_end, log_x)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end
-   logical, intent(in), optional :: log_x
-   !------------------------
-   character(200) :: File_script, Out_file
-   character(50) :: Title, temp, temp2
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   logical :: logx
-   integer :: FN_gnu, i_first, Reason
-   real(8) :: tics, ord
-   
-   if (present(log_x)) then
-      if (log_x) then   ! user set it to make x-axis logscale
-         logx = .true.
-      else  ! x axis linear
-         logx = .false.
-      endif
-   else ! x axis linear
-      logx = .false.
-   endif
-   
-   ! Set the grid step on the plots:
-   if (logx) then
-      tics = 10.0d0
-   else
-      ord = dble( find_order_of_number( abs(x_start-x_end) ) - 2 )   ! module "Little_subroutines"
-      write(temp2,'(es)')  abs(x_start-x_end) ! make it a string
-      temp = trim(adjustl(temp2))
-      read(temp(1:1),*,IOSTAT=Reason) i_first
-      if (i_first < 3) then
-         tics = 10.0d0**ord
-      else
-         tics = 10.0d0**(ord+1)
-      endif
-   endif
-   
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-   
-   ! Printout total values in each target:
-   ! Get the paths and file names:
-   File_script = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_E_gnu))//trim(adjustl(Material%Name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-!    Out_file = trim(adjustl(m_output_E_gnu))//'in_'//trim(adjustl(Material%Name))//'.eps'
-   Out_file = trim(adjustl(m_output_E_gnu))//'in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-   
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Energies vs Time", "Time (fs)", "Energy (eV)", trim(adjustl(Out_file)), &
-            trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0, logx=logx, logy=.false.)  ! module "Gnuplotting"
-   
-   ! Create the plotting part:
-   write(Title, '(a)') ' Total'
-   write(col_y, '(i4)') 12   ! in this column there is Etot
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Photons'
-   write(col_y, '(i4)') 6   ! in this column there is Eph
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif  
-   write(Title, '(a)') ' Electrons'
-   write(col_y, '(i4)') 7   ! in this column there is Ee
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, &
-                 lw=3, title=trim(adjustl(Title)), additional_info = 'lt -1')  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, &
-                 lw=3, title=trim(adjustl(Title)), additional_info = 'lt -1', linux_s =.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Holes (kin)'
-   write(col_y, '(i4)') 8   ! in this column there is Eh_pot
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, &
-               lw=3, title=trim(adjustl(Title)) )  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, &
-               lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Holes (pot)'
-   write(col_y, '(i4)') 9   ! in this column there is Eh_pot
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, &
-               lw=3, title=trim(adjustl(Title)) )  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, &
-               lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Positrons'
-   write(col_y, '(i4)') 10   ! in this column there is Ep
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .false., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   write(Title, '(a)') ' Atoms'
-   write(col_y, '(i4)') 11   ! in this column there is Ep
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-   
-   call close_file('save',FN=FN_gnu)
-end subroutine create_total_energies_gnuplot
 
 
 
@@ -2602,10 +2083,12 @@ subroutine photon_spectrum(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron spectrum in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
       numpar%FILE_spectrum_ph = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_spectrum_ph))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    !trim(adjustl(m_output_spectrum_ph))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_spectrum_ph))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_spectrum_ph)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_spectrum_ph, FILE = trim(adjustl(numpar%FILE_spectrum_ph)))
@@ -2620,7 +2103,7 @@ subroutine photon_spectrum(used_target, numpar, out_data, tim)
          write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%NRG_grid(i), out_data%Spectrum_ph(i)
       enddo
       write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine photon_spectrum
 
 
@@ -2636,10 +2119,12 @@ subroutine electron_spectrum(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron spectrum in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
       numpar%FILE_spectrum_e = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_spectrum_e))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    !trim(adjustl(m_output_spectrum_e))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_spectrum_e))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_spectrum_e)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_spectrum_e, FILE = trim(adjustl(numpar%FILE_spectrum_e)))
@@ -2653,7 +2138,7 @@ subroutine electron_spectrum(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%NRG_grid(i), out_data%Spectrum_e(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine electron_spectrum
 
 
@@ -2707,10 +2192,12 @@ subroutine positron_spectrum(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron spectrum in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
       numpar%FILE_spectrum_p = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_spectrum_p))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    !trim(adjustl(m_output_spectrum_p))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_spectrum_p))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_spectrum_p)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_spectrum_p, FILE = trim(adjustl(numpar%FILE_spectrum_p)))
@@ -2724,7 +2211,7 @@ subroutine positron_spectrum(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%NRG_grid(i), out_data%Spectrum_p(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine positron_spectrum
 
 
@@ -2740,10 +2227,12 @@ subroutine muon_spectrum(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
 
    ! Printout electron spectrum in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
       numpar%FILE_spectrum_mu = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_spectrum_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    !trim(adjustl(m_output_spectrum_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_spectrum_mu))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_spectrum_mu)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_spectrum_mu, FILE = trim(adjustl(numpar%FILE_spectrum_mu)))
@@ -2757,7 +2246,7 @@ subroutine muon_spectrum(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%NRG_grid(i), out_data%Spectrum_mu(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine muon_spectrum
 
 
@@ -2946,10 +2435,13 @@ subroutine photon_velotheta(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout photon velocity theta in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
+      !numpar%FILE_vel_theta_ph = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+      !               trim(adjustl(m_output_velocity_theta_distr_ph))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
       numpar%FILE_vel_theta_ph = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_velocity_theta_distr_ph))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_velocity_theta_distr_ph))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_vel_theta_ph)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_vel_theta_ph, FILE = trim(adjustl(numpar%FILE_vel_theta_ph)))
@@ -2963,7 +2455,7 @@ subroutine photon_velotheta(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_ph(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine photon_velotheta
 
 
@@ -2978,10 +2470,14 @@ subroutine electron_velotheta(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron velocity theta in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
+!       numpar%FILE_vel_theta_e = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+!                     trim(adjustl(m_output_velocity_theta_distr_e))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+
       numpar%FILE_vel_theta_e = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_velocity_theta_distr_e))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_velocity_theta_distr_e))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_vel_theta_e)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_vel_theta_e, FILE = trim(adjustl(numpar%FILE_vel_theta_e)))
@@ -2995,7 +2491,7 @@ subroutine electron_velotheta(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_e(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine electron_velotheta
 
 
@@ -3010,10 +2506,14 @@ subroutine positron_velotheta(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron velocity theta in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
+!       numpar%FILE_vel_theta_p = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+!                     trim(adjustl(m_output_velocity_theta_distr_p))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+
       numpar%FILE_vel_theta_p = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_velocity_theta_distr_p))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_velocity_theta_distr_p))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_vel_theta_p)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_vel_theta_p, FILE = trim(adjustl(numpar%FILE_vel_theta_p)))
@@ -3027,7 +2527,7 @@ subroutine positron_velotheta(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_p(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine positron_velotheta
 
 
@@ -3043,10 +2543,14 @@ subroutine muon_velotheta(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
 
    ! Printout electron velocity theta in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
+!       numpar%FILE_vel_theta_mu = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+!                     trim(adjustl(m_output_velocity_theta_distr_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+
       numpar%FILE_vel_theta_mu = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_velocity_theta_distr_mu))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_velocity_theta_distr_mu))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_vel_theta_mu)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_vel_theta_mu, FILE = trim(adjustl(numpar%FILE_vel_theta_mu)))
@@ -3060,7 +2564,7 @@ subroutine muon_velotheta(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_mu(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine muon_velotheta
 
 
@@ -3076,10 +2580,14 @@ subroutine hole_velotheta(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron velocity theta in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
+!       numpar%FILE_vel_theta_h = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+!                     trim(adjustl(m_output_velocity_theta_distr_h))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+
       numpar%FILE_vel_theta_h = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_velocity_theta_distr_h))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_velocity_theta_distr_h))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_vel_theta_h)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_vel_theta_h, FILE = trim(adjustl(numpar%FILE_vel_theta_h)))
@@ -3093,7 +2601,7 @@ subroutine hole_velotheta(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_h(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine hole_velotheta
 
 
@@ -3108,10 +2616,14 @@ subroutine SHI_velotheta(used_target, numpar, out_data, tim)
    logical :: file_opened, file_exist
    
    ! Printout electron velocity theta in each target:
-   TRGT:do i_tar = 1, used_target%NOC ! for all targets
+   !TRGT:do i_tar = 1, used_target%NOC ! for all targets
       ! Create a directory for MFPs:
+!       numpar%FILE_vel_theta_SHI = trim(adjustl(numpar%output_path))//numpar%path_sep// &
+!                     trim(adjustl(m_output_velocity_theta_distr_SHI))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+
       numpar%FILE_vel_theta_SHI = trim(adjustl(numpar%output_path))//numpar%path_sep// &
-                    trim(adjustl(m_output_velocity_theta_distr_SHI))//trim(adjustl(used_target%Material(i_tar)%Name))//'.dat'
+                    trim(adjustl(m_output_velocity_theta_distr_SHI))//trim(adjustl(used_target%Name))//'.dat'
+
       inquire(file=trim(adjustl(numpar%FILE_vel_theta_SHI)),exist=file_exist) ! check if input file is there
       if (.not. file_exist) then   ! it's the first time, create file and write the header
          open(newunit = numpar%FN_vel_theta_SHI, FILE = trim(adjustl(numpar%FILE_vel_theta_SHI)))
@@ -3125,11 +2637,11 @@ subroutine SHI_velotheta(used_target, numpar, out_data, tim)
           write(FN,'(f16.6,es24.16,es24.16)') tim, numpar%vel_theta_grid(i), out_data%Vel_theta_SHI(i)
        enddo
        write(FN,'(a)') ! skip line between timesteps
-   enddo TRGT
+   !enddo TRGT
 end subroutine SHI_velotheta
 
 
- 
+
 !===================================================
 subroutine print_MFPs(used_target, numpar, bunch)    ! create all output files
    type(Matter), intent(in) :: used_target      ! parameters of the target
@@ -3491,178 +3003,6 @@ subroutine printout_Se_and_ranges(used_target, numpar, bunch)
    nullify(CS)
 end subroutine printout_Se_and_ranges
 
-
-subroutine create_Se_vs_Range_gnuplot(Material, numpar, Datafile, x_start, x_end, y_start, y_end, particle_name, y_units)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end, y_start, y_end
-   character(*), intent(in) :: particle_name
-   character(*), intent(in), optional :: y_units
-   !------------------------
-   character(200) :: File_script, Out_file, Path
-   character(50) :: Title
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   integer :: FN_gnu
-   real(8) :: tics
-   
-  if (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-   
-   if (present(y_units)) then
-      units = y_units  ! user provided units
-   else
-      units = '(A)'    ! by default, assume eV
-   endif
-   
-   tics = 10.0d0
-   
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-   
-    ! Get the paths and file names:
-   Path = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_folder_MFP))//trim(adjustl(Material%Name))
-   File_script = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(m_output_Se_vs_range))//trim(adjustl(Material%Name))//'_'// &
-                      trim(adjustl(particle_name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-!    Out_file = trim(adjustl(m_output_Se_vs_range))//trim(adjustl(particle_name))//'_in_'//trim(adjustl(Material%Name))//'.eps'
-   Out_file = trim(adjustl(m_output_Se_vs_range))//trim(adjustl(particle_name))//'_in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-   
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Se vs Range", "Range (A)", "Stopping power Se (eV/A)", trim(adjustl(Out_file)), &
-            trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0, logx=.true., logy=.false.)  ! module "Gnuplotting"
-   
-   ! Create the plotting part:
-   write(col_y, '(i4)') 2   ! in this column there is Se
-   write(Title, '(a)') trim(adjustl(particle_name))//' inelastic Se'
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="3", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="3", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-   
-   call close_file('save',FN=FN_gnu)
-   
-  endif ! (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-end subroutine create_Se_vs_Range_gnuplot
-
-
-subroutine create_Se_gnuplot(Material, numpar, Datafile, x_start, x_end, y_start, y_end, particle_name, y_units)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end, y_start, y_end
-   character(*), intent(in) :: particle_name
-   character(*), intent(in), optional :: y_units
-   !------------------------
-   character(200) :: File_script, Out_file, Path
-   character(50) :: Title
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   integer :: FN_gnu
-   real(8) :: tics
-   
-  if (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-   
-   if (present(y_units)) then
-      units = y_units  ! user provided units
-   else
-      units = '(eV)'    ! by default, assume eV
-   endif
-   
-   tics = 10.0d0
-   
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-   
-    ! Get the paths and file names:
-   Path = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_folder_MFP))//trim(adjustl(Material%Name))
-   File_script = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(m_output_Se))//trim(adjustl(Material%Name))//'_'// &
-                      trim(adjustl(particle_name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_Se))//trim(adjustl(particle_name))//'_in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-   
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Se", "Energy "//trim(adjustl(units)), "Stopping power Se (eV/A)", trim(adjustl(Out_file)), &
-            trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0, logx=.true., logy=.false.)  ! module "Gnuplotting"
-   
-   ! Create the plotting part:
-   write(col_y, '(i4)') 2   ! in this column there is Se
-   write(Title, '(a)') trim(adjustl(particle_name))//' inelastic Se'
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-   
-   call close_file('save',FN=FN_gnu)
-   
- endif ! (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-end subroutine create_Se_gnuplot
-
-
-
-subroutine create_Range_gnuplot(Material, numpar, Datafile, x_start, x_end, y_start, y_end, particle_name, y_units)
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in) :: Datafile
-   real(8), intent(in) :: x_start, x_end, y_start, y_end
-   character(*), intent(in) :: particle_name
-   character(*), intent(in), optional :: y_units
-   !------------------------
-   character(200) :: File_script, Out_file, Path
-   character(50) :: Title
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   integer :: FN_gnu
-   real(8) :: tics
-   
-  if (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-
-   if (present(y_units)) then
-      units = y_units  ! user provided units
-   else
-      units = '(eV)'    ! by default, assume eV
-   endif
-   
-   tics = 10.0d0
-   
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-   
-    ! Get the paths and file names:
-   Path = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_folder_MFP))//trim(adjustl(Material%Name))
-   File_script = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(m_output_Range))//trim(adjustl(Material%Name))//'_'// &
-                      trim(adjustl(particle_name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_Range))//trim(adjustl(particle_name))//'_in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-   
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "Range", "Energy "//trim(adjustl(units)), "Range (A)", trim(adjustl(Out_file)), &
-            trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0, logx=.true., logy=.true.)  ! module "Gnuplotting"
-   
-   ! Create the plotting part:
-   write(col_y, '(i4)') 3   ! in this column there is Range
-   write(Title, '(a)') 'Inelastic '//trim(adjustl(particle_name))//' range'
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)),  x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .true., .true., Datafile, col_x="1", col_y=trim(adjustl(col_y)), x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-   
-   call close_file('save',FN=FN_gnu)
-   
-  endif ! (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-end subroutine create_Range_gnuplot
 
 
 
@@ -4382,195 +3722,6 @@ end subroutine printout_MFPs
 
 
 
-subroutine create_MFPs_gnuplot(File_name, File_name2, Material, x_start, x_end, y_start, y_end, particle_name, numpar, File_EMFL, File_Brems, File_annihil, File_pair, File_Compton, File_Rayleigh, logx_in, logy_in, ch_units)    ! below
-   character(*), dimension(:), allocatable, intent(in) :: File_name      ! file with the core data to plot from
-   character(*), intent(in) :: File_name2    ! file with the total data to plot from
-   type(Target_atoms), intent(in), target :: Material ! parameters of this material
-   character(*), intent(in) :: particle_name  ! name of the model and particle to include into the file names
-   real(8), intent(in) :: x_start, x_end, y_start, y_end
-   type(Num_par), intent(in), optional :: numpar	! all numerical parameters
-   character(*), intent(in), optional :: File_EMFL, File_Brems, File_annihil, File_pair, File_Compton, File_Rayleigh ! files with the data to plot from: elastic, bremsstrahlung, annihilation, pair creation, Compton, Rayleigh
-   logical, intent(in), optional :: logx_in, logy_in
-   character(*), intent(in), optional :: ch_units
-   !------------------------------------
-   type(Atom_kind), pointer  :: Element
-   real(8) :: tics
-   integer :: j, k, N_elements, N_shells, FN_gnu, FN_eps, i
-   character(200) :: File_script, Out_file, Path
-   character(50) :: Title
-   character(10) :: units
-   character(5) ::  call_slash, sh_cmd, col_y
-   logical :: logx, logy, first_line
-   
-  if (numpar%gnupl%do_gnuplot) then ! do only if user wants plots
-   
-   if (present(logx_in)) then
-      logx = logx_in    ! follow what user set
-   else
-      logx = .true. ! set logscale x by default
-   endif
-   if (present(logy_in)) then
-      logy = logy_in    ! follow what user set
-   else
-      logy = .true. ! set logscale y by default
-   endif
-   if (present(ch_units)) then
-      units = ch_units  ! user provided units
-   else
-      units = '(eV)'    ! by default, assume eV
-   endif
-
-   ! Get the extension and slash in this OS:
-   call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-   ! Get the paths and file names:
-   Path = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_folder_MFP))//trim(adjustl(Material%Name))
-   File_script = trim(adjustl(Path))//numpar%path_sep//trim(adjustl(m_output_MFP))//trim(adjustl(Material%Name))//'_'// &
-                      trim(adjustl(particle_name))//trim(adjustl(sh_cmd))
-   open(newunit = FN_gnu, FILE = trim(adjustl(File_script)))
-   Out_file = trim(adjustl(m_output_MFP))//trim(adjustl(particle_name))//'_in_'//trim(adjustl(Material%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-   
-   ! Set the grid step on the plots:
-   if (logx) then
-      tics = 10.0d0
-   else
-      tics = dble(find_order_of_number( abs(x_start-x_end) )) ! module "Little_subroutines"
-   endif
-   
-   ! Create the gnuplot-script header:
-   call write_gnuplot_script_header_new(FN_gnu, 1, 3.0d0, tics, "MFP", "Energy "//trim(adjustl(units)), "Mean free path (A)", trim(adjustl(Out_file)), &
-                trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=1, logx=logx, logy=logy)  ! module "Gnuplotting"
-   
-   if (allocated(File_name)) then
-      N_elements = size(Material%Elements)	! that's how many different elements are in this target
-      ! Core-shells:
-      LMNT:do j =1, N_elements	! for each element
-         Element => Material%Elements(j)	! all information about this element
-         N_shells = Element%N_shl
-         ! MFPs for all shells of this element:
-         do k = 1, N_shells
-            VAL:if ( (Element%valent(k)) .and. (allocated(Material%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
-                  ! Valence band will be added at the end
-            else VAL    ! core shell
-               write(col_y, '(i4)') 1 + k  ! number of column
-               write(Title, '(a)') trim(adjustl(Element%Name))//' '//trim(adjustl(Element%Shell_name(k)))//'-shell inelastic'
-               ! Create the plotting options:
-               if ((j ==1) .and. (k==1)) then    ! first line in gnuplot script
-                  if (numpar%path_sep == '\') then	! if it is Windows
-                     call write_gnu_printout(FN_gnu, .true., .false., File_name(j), x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-                  else
-                     call write_gnu_printout(FN_gnu, .true., .false., File_name(j),  x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-                  endif
-               else
-                  if (numpar%path_sep == '\') then	! if it is Windows
-                     call write_gnu_printout(FN_gnu, .false., .false., File_name(j), col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-                  else
-                     call write_gnu_printout(FN_gnu, .false., .false., File_name(j), col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-                  endif
-               endif
-            endif VAL
-         enddo
-      enddo LMNT
-      first_line = .false.
-   else ! Core shells are undefined, start from the valence band (e.g. for holes scattering)
-      first_line = .true.
-   endif
-   ! Valence MFPs:
-   i = 1
-   if ( (allocated(Material%CDF_valence%A)) ) then    ! Valence band (not for RBEB atomic model!)
-      i = i + 1 ! column with valence MFP
-      write(col_y, '(i4)') i
-      write(Title, '(a)') 'Valence inelastic'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, first_line, .false., File_name2, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, first_line, .false., File_name2, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-       first_line = .false.
-   endif
-   
-   if(present(File_EMFL)) then  ! plot also elastic MFP
-      write(col_y, '(i4)') 2
-      write(Title, '(a)') 'Elastic'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, first_line, .false., File_EMFL, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, first_line, .false., File_EMFL, col_x="1", col_y=trim(adjustl(col_y)), &
-            x_start=x_start, x_end=x_end, y_start=y_start, y_end=y_end, lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-   endif ! present(File_EMFL)
-   
-   if(present(File_Brems)) then  ! plot also Bremsstrahlung
-      write(col_y, '(i4)') 2
-      write(Title, '(a)') 'Bremsstrahlung'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .false., .false., File_Brems, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, .false., .false., File_Brems, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-   endif ! present(File_Brems)
-   
-   if(present(File_annihil)) then  ! plot also Annihilation
-      write(col_y, '(i4)') 2
-      write(Title, '(a)') 'Annihilation'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .false., .false., File_annihil, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, .false., .false., File_annihil, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-   endif ! present(File_annihil)
-   
-   if(present(File_Rayleigh)) then  ! plot also Rayleigh
-      write(col_y, '(i4)') 2
-      write(Title, '(a)') 'Rayleigh'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .false., .false., File_Rayleigh, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, .false., .false., File_Rayleigh, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-   endif ! present(File_Rayleigh)
-   
-   if(present(File_Compton)) then  ! plot also Compton
-      write(col_y, '(i4)') 2
-      write(Title, '(a)') 'Compton'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .false., .false., File_Compton, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, .false., .false., File_Compton, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-   endif ! present(File_Compton)
-
-   if(present(File_pair)) then  ! plot also e-e+ pair creation
-      write(col_y, '(i4)') 2
-      write(Title, '(a)') 'e-e+ pair creation'
-      if (numpar%path_sep == '\') then	! if it is Windows
-         call write_gnu_printout(FN_gnu, .false., .false., File_pair, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-       else
-          call write_gnu_printout(FN_gnu, .false., .false., File_pair, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-       endif
-   endif ! present(File_pair)
-   
-   
-   ! Total inelastic MFPs:
-   i = i + 1    ! column with total MFP
-   write(col_y, '(i4)') i
-   write(Title, '(a)') 'Total inelastic'
-   if (numpar%path_sep == '\') then	! if it is Windows
-      call write_gnu_printout(FN_gnu, .false., .true., File_name2, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)))  ! module "Gnuplotting"
-   else
-      call write_gnu_printout(FN_gnu, .false., .true., File_name2, col_x="1", col_y=trim(adjustl(col_y)), lw=3, title=trim(adjustl(Title)), linux_s=.true.)  ! module "Gnuplotting"
-   endif
-   
-   ! Create the gnuplot-script ending:
-   call  write_gnuplot_script_ending_new(FN_gnu, File_script, numpar%path_sep)  ! module "Gnuplotting"
-   nullify(Element)
-   
-   call close_file('save', FN=FN_gnu)  ! module "Dealing_with_files"
-   
-  endif ! (g_numpar%gnupl%do_gnuplot)
-end subroutine create_MFPs_gnuplot
 
 
 subroutine write_shell_headers_output(FN, Material, Element, numpar, novalence)
@@ -4638,138 +3789,6 @@ subroutine printout_DOS(used_target, numpar)
 end subroutine printout_DOS
 
 
-subroutine gnuplot_DOS(used_target, numpar)
-   type(Matter), intent(in) :: used_target	! parameters of the target
-   type(Num_par), intent(inout) :: numpar	! all numerical parameters
-   character(250) :: File_name, File_script, Out_file
-   character(5) ::  call_slash, sh_cmd
-   integer :: i, j, FN
-   if (numpar%printout_DOS) then    ! do it only if a user requested it
-      ! Get the extension and slash in this OS:
-      call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-      
-      ! Prepare DOS file with the data:
-      do i = 1, used_target%NOC
-         ! Create gnuplot script file:
-         !File_script = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_DOS_k))// &
-         File_script = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_DOS))// &
-                            trim(adjustl(used_target%Material(i)%Name))//trim(adjustl(sh_cmd))
-         open(NEWUNIT=FN, FILE = trim(adjustl(File_script)), action="write", status="replace")
-         Out_file = 'OUTPUT_DOS_in_'//trim(adjustl(used_target%Material(i)%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-         
-         ! For this material in the target:
-         File_name = trim(adjustl(m_output_DOS))//trim(adjustl(used_target%Material(i)%Name))//'.dat'
-         
-         ! Create the gnuplot-script header:
-         call write_gnuplot_script_header_new(FN, 1, 3.0d0, 2.0d0, "DOS", "Energy (eV)", "DOS (1/eV)", trim(adjustl(Out_file)), &
-                    trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0)  ! module "Gnuplotting"
-         
-         ! DOS:
-         ! Create the plotting options:
-         if (numpar%path_sep == '\') then	! if it is Windows
-            call  write_gnu_printout(FN, .true., .true., File_name, col_x="1", col_y="2", lw=3, title='DOS')  ! module "Gnuplotting"
-         else
-            call  write_gnu_printout(FN, .true., .true., File_name, col_x="1", col_y="2", lw=3, title='DOS', linux_s=.true.)  ! module "Gnuplotting"
-         endif
-!          ! Effective mass:
-!          ! Create the plotting options:
-!          if (numpar%path_sep == '\') then	! if it is Windows
-!             call  write_gnu_printout(FN, .false., .true., File_name, col_x="1", col_y="4", lw=3, title='Effective mass')  ! module "Gnuplotting"
-!          else
-!             call  write_gnu_printout(FN, .false., .true., File_name, col_x="1", col_y="4", lw=3, title='Effective mass', linux_s=.true.)  ! module "Gnuplotting"
-!          endif
-         
-         ! Create the gnuplot-script ending:
-         call  write_gnuplot_script_ending_new(FN, File_script, numpar%path_sep)  ! module "Gnuplotting"
-         close(FN)
-      enddo
-   endif
-end subroutine gnuplot_DOS
-
-
-subroutine gnuplot_DOS_k(used_target, numpar)
-   type(Matter), intent(in) :: used_target	! parameters of the target
-   type(Num_par), intent(inout) :: numpar	! all numerical parameters
-   character(250) :: File_name, File_script, Out_file
-   character(5) ::  call_slash, sh_cmd
-   integer :: i, j, FN
-   if (numpar%printout_DOS) then    ! do it only if a user requested it
-      ! Get the extension and slash in this OS:
-      call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-      
-      ! Prepare DOS file with the data:
-      do i = 1, used_target%NOC
-         ! Create gnuplot script file:
-         !File_script = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_DOS_effm))//&
-         File_script = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_DOS_k))//&
-                            trim(adjustl(used_target%Material(i)%Name))//trim(adjustl(sh_cmd))
-                            
-         open(NEWUNIT=FN, FILE = trim(adjustl(File_script)), action="write", status="replace")
-         Out_file = 'OUTPUT_DOS_k_vector_in_'//trim(adjustl(used_target%Material(i)%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-         
-         ! For this material in the target:
-         File_name = trim(adjustl(m_output_DOS))//trim(adjustl(used_target%Material(i)%Name))//'.dat'
-         
-         ! Create the gnuplot-script header:
-         call write_gnuplot_script_header_new(FN, 1, 3.0d0, 2.0d0, "k-vector", "Energy (eV)", "k-vector (1/m)", trim(adjustl(Out_file)), &
-                    trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0)  ! module "Gnuplotting"
-         
-         ! Create the plotting options:
-         if (numpar%path_sep == '\') then	! if it is Windows
-            call  write_gnu_printout(FN, .true., .true., File_name, col_x="1", col_y="3", lw=3, title='k-vector')  ! module "Gnuplotting"
-         else
-            call  write_gnu_printout(FN, .true., .true., File_name, col_x="1", col_y="3", lw=3, title='k-vector', linux_s=.true.)  ! module "Gnuplotting"
-         endif
-         
-         ! Create the gnuplot-script ending:
-         call  write_gnuplot_script_ending_new(FN, File_script, numpar%path_sep)  ! module "Gnuplotting"
-         close(FN)
-      enddo
-   endif
-end subroutine gnuplot_DOS_k
-
-
-
-subroutine gnuplot_DOS_m_eff(used_target, numpar)
-   type(Matter), intent(in) :: used_target	! parameters of the target
-   type(Num_par), intent(inout) :: numpar	! all numerical parameters
-   character(250) :: File_name, File_script, Out_file
-   character(5) ::  call_slash, sh_cmd
-   integer :: i, j, FN
-   if (numpar%printout_DOS) then    ! do it only if a user requested it
-      ! Get the extension and slash in this OS:
-      call cmd_vs_sh(numpar%path_sep, call_slash, sh_cmd)  ! module "Gnuplotting"
-      
-      ! Prepare DOS file with the data:
-      do i = 1, used_target%NOC
-         ! Create gnuplot script file:
-         File_script = trim(adjustl(numpar%output_path))//numpar%path_sep//trim(adjustl(m_output_DOS_effm))// &
-                            trim(adjustl(used_target%Material(i)%Name))//trim(adjustl(sh_cmd))
-         open(NEWUNIT=FN, FILE = trim(adjustl(File_script)), action="write", status="replace")
-         Out_file = 'OUTPUT_DOS_effective_mass_in_'//trim(adjustl(used_target%Material(i)%Name))//'.'//trim(adjustl(numpar%gnupl%gnu_extension))
-         
-         ! For this material in the target:
-         File_name = trim(adjustl(m_output_DOS))//trim(adjustl(used_target%Material(i)%Name))//'.dat'
-         
-         ! Create the gnuplot-script header:
-         call write_gnuplot_script_header_new(FN, 1, 3.0d0, 2.0d0, "Effective mass", "Energy (eV)", "Effective mass (me)", trim(adjustl(Out_file)), &
-                    trim(adjustl(numpar%gnupl%gnu_terminal)), numpar%path_sep, setkey=0)  ! module "Gnuplotting"
-         
-         ! Create the plotting options:
-         if (numpar%path_sep == '\') then	! if it is Windows
-            call  write_gnu_printout(FN, .true., .true., File_name, col_x="1", col_y="4", y_end=5.0d0, lw=3, title='Effective mass')  ! module "Gnuplotting"
-         else
-            call  write_gnu_printout(FN, .true., .true., File_name, col_x="1", col_y="4", y_end=5.0d0, lw=3, title='Effective mass', linux_s=.true.)  ! module "Gnuplotting"
-         endif
-         
-         ! Create the gnuplot-script ending:
-         call  write_gnuplot_script_ending_new(FN, File_script, numpar%path_sep)  ! module "Gnuplotting"
-         close(FN)
-      enddo
-   endif
-end subroutine gnuplot_DOS_m_eff
-
-
 
 !===================================================
 ! Python scripts for plotting:
@@ -4808,6 +3827,7 @@ subroutine execute_all_pythons(numpar, out_path)
       call call_python(numpar%path_sep, output_path, m_python_surface_3d, trim(adjustl(file_extension)))
       call call_python(numpar%path_sep, output_path, m_python_surface_colormap, trim(adjustl(file_extension)))
       call call_python(numpar%path_sep, output_path, m_python_time_dependencies_video, trim(adjustl(file_extension)))
+      call call_python(numpar%path_sep, output_path, m_python_2d_density_vid, trim(adjustl(file_extension)))
    endif
 end subroutine execute_all_pythons
 
