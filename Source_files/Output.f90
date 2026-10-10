@@ -101,7 +101,7 @@ character(100) ::   m_python_MFP, m_python_Se, &
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 09.10.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 10.10.2026)'
 
 
 ! All output file names:
@@ -1546,7 +1546,7 @@ subroutine printout_cylindric_2d_RL_SHI(used_target, numpar, out_data, tim)  ! S
       FN = numpar%FN_cyl_2d_RL_E_SHI ! just set a number
       ! Write data with energy densities into this file:
       call printout_data_on_2d_grid(FN, numpar%grids(11)%spatial_grid1(:), numpar%grids(11)%spatial_grid2(:), &
-                                    out_data%E_Distr_e_RL(:,:), tim)    ! below
+                                    out_data%E_Distr_SHI_RL(:,:), tim)    ! below
    !enddo TRGT
 end subroutine printout_cylindric_2d_RL_SHI
 

@@ -8,11 +8,11 @@ This module is written by N. Medvedev
 in 2026
 -----------------------------------
 Standalone script to batch parse TREKIS 2D spatial distribution files 
-and compile them into animated video files (e.g., MP4 or GIF) with automatic X/Y boundary clipping.
+and compile them into animated video files (MP4 or GIF) with high-contrast options.
 
 Usage:
-    python plot_trekis_2d_video.py --ext mp4
-    python plot_trekis_2d_video.py --keep-original-axes --ext gif
+    python plot_trekis_2d_video.py --cmap turbo --log-colors --ext mp4
+    python plot_trekis_2d_video.py --cmap inferno --ext gif
 """
 
 import argparse
@@ -22,6 +22,7 @@ import re
 import sys
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 
@@ -92,7 +93,7 @@ def parse2dblockfile(filepath):
     return col_names, col_units, blocks
 
 
-def create_animation_from_file(outfolder, fname, verbose=False, cmap="viridis", ext="mp4", fps=10, keep_original_axes=True):
+def create_animation_from_file(outfolder, fname, verbose=False, cmap="turbo", ext="mp4", fps=10, keep_original_axes=True, log_colors=False):
     filepath = os.path.join(outfolder, fname)
     col_names, col_units, blocks = parse2dblockfile(filepath)
 
@@ -101,8 +102,6 @@ def create_animation_from_file(outfolder, fname, verbose=False, cmap="viridis", 
             print(f"Skipping {fname}: Insufficient data or columns for 2D map.")
         return
 
-    # Default: X is R (col 0), Y is L (col 1):
-    #print(f"keep_original_axes: {keep_original_axes}")
     if keep_original_axes:
         x_raw, y_raw = col_names[0], col_names[1]
         x_unit, y_unit = f" ({col_units[0]})" if col_units[0] else "", f" ({col_units[1]})" if col_units[1] else ""
@@ -132,50 +131,34 @@ def create_animation_from_file(outfolder, fname, verbose=False, cmap="viridis", 
         if df_block.empty:
             continue
         try:
-            # Pivot using raw column names from dataframe
             pivot_col = x_raw
             pivot_idx = y_raw
             pivot_df = df_block.pivot(index=pivot_idx, columns=pivot_col, values=col_names[2])
 
-            # Extract full coordinate arrays and values matrix
             X_full = pivot_df.columns.values
             Y_full = pivot_df.index.values
             Z_full = pivot_df.values
 
-            # X and Y represent the full cell boundaries (length = N + 1)
             X = X_full
             Y = Y_full
-
-            # Drop the dummy index 0 row and column from Z_vals
-            # so its shape (N_y, N_x) is one smaller than X and Y
             Z_vals = Z_full[1:, 1:] if (len(Y_full) > 1 and len(X_full) > 1) else Z_full
 
             # Evaluate grid limit conditions (> 1e5 / < -1e5) on X boundaries
             if len(X) >= 2:
-                x_0 = X[0]
-                x_1 = X[1]
-                x_last = X[-1]
-                x_prev = X[-2]
-
+                x_0, x_1, x_last, x_prev = X[0], X[1], X[-1], X[-2]
                 if x_last > 1e5:
                     calculated_xmax = x_prev * 2.0
                     custom_xmax = calculated_xmax if custom_xmax is None else max(custom_xmax, calculated_xmax)
-
                 if x_0 < -1e5:
                     calculated_xmin = max(min(-x_prev, x_1), x_0)
                     custom_xmin = calculated_xmin if custom_xmin is None else min(custom_xmin, calculated_xmin)
 
             # Evaluate grid limit conditions (> 1e5 / < -1e5) on Y boundaries
             if len(Y) >= 2:
-                y_0 = Y[0]
-                y_1 = Y[1]
-                y_last = Y[-1]
-                y_prev = Y[-2]
-
+                y_0, y_1, y_last, y_prev = Y[0], Y[1], Y[-1], Y[-2]
                 if y_last > 1e5:
                     calculated_ymax = y_prev * 2.0
                     custom_ymax = calculated_ymax if custom_ymax is None else max(custom_ymax, calculated_ymax)
-
                 if y_0 < -1e5:
                     calculated_ymin = max(min(-y_prev, y_1), y_0)
                     custom_ymin = calculated_ymin if custom_ymin is None else min(custom_ymin, calculated_ymin)
@@ -192,27 +175,35 @@ def create_animation_from_file(outfolder, fname, verbose=False, cmap="viridis", 
         return
 
     fig, ax = plt.subplots(figsize=(5, 4))
-
     t_val, t_unit, X, Y, Z = valid_blocks[0]
 
-    # shading='flat' natively expects coordinate arrays that represent exact cell edges
-    mesh = ax.pcolormesh(X, Y, Z, shading='flat', cmap=cmap, vmin=global_min, vmax=global_max)
+    # Handle Logarithmic vs Linear Color Normalization for higher contrast
+    if log_colors:
+        # Prevent log(0) or negative errors by clipping positive bounds safely
+        pos_vals = [v[v > 0] for _, _, _, _, v in valid_blocks if np.any(v > 0)]
+        vmin_log = min([np.min(pv) for pv in pos_vals]) if pos_vals else 1e-6
+        vmax_log = max([np.max(v) for _, _, _, _, v in valid_blocks]) if global_max > 0 else 1.0
+        norm = mcolors.LogNorm(vmin=max(vmin_log, 1e-16), vmax=vmax_log)
+        mesh = ax.pcolormesh(X, Y, Z, shading='flat', cmap=cmap, norm=norm)
+    else:
+        mesh = ax.pcolormesh(X, Y, Z, shading='flat', cmap=cmap, vmin=global_min, vmax=global_max)
+
     cbar = fig.colorbar(mesh, ax=ax)
     cbar.set_label(f"{val_col}{val_unit}")
 
-    # Apply window bounds if thresholds were exceeded for X
     if custom_xmin is not None or custom_xmax is not None:
         current_xmin, current_xmax = ax.get_xlim()
-        new_xmin = custom_xmin if custom_xmin is not None else current_xmin
-        new_xmax = custom_xmax if custom_xmax is not None else current_xmax
-        ax.set_xlim(new_xmin, new_xmax)
+        ax.set_xlim(
+            custom_xmin if custom_xmin is not None else current_xmin,
+            custom_xmax if custom_xmax is not None else current_xmax
+        )
 
-    # Apply window bounds if thresholds were exceeded for Y
     if custom_ymin is not None or custom_ymax is not None:
         current_ymin, current_ymax = ax.get_ylim()
-        new_ymin = custom_ymin if custom_ymin is not None else current_ymin
-        new_ymax = custom_ymax if custom_ymax is not None else current_ymax
-        ax.set_ylim(new_ymin, new_ymax)
+        ax.set_ylim(
+            custom_ymin if custom_ymin is not None else current_ymin,
+            custom_ymax if custom_ymax is not None else current_ymax
+        )
 
     ax.set_xlabel(f"{x_col}{x_unit}")
     ax.set_ylabel(f"{y_col}{y_unit}")
@@ -226,7 +217,6 @@ def create_animation_from_file(outfolder, fname, verbose=False, cmap="viridis", 
         return mesh, title_text
 
     anim = animation.FuncAnimation(fig, update, frames=len(valid_blocks), interval=1000/fps, blit=False)
-
     out_path = os.path.join(outfolder, f"{base_name}_anim.{ext.lower()}")
 
     try:
@@ -247,7 +237,7 @@ def create_animation_from_file(outfolder, fname, verbose=False, cmap="viridis", 
     plt.close()
 
 
-def process2ddirectory(directorypath='.', cmap="viridis", ext="mp4", fps=10, keep_original_axes=True):
+def process2ddirectory(directorypath='.', cmap="turbo", ext="mp4", fps=10, keep_original_axes=True, log_colors=False):
     all_dat_files = glob.glob(os.path.join(directorypath, "*.dat"))
     target_files = []
 
@@ -268,12 +258,12 @@ def process2ddirectory(directorypath='.', cmap="viridis", ext="mp4", fps=10, kee
     print(f"Found {len(target_files)} 2D density/energy .dat file(s) to convert to video:")
     for file_path in target_files:
         fname = os.path.basename(file_path)
-        create_animation_from_file(directorypath, fname, verbose=True, cmap=cmap, ext=ext, fps=fps, keep_original_axes=keep_original_axes)
+        create_animation_from_file(directorypath, fname, verbose=True, cmap=cmap, ext=ext, fps=fps, keep_original_axes=keep_original_axes, log_colors=log_colors)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Process 2D spatial distribution files and compile them into video animations with R on X-axis by default."
+        description="Process 2D spatial distribution files and compile them into video animations with high-contrast options."
     )
     parser.add_argument(
         "-d", "--dir",
@@ -284,8 +274,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cmap",
         type=str,
-        default="viridis",
-        help="Matplotlib colormap (default: 'viridis', options: 'plasma', 'inferno', etc.)",
+        default="turbo",
+        help="Matplotlib colormap (default: 'turbo', options: 'inferno', 'plasma', 'magma', 'hot', 'jet')",
+    )
+    parser.add_argument(
+        "--log-colors",
+        action="store_true",
+        help="Use logarithmic color scaling (LogNorm) for vastly improved contrast across multiple orders of magnitude.",
     )
     parser.add_argument(
         "-ext", "--ext", "--extension",
@@ -297,8 +292,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fps",
         type=int,
-        default=5,
-        help="Frames per second for the output video (default: 5)",
+        default=10,
+        help="Frames per second for the output video (default: 10)",
     )
     parser.add_argument(
         "--keep-original-axes",
@@ -314,4 +309,4 @@ if __name__ == "__main__":
         print(f"Error: Directory '{target_dir}' does not exist.")
         sys.exit(1)
 
-    process2ddirectory(target_dir, cmap=args.cmap, ext=args.ext, fps=args.fps, keep_original_axes=args.keep_original_axes)
+    process2ddirectory(target_dir, cmap=args.cmap, ext=args.ext, fps=args.fps, keep_original_axes=args.keep_original_axes, log_colors=args.log_colors)
