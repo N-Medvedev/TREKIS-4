@@ -9,6 +9,7 @@ in 2026
 -----------------------------------
 Standalone script to batch parse TREKIS 1D distribution files in a directory.
 Scans exclusively for .dat files containing 'spectrum_1d_[axis]' or 'velocity_theta_distr_1d_[axis]'.
+Conditionally places the legend outside the plot only when there are many curves.
 
 Usage:
     python TREKIS_4_1d_spectra_plotting.py
@@ -29,7 +30,7 @@ FILE_PATTERN = re.compile(r"(spectrum_1d_\w+|velocity_theta_distr_1d_\w+).*\.dat
 
 
 def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="auto", yscale="auto", ext="png"):
-    """Parses a single 1D distribution file and generates plots for all spatial bins with configurable scales."""
+    """Parses a single 1D distribution file and generates plots with smart conditional legend placement."""
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
 
@@ -116,7 +117,7 @@ def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="aut
     if len(col_names) > 2:
         raw_dist = col_names[2].replace("_", " ")
         base_dist_name = re.sub(r"\b(space\s+)?[xyzr]\b", f"space {axis_name.upper()}", raw_dist, flags=re.IGNORECASE)
-    
+
     dist_label = f"{base_dist_name} ({axis_name.upper()})" if "space" not in base_dist_name.lower() else base_dist_name
     time_unit = f" {col_units[0]}" if len(col_units) > 0 else ""
 
@@ -155,12 +156,26 @@ def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="aut
     # 4. Generate plots per spatial bin
     unique_times = df[col_names[0]].unique()
     num_times = len(unique_times)
-    ncol_legend = 2 if num_times > 4 else 1
+
+    # Determine if legend should be external (if more than 6 curves)
+    is_large_legend = num_times > 6
+
+    if is_large_legend:
+        if num_times > 40:
+            ncol_legend = 3
+        elif num_times > 15:
+            ncol_legend = 2
+        else:
+            ncol_legend = 1
+        fig_width = 8.0
+    else:
+        ncol_legend = 1
+        fig_width = 5.0
 
     for bin_idx in range(num_bins):
         bin_col = f"Bin_{bin_idx+1}"
 
-        fig, ax = plt.subplots(figsize=(6, 4.5))
+        fig, ax = plt.subplots(figsize=(fig_width, 4.0))
 
         for t in unique_times:
             sub_df = df[df[col_names[0]] == t]
@@ -168,6 +183,7 @@ def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="aut
                 sub_df[col_names[1]],
                 sub_df[bin_col],
                 label=f"t = {t}{time_unit}",
+                linewidth=1.0,
             )
 
         if use_xlog:
@@ -178,21 +194,38 @@ def parse_and_plot_file(filepath, output_dir=None, show_plots=False, xscale="aut
         ax.set_xlabel(var_label, fontsize=10)
         ax.set_ylabel(dist_label, fontsize=10)
         ax.set_title(bin_titles[bin_idx], fontsize=10, pad=10)
-        
+
         ax.grid(False)
-        
-        ax.legend(
-            loc="upper right",
-            ncol=ncol_legend,
-            fontsize=8,
-            frameon=True,
-            framealpha=0.85,
-            labelspacing=0.3,
-            handletextpad=0.4,
-            columnspacing=0.8
-        )
-        
-        plt.tight_layout(pad=1.2)
+
+        # Conditional legend placement
+        if is_large_legend:
+            # Place outside on the right if there are too many curves
+            ax.legend(
+                loc="upper left",
+                bbox_to_anchor=(1.02, 1.0),
+                ncol=ncol_legend,
+                fontsize=6,
+                frameon=True,
+                framealpha=0.85,
+                labelspacing=0.2,
+                handlelength=0.8,
+                handletextpad=0.3,
+                columnspacing=0.5
+            )
+            plt.tight_layout(rect=[0, 0, 0.78, 1])
+        else:
+            # Keep inside normally if few curves fit easily
+            ax.legend(
+                loc="upper right",
+                ncol=ncol_legend,
+                fontsize=8,
+                frameon=True,
+                framealpha=0.85,
+                labelspacing=0.3,
+                handlelength=1.0,
+                handletextpad=0.4,
+            )
+            plt.tight_layout(pad=1.2)
 
         save_filename = f"{base_name}_bin_{bin_idx+1}.{ext}"
         out_path = (
@@ -263,7 +296,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     matched_files = [
-        f for f in os.listdir(target_dir) 
+        f for f in os.listdir(target_dir)
         if f.lower().endswith(".dat") and FILE_PATTERN.search(f)
     ]
 
