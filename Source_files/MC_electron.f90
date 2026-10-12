@@ -179,7 +179,8 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
 
    ! Use average parameters between the targets:
    work_function = abs( Em_Barr1%Work_func - Em_Barr2%Work_func )
-   bar_height = ( Em_Barr1%Bar_height + Em_Barr2%Bar_height ) * 0.5d0
+   !bar_height = ( Em_Barr1%Bar_height + Em_Barr2%Bar_height ) * 0.5d0
+   bar_height = abs( Em_Barr1%Bar_height - Em_Barr2%Bar_height )
    Surf_bar = ( Em_Barr1%Surf_bar + Em_Barr2%Surf_bar ) * 0.5d0
    ! Get the coefficients:
    call get_barrier_parameters_mix(work_function, bar_height, Surf_bar, Em_E1, Em_gamma) ! module "MC_general_tools"
