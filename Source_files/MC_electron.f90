@@ -163,13 +163,19 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
 
    ! Use the barrier of the target:
    if (tar_ind1 == 0) then ! vacuum
-      Em_Barr1 => used_target%Material(tar_ind2)%Surface_barrier  ! use 2d target
+      !Em_Barr1 => used_target%Material(tar_ind2)%Surface_barrier  ! use 2d target
+      Em_Barr1%Bar_height = 0.0d0
+      Em_Barr1%Work_func = 0.0d0
+      Em_Barr1%Surf_bar = Em_Barr2%Surf_bar
    else
       Em_Barr1 => used_target%Material(tar_ind1)%Surface_barrier  ! use 1st target
    endif
 
    if (tar_ind2 == 0) then ! vacuum
-      Em_Barr2 => used_target%Material(tar_ind1)%Surface_barrier  ! use 1st target
+      !Em_Barr2 => used_target%Material(tar_ind1)%Surface_barrier  ! use 1st target
+      Em_Barr2%Bar_height = 0.0d0
+      Em_Barr2%Work_func = 0.0d0
+      Em_Barr2%Surf_bar = Em_Barr1%Surf_bar
    else
       Em_Barr2 => used_target%Material(tar_ind2)%Surface_barrier  ! use 2d target
    endif
