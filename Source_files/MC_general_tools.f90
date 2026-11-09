@@ -4,7 +4,7 @@
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
 ! and F. Akhmetov
-! in 2019-2021
+! in 2019-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! Module contains generally used Monte Carlo routines
 ! References used in the module:
