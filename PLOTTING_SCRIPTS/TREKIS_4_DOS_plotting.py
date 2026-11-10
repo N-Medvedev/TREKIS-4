@@ -96,7 +96,7 @@ def parse_dos_file(file_path):
         # Determine mode based on header or energy sign
         current_mode = mode
         if not has_explicit_modes:
-            current_mode = "valence" if e < 0 else "conduction"
+            current_mode = "valence" if e <= 0 else "conduction"
 
         if current_mode == "valence":
             val_E.append(e)
@@ -154,6 +154,7 @@ def plot_processed_dos(out_folder, fname, file_label, out_name, out_extension=".
             ax2.plot(cond_effm_E, cond_effm_vals, color="red", ls="--", lw=1.2, label="Conduction m*")
 
         ax2.set_ylabel("Effective mass ($m_e$)")
+        ax2.set_ylim(0.0, None)
 
         # Combine legends
         lines1, labels1 = ax1.get_legend_handles_labels()

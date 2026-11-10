@@ -351,6 +351,7 @@ g_as1=dble(24.0d0*60.0d0*60.0d0*(g_c1(3)-g_ctim(3))+3600.0d0*(g_c1(5)-g_ctim(5))
     60.0d0*(g_c1(6)-g_ctim(6))+(g_c1(7)-g_ctim(7))+(g_c1(8)-g_ctim(8))*0.001d0)    ! sec
 call parse_time(g_as1,g_text)   ! module "Little_subroutines"
 
+write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
 ! Print duration of execution of the program on the screen:
 call print_duration(6, trim(adjustl(g_text)), g_ctim) ! module "Output"
 ! And into the Parameters file:
