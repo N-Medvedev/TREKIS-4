@@ -4,7 +4,7 @@
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! This module is written by N. Medvedev
 ! and F. Akhmetov
-! in 2019-2021
+! in 2019-2026
 ! 1111111111111111111111111111111111111111111111111111111111111
 ! Module contains generally used Monte Carlo routines
 ! References used in the module:
@@ -12,6 +12,7 @@
 !   "PENELOPE-2014 A Code System for Monte Carlo Simulation of Electron and Photon Transport", OECD (2014)
 ! [2] R. Rymzhanov et al. Phys. Status Solidi B 252, 159-164 (2015) / DOI 10.1002/pssb.201400130
 ! [3] M. Azzolini et al. J. Phys. Condens. Matter 31, 055901 (2019)
+! [4] Z. J. Ding, X. D. Tang, and R. Shimizu, J. Appl. Phys. 89, 718 (2001)
 
 
 module MC_general_tools
@@ -50,7 +51,7 @@ interface copy_MC_array
 end interface copy_MC_array
 
 
-public :: extend_MC_array, copy_MC_array
+public :: extend_MC_array, copy_MC_array, electron_kinetic_energy
 
 
  contains
@@ -317,16 +318,28 @@ pure function electron_transmission_probability(Work_func, Em_gamma, Em_E1, Ekin
 end function electron_transmission_probability
 
 
-pure function electron_transmission_probability_step(Work_func, Ekin) result(T) 
+pure function electron_transmission_probability_step(Work_func, Ekin, E_fermi) result(T)
    real(8) T    ! transmission probability / penetrability
-   real(8), intent(in) :: Work_func   ! work function of the material/height of the barrier
-   real(8), intent(in) :: Ekin  ! electron kinetic energy, perpendicular to the surface component [eV]
-   real(8) :: frac, num, denom, denom2
-   
-   if (Ekin < Work_func) then
+   real(8), intent(in) :: Work_func ! work function of the material/height of the barrier
+   real(8), intent(in) :: Ekin      ! electron kinetic energy, perpendicular to the surface component [eV]
+   real(8), intent(in), optional :: E_fermi   ! [eV] Fermi energy, if we want to include it accordint to Eq.(11) [4]
+   !---------------------
+   real(8) :: frac, num, denom, denom2, U, U0
+
+   if (present(E_fermi)) then
+      U = E_fermi
+   else     ! don't add it
+      U = 0.0d0
+   endif
+
+   ! Work function, counted either from Fermi-level, or from the CB bottom, depending on the model,
+   ! Note that the kinetic energy must be counted accordingly!
+   U0 = Work_func + U
+
+   if (Ekin < U0) then
       T = 0.0d0
    else
-      frac = Work_func / Ekin
+      frac = U0 / Ekin
       num = 4.0d0*sqrt(1.0d0 - frac)
       denom = 1.0d0 + sqrt(1.0d0 - frac)
       denom2 = denom*denom
@@ -711,6 +724,11 @@ subroutine scatter_from_white_wall(Box_wall_index, V)
 end subroutine scatter_from_white_wall
 
 
+
+
+!SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+! Scattering subroutines
+
 function sample_phi() result(phi)
    real(8) phi    ! uniformly sampled angle around X from 0 to 2Pi
    real(8) :: RN
@@ -988,8 +1006,11 @@ end subroutine flight_time_to_boundary
    ! Sanity check:
    if (tar_ind < 1) then ! something went wrong
       print*, 'Error in define_normal_to_surface:', Prtcl%in_target, tar_ind
-      print*, 'R=', Prtcl%R(:), Prtcl%R0(:)
-      print*, 'O=', Prtcl%origin
+      print*, 'R =', Prtcl%R(:)
+      print*, 'R0=', Prtcl%R0(:)
+      print*, 'Shift=', R_shift
+      print*, 'V =', Prtcl%V(:)
+      print*, 'Origin=', Prtcl%origin
       select type (Prtcl)
          type is (Electron)
             print *, "Electron"
@@ -998,9 +1019,7 @@ end subroutine flight_time_to_boundary
          type is (Hole)
             print *, "Hole"
          type is (Photon)
-            print *, "Hole"
-         !type is (Positron)
-         !   print *, "Positron"
+            print *, "Photon"
          type is (Muon)
             print *, "Muon"
         class default
@@ -1547,6 +1566,7 @@ end function it_is_within_cylinder_segment
 ! Subroutines related to flight times of particles:
 
 
+
 subroutine update_flight_time_to_boundary(used_target, numpar, Prtcl) ! Find within which given particle is now
    type(Matter), intent(in), target :: used_target   ! parameters of the target
    type(Num_par), intent(in) :: numpar   ! all numerical parameters
@@ -1640,13 +1660,25 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
    real(8) :: T  ! time and distance to the cross point
    real(8) :: CS_total, MFP_total, Sampled_path  ! total cross section and MFP
    real(8) :: V, V1 ! [A/fs] velosity
-   real(8) :: eps
+   real(8) :: eps, E_kin
    type(Target_atoms), pointer :: matter
    logical :: do_scattering
    
    eps = 1.0d-12    ! energy precision
+
+
+   ! Ensure electron's kinetic energy is counted from the bottom of VB (shift for metals):
+   if (Prtcl%in_target > 0) then    ! it is not in vacuum
+      matter => used_target%Material(Prtcl%in_target)
+      E_kin = electron_kinetic_energy(Prtcl%Ekin, matter%DOS)      ! below
+   else ! vacuum, no shift
+      E_kin = Prtcl%Ekin
+   endif
+
+
    
-   if (abs(Prtcl%Ekin) < eps) then ! electron with zero energy cannot fly
+   !if (abs(Prtcl%Ekin) < eps) then ! electron with zero energy cannot fly
+   if (abs(E_kin) < eps) then ! electron with zero energy cannot fly
       Prtcl%ti = 1.0d26
       Prtcl%t_sc = 1.0d25
    else ! non-zero-energy electron can fly
@@ -1657,7 +1689,8 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
       Prtcl%ti = Prtcl%t0 + T  ! [fs]
 
       do_scattering = .true.   ! by default, recalculate the scattering time
-      if (present(no_scatternig) .or. ( abs(Prtcl%Ekin) < eps) ) then  ! electron with zero energy cannot scatter
+      !if (present(no_scatternig) .or. ( abs(Prtcl%Ekin) < eps) ) then  ! electron with zero energy cannot scatter
+      if (present(no_scatternig) .or. ( abs(E_kin) < eps) ) then  ! electron with zero energy cannot scatter
          if (no_scatternig) do_scattering = .false.
       endif
 
@@ -1671,7 +1704,8 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
             ! Properties of the target material, inside of which the particle is:
             matter => used_target%Material(Prtcl%in_target)
             ! a) get the total cross sections from all possible scattering channels:
-            CS_total = total_CS_from_chennels(Prtcl%Ekin, matter%El_inelastic_total%E, matter%El_inelastic_total%Total, &
+            !CS_total = total_CS_from_chennels(Prtcl%Ekin, matter%El_inelastic_total%E, matter%El_inelastic_total%Total, &
+            CS_total = total_CS_from_chennels(E_kin, matter%El_inelastic_total%E, matter%El_inelastic_total%Total, &
                     E_array2=matter%El_elastic_total%E, CS_array2=matter%El_elastic_total%Total, &
                     E_array3=matter%El_Brems_total%E, CS_array3=matter%El_Brems_total%Total) ! module "CS_general_tools"
             ! b) get the total mean free path:
@@ -1681,15 +1715,19 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
             
             ! c) get the total flight time:
             V = sqrt( SUM(Prtcl%V(:)*Prtcl%V(:)) )  ! electron speed [A/fs]
-            V1 = velosity_from_kinetic_energy(Prtcl%Ekin, g_me)    ! module "Relativity"
+            !V1 = velosity_from_kinetic_energy(Prtcl%Ekin, g_me)    ! module "Relativity"
+            ! Get the velosity corresponding to the energy counted from the bottom of VB (important for metals):
+            V1 = velosity_from_kinetic_energy(E_kin, g_me)    ! module "Relativity"
       
-            ! Cross check that velosity is consistent:
-            if ( abs(V-V1) > 1.0d-6*V1 ) then
-               print*, 'Error in get_electron_flight_time:', V, velosity_from_kinetic_energy(Prtcl%Ekin, g_me) 
-            endif
-      
-            !T =  Time_from_MFP(MFP_total, V) ! [fs] module "CS_general_tools"
-            T =  Time_from_MFP(Sampled_path, V) ! [fs] module "CS_general_tools"
+            ! Cross check that velosity is consistent -- test fails for metals where we have a shift in energy to the VB bottom!
+            !if ( abs(V-V1) > 1.0d-6*V1 ) then
+            !   !print*, 'Error in get_electron_flight_time:', V, velosity_from_kinetic_energy(Prtcl%Ekin, g_me)
+            !   print*, 'Error in get_electron_flight_time:', V, V1
+            !endif
+
+            !T =  Time_from_MFP(Sampled_path, V) ! [fs] module "CS_general_tools"
+            T =  Time_from_MFP(Sampled_path, V1) ! [fs] module "CS_general_tools"
+
             ! The time of the next event (for scattering):
             Prtcl%t_sc = Prtcl%t0 + T  ! [fs]
             
@@ -1716,6 +1754,22 @@ subroutine get_electron_flight_time(used_target, numpar, Prtcl, MD_supce, E_e, n
    
    nullify(matter)
 end subroutine get_electron_flight_time
+
+
+
+function electron_kinetic_energy(Ekin_in, DOS) result(E_kin)
+   real(8) :: E_kin     ! [eV] electron kinetic energy ensuring that is counted from the bottom of CB for metals
+   real(8), intent(in) :: Ekin_in   ! [eV] electron kinetic energy counted from Efermi
+   type(Density_of_states), intent(in) :: DOS   ! container for all DOS data
+   !----------------------
+
+   ! Check if it is metal:
+   if (DOS%Egap < 0.1d0) then      ! metal, shift by the width of the filled band (Fermi energy)
+      E_kin = Ekin_in - DOS%E_VB_bottom
+   else     ! non-metal, do nothing
+      E_kin = Ekin_in
+   endif
+end function electron_kinetic_energy
 
 
 

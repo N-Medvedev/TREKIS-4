@@ -320,7 +320,19 @@ enddo TP ! while (g_time .LT. g_numpar%t_total)
 
 !'******************************************************************'
 write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
+! Printing out the duration of calcualtions (without the plotting):
+call date_and_time(values=g_c1)     ! For calculation of the time of execution of the program
+g_as1=dble(24.0d0*60.0d0*60.0d0*(g_c1(3)-g_ctim(3))+3600.0d0*(g_c1(5)-g_ctim(5))+ &
+    60.0d0*(g_c1(6)-g_ctim(6))+(g_c1(7)-g_ctim(7))+(g_c1(8)-g_ctim(8))*0.001d0)    ! sec
+call parse_time(g_as1,g_text)   ! module "Little_subroutines"
+! Print duration of execution of the computations:
+call print_duration(6, trim(adjustl(g_text)), g_ctim, text_replace='Computations finished within:') ! module "Output"
+call print_duration(g_numpar%FN_parameters, trim(adjustl(g_text)), g_ctim, text_replace='Computations finished within:') ! module "Output"
+write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
+!'******************************************************************'
 
+
+!'******************************************************************'
 ! Execute all gnuplot scripts to plot the data user requested to:
 if (g_numpar%gnupl%do_gnuplot) call execute_all_gnuplots(g_numpar) ! module "Output"
 if (g_numpar%verbose) write(*,'(a)') " Completed execute_all_gnuplots"
@@ -328,6 +340,7 @@ if (g_numpar%verbose) write(*,'(a)') " Completed execute_all_gnuplots"
 ! All call for python plotting scripts:
 call execute_all_pythons(g_numpar) ! module "Output"
 if (g_numpar%verbose) write(*,'(a)') " Completed execute_all_pythons"
+
 
 !--------------------------------------------------------------
 ! Finilize simulation run:
@@ -338,6 +351,7 @@ g_as1=dble(24.0d0*60.0d0*60.0d0*(g_c1(3)-g_ctim(3))+3600.0d0*(g_c1(5)-g_ctim(5))
     60.0d0*(g_c1(6)-g_ctim(6))+(g_c1(7)-g_ctim(7))+(g_c1(8)-g_ctim(8))*0.001d0)    ! sec
 call parse_time(g_as1,g_text)   ! module "Little_subroutines"
 
+write(6,'(a)') trim(adjustl(m_starline))    ! module "Output"
 ! Print duration of execution of the program on the screen:
 call print_duration(6, trim(adjustl(g_text)), g_ctim) ! module "Output"
 ! And into the Parameters file:

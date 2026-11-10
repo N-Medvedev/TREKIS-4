@@ -101,7 +101,7 @@ character(100) ::   m_python_MFP, m_python_Se, &
 
 
 ! code version:
-character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 04.11.2026)'
+character(30), parameter :: m_TREKIS_version = 'TREKIS-4 (version 09.11.2026)'
 
 
 ! All output file names:
@@ -4961,12 +4961,21 @@ end subroutine Print_CDF_parameters
 
 
 
-subroutine print_duration(print_to, chtext, ctim)
+subroutine print_duration(print_to, chtext, ctim, text_replace)
    integer, intent(in) :: print_to	! into which unit to print (file number or screen)
    character(*), intent(in) :: chtext	! time duration to print out
    integer, intent(in) :: ctim(8)	! time stamps
+   character(*), intent(in), optional :: text_replace ! text to print instead of default
+   !-----------------------------
+   character(1000) :: text_to_print
+
+   if (present(text_replace)) then ! use it to print
+      text_to_print = text_replace
+   else ! use default text:
+      text_to_print = ' Duration of execution of program: '
+   endif
    
-   write(print_to,'(a,a)') ' Duration of execution of program: ', trim(adjustl(chtext))
+   write(print_to,'(a,a)') ' '//trim(adjustl(text_to_print))//' ', trim(adjustl(chtext))
    call print_time(' Started  at', ind=0, ctim=ctim, print_to=print_to)	! module "Little_subroutines"
    call print_time(' Finished at', ind=0, print_to=print_to)	! module "Little_subroutines"
    write(print_to,'(a)') trim(adjustl(m_starline))

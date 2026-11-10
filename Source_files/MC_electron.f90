@@ -120,6 +120,7 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    real(8) :: Vnorm, Ekin_norm, T, RN, Vabs, Z, PrtclV
    real(8) :: work_function, bar_height, Surf_bar
    real(8) :: Em_E1, Em_gamma
+   real(8) :: E_fermi1, E_fermi2, E_fermi
    integer :: target_ind, i, surf_ind, tar_ind1, tar_ind2, barr_type
    logical :: transmit
    type(Emission_barrier), pointer :: Em_Barr1, Em_Barr2
@@ -146,14 +147,7 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       print*, 'n to surface:', norm_to_surf
    endif
    
-   ! 2) Find the velosity projection onto the normal to the surface:
-   Vnorm = scalar_projection(Prtcl%V, norm_to_surf)     ! module "Geometries"
-   Vnorm = Vnorm * g_Afs2ms ! [fs/A] -> [m/s]
-   
-   ! 3) Get the normal component of the kinetic energy:
-   Ekin_norm = kinetic_energy_from_velosity(Vnorm, g_me)    ! module "Relativity"
-   
-   ! 4) Get the probability of boundary crossing:
+   ! 2) Get the probability of boundary crossing:
    tar_ind1 = Prtcl%in_target ! old target
    ! new target:
    PrtclV = max(SQRT( SUM( Prtcl%V(:)*Prtcl%V(:) ) ), m_tollerance_eps) ! exclude zero
@@ -167,8 +161,15 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       Em_Barr1%Bar_height = 0.0d0
       Em_Barr1%Work_func = 0.0d0
       Em_Barr1%Surf_bar = Em_Barr2%Surf_bar
+      E_fermi1 = 0.0d0   ! Fetmi energy [eV]
    else
       Em_Barr1 => used_target%Material(tar_ind1)%Surface_barrier  ! use 1st target
+      ! Check if it is metal:
+      if (used_target%Material(tar_ind1)%DOS%Egap < 0.1d0) then      ! metal, shift by the width of the filled band (Fermi energy)
+         E_fermi1 = used_target%Material(tar_ind1)%DOS%E_VB_bottom   ! Fetmi energy [eV]
+      else
+         E_fermi1 = 0.0d0 ! no shift in non-metals
+      endif
    endif
 
    if (tar_ind2 == 0) then ! vacuum
@@ -176,8 +177,14 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       Em_Barr2%Bar_height = 0.0d0
       Em_Barr2%Work_func = 0.0d0
       Em_Barr2%Surf_bar = Em_Barr1%Surf_bar
+      E_fermi2 = 0.0d0   ! Fetmi energy [eV]
    else
       Em_Barr2 => used_target%Material(tar_ind2)%Surface_barrier  ! use 2d target
+      if (used_target%Material(tar_ind2)%DOS%Egap < 0.1d0) then      ! metal, shift by the width of the filled band (Fermi energy)
+         E_fermi2 = used_target%Material(tar_ind2)%DOS%E_VB_bottom   ! Fetmi energy [eV]
+      else
+         E_fermi2 = 0.0d0 ! no shift in non-metals
+      endif
    endif
 
    ! Use the simplest barrier type among specified (inhomogeneous not allowed):
@@ -191,6 +198,22 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
    ! Get the coefficients:
    call get_barrier_parameters_mix(work_function, bar_height, Surf_bar, Em_E1, Em_gamma) ! module "MC_general_tools"
 
+   ! Relative Fermi energy, if used:
+   E_fermi = abs(E_fermi1 - E_fermi2)
+
+
+   ! 3) Get the normal component of the kinetic energy,
+   ! Via finding the velosity projection onto the normal to the surface:
+   Vnorm = scalar_projection(Prtcl%V, norm_to_surf)     ! module "Geometries"
+   Vnorm = Vnorm * g_Afs2ms ! [fs/A] -> [m/s]
+
+   ! If we include the Fermi-energy into the velosity used to calculate the barrier crossing:
+   ! Rescale velosity to the one counted from E_fermi:
+   Vnorm = Vnorm * sqrt((Prtcl%Ekin + E_fermi) / Prtcl%Ekin)
+
+   ! Energy, corresponding to the normal projection of the velocity:
+   Ekin_norm = kinetic_energy_from_velosity(Vnorm, g_me)    ! module "Relativity"
+
 
    ! Projection of energy on the normal to use to calculate transmission probability:
    ! Total kinetic energy to use to calculate transmission probability:
@@ -200,7 +223,10 @@ subroutine event_electron_target_boundary(used_target, numpar, MC, Prtcl, NOP, M
       T = electron_transmission_probability(work_function, Em_gamma, Em_E1, Ekin_norm)     ! module "MC_general_tools"
    case default ! step barrier
       !T = electron_transmission_probability_step(Em_Barr%Work_func, Ekin_norm) ! module "MC_general_tools"
-      T = electron_transmission_probability_step(work_function, Ekin_norm) ! module "MC_general_tools"
+      !T = electron_transmission_probability_step(work_function, Ekin_norm) ! module "MC_general_tools"
+      ! Alternative model, counting electron energy from the CB bottom instead of Fermi-level:
+      T = electron_transmission_probability_step(work_function, Ekin_norm, E_fermi) ! module "MC_general_tools"
+
    end select
 
    ! 5) Sample transmission vs. reflection:
