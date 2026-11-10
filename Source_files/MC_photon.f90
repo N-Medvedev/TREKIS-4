@@ -132,6 +132,17 @@ subroutine event_photon_target_boundary(used_target, numpar, Prtcl)
    ! First, construct the normal to the surface:
    call define_normal_to_surface(used_target,  Prtcl, norm_to_surf, &
                                  'event_photon_target_boundary', INFO=INFO, surf_ind=surf_ind)    ! module "MC_general_tools"
+
+   ! Patch for the case of seeing the same border twice (to figure out later why this is even possible!):
+   ! If the particle didn't actually find the border, just let it fly further...
+   if (INFO /= 0) then
+      Prtcl%R(:) = Prtcl%R0(:) + R_shift     ! make a tiny step
+      call find_the_target(used_target, Prtcl, R_shift) ! module "MC_general_tools"
+      ! Update the mean free flight time:
+      call get_photon_flight_time(used_target, numpar, Prtcl)  ! module "MC_general_tools"
+      return ! nothing more to do here, proceed
+   endif
+
    ! Vector of the photon motion:
    V_ph(:) = Prtcl%V(:)/g_c_Afs   ! normalized to 1
 

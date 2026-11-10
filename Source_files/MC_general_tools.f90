@@ -1006,6 +1006,7 @@ end subroutine flight_time_to_boundary
    ! Sanity check:
    if (tar_ind < 1) then ! something went wrong
       print*, 'Error in define_normal_to_surface:', Prtcl%in_target, tar_ind
+      print*, message_in
       print*, 'R =', Prtcl%R(:)
       print*, 'R0=', Prtcl%R0(:)
       print*, 'Shift=', R_shift
@@ -1025,6 +1026,12 @@ end subroutine flight_time_to_boundary
         class default
             print *, "Unknown particle type"
        end select
+
+       ! Mark it and exit:
+       INFO = -1  ! no border found
+       n(1:2) = 0.0d0
+       n(3) = 1.0d0
+       return
    endif
 
    
