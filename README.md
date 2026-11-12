@@ -8,6 +8,10 @@ A hybrid code combining Monte Carlo and molecular dynamics simulation of the eff
 
 For all details and instruction, please address the manual (available in English and Russian).
 
+## Building
+
+The ordered Fortran compilation list is maintained in `Source_files/sources.list` and shared by the GNU Make and Windows `Make.bat` builds. Keep module dependencies in order when adding or moving source files. Compiler flags and build configurations remain specific to each toolchain.
+
 ## Disclaimer
 
 This code is developed for non-commercial peaceful purposes only, such as research and education, and cannot be used for military-related and other than peaceful purposes.
